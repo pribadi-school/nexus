@@ -1,0 +1,7 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Nexus">
+  <!-- Mark used inside the app icon tile: heavier lines, no nodes. -->
+  <polyline points="16,30 50,86 84,30" fill="none" stroke="#1F4E9F" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <polyline points="32,38 50,86 68,38" fill="none" stroke="#1F4E9F" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="50" y1="46" x2="50" y2="86" stroke="#1F4E9F" stroke-width="7" stroke-linecap="round"/>
+  <circle cx="50" cy="19" r="11.5" fill="#B91C1C"/>
+</svg>

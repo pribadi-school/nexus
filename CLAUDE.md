@@ -196,7 +196,7 @@ deployed yet.
 - Read `DESIGN.md` first: it points to `design-system/sekolah-pribadi-depok/MASTER.md`
   (shared Pribadi system) and `pages/nexus-app.md` (Nexus overrides; it wins).
   Tokens: `public/assets/css/tokens.css`. No raw hex values elsewhere.
-- Brand: blue `#1F4E9F` (action colour), red `#B91C1C` (hub, "Has problem",
+- Brand: blue `#1F4E9F` (action colour), red `#B91C1C` (logo point, "Has problem",
   destructive), navy `#0F2A5C` (login backdrop). Neutrals from MASTER
   (page `#f2f5f9`, white cards, 1px `rgba(18,35,60,.16)` borders).
 - Flat app style: no shadows (except `--shadow-e4` on menus/dialogs), no
@@ -206,17 +206,20 @@ deployed yet.
   "OK" / "Has problem"). Problem rows: `problem-tint` + 3px red left border.
   Meter "running well" uses `--color-success-track` (light green); solid green
   next to red fails red–green colour blindness (checked with the dataviz validator).
-- Fonts (self-hosted): Inter (UI), Space Grotesk 600 (wordmark only),
-  IBM Plex Sans 400 (tagline only).
-- Logo "Pentagon Hub": `public/assets/brand/logo-mark.svg` (master, exact
-  owner SVG), `logo-mark-white.svg` (dark backgrounds, hub stroke = navy),
-  `favicon.svg` (≤32px: outline stroke 11 + hub r=18), app icons
-  `app-icon-512.png`, `app-icon-192.png`, `apple-touch-icon.png`,
-  `favicon-32.png`, `/favicon.ico`. Rebuild PNGs with `npm run build:assets`.
-- Wordmark: "nexus", always lowercase, Space Grotesk 600, letter-spacing
-  −0.03em, `#1F4E9F`. Lockup = mark at 1.3× the wordmark size, kept above
-  32px so the full mark is used. Login page and sidebar show the lockup; the
-  login page adds the tagline (IBM Plex Sans, `#4B5568`).
+- Fonts (self-hosted): Inter (UI), Space Grotesk 700 (wordmark only),
+  IBM Plex Sans 500 (tagline only).
+- Logo "Rise" (replaced the first "Pentagon Hub" mark, Oct 2026): raised
+  arms drawn as lines meeting at one point, red point above. One drawing per
+  size in `public/assets/brand/`: `logo-mark.svg` (≥56px, full),
+  `logo-mark-48.svg` (sidebar/top bar), `favicon.svg` (≤32px),
+  `logo-mark-white.svg` (navy backgrounds), `app-icon.svg` (inside app icons).
+  PNGs: `app-icon-512.png`, `app-icon-192.png`, `apple-touch-icon.png`,
+  `favicon-32.png`, `/favicon.ico`; rebuild with `npm run build:assets`.
+  Size table in nexus-app.md §6. Mockup: `B · Rise-html/` (not committed).
+- Wordmark: "nexus", always lowercase, Space Grotesk 700, letter-spacing
+  −0.04em, `#1F4E9F`. Lockup (`partials/lockup.php`) = mark at 1.4× the
+  wordmark size; `large => true` uses the full mark (login), otherwise the
+  48 variant. The login page adds the tagline (IBM Plex Sans 500, `#4B5568`).
 - Icons: Lucide, via `icon('name')` from `public/assets/icons/sprite.svg`.
   To add one, put its name in `ICONS` in `tools/build-assets.mjs` and rebuild.
 

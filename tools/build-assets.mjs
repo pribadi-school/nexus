@@ -52,8 +52,8 @@ function buildSprite() {
 const FONTS = [
   ['@fontsource-variable/inter', 'inter-latin-wght-normal.woff2'],
   ['@fontsource-variable/inter', 'inter-latin-ext-wght-normal.woff2'],
-  ['@fontsource/space-grotesk', 'space-grotesk-latin-600-normal.woff2'],
-  ['@fontsource/ibm-plex-sans', 'ibm-plex-sans-latin-400-normal.woff2'],
+  ['@fontsource/space-grotesk', 'space-grotesk-latin-700-normal.woff2'],
+  ['@fontsource/ibm-plex-sans', 'ibm-plex-sans-latin-500-normal.woff2'],
 ];
 
 function copyFonts() {
@@ -73,11 +73,11 @@ function renderPng(svg, size) {
   return new Resvg(svg, { fitTo: { mode: 'width', value: size } }).render().asPng();
 }
 
-// The full mark on a white square, scaled to 78% so it sits inside the
+// The app-icon mark on a white square, scaled to 74% so it sits inside the
 // maskable-icon safe zone (a centred circle of 80%).
 function appIconSvg() {
-  const mark = inner(readFileSync(pub('assets', 'brand', 'logo-mark.svg'), 'utf8'));
-  const scale = 0.78;
+  const mark = inner(readFileSync(pub('assets', 'brand', 'app-icon.svg'), 'utf8'));
+  const scale = 0.74;
   const offset = (100 - 100 * scale) / 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#FFFFFF"/><g transform="translate(${offset} ${offset}) scale(${scale})">${mark}</g></svg>`;
 }

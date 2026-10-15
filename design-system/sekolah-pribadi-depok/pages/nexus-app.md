@@ -24,7 +24,7 @@ MASTER's blue/teal. MASTER's neutrals stay.
 | Action | = brand blue | `--color-action` | Every button fill, link, active nav item, focus ring. White on it: 7.9:1 |
 | Action hover | color-mix(action 80%, navy) | `--color-action-hover` | Hover/pressed fill |
 | Action tint | color-mix(action 8%, surface) | `--color-action-tint` | Active nav background, info notices |
-| Brand red (hub) | `#B91C1C` | `--color-brand-red` | The logo hub |
+| Brand red | `#B91C1C` | `--color-brand-red` | The red point in the logo |
 | Problem | = brand red | `--color-problem` | "Has problem" status, problem counts. 6.5:1 on white |
 | Destructive | = brand red | `--color-destructive` | Delete buttons, errors. Replaces MASTER's `#dc2626` here, so the app has one red |
 | Navy | `#0F2A5C` | `--color-navy` | Dark surfaces only: the login backdrop |
@@ -60,9 +60,9 @@ It only feeds the warning mix above.
 ## 3. Type
 
 - **UI font:** Inter (variable, self-hosted in `public/assets/fonts`).
-- **Wordmark:** "nexus", always lowercase, Space Grotesk 600, letter-spacing
-  −0.03em, `--color-brand-blue`. Space Grotesk is used for nothing else.
-- **Tagline:** "Connecting to Pribadi School", IBM Plex Sans 400,
+- **Wordmark:** "nexus", always lowercase, Space Grotesk 700, letter-spacing
+  −0.04em, `--color-brand-blue`. Space Grotesk is used for nothing else.
+- **Tagline:** "Connecting to Pribadi School", IBM Plex Sans 500, letter-spacing 0.02em,
   `--color-tagline`. IBM Plex Sans is used for nothing else.
 
 Data-dense scale (nothing below 12px):
@@ -127,15 +127,22 @@ tile.
 
 ## 6. Logo
 
-- Master: `public/assets/brand/logo-mark.svg` (pentagon from the school emblem;
-  the red hub is where every device connects).
-- White version for dark backgrounds: `logo-mark-white.svg`. The hub's stroke
-  matches the background (navy `#0F2A5C`).
-- 32px and below: `favicon.svg` (pentagon outline stroke 11 + red hub r=18, no
-  spokes or nodes).
+"Rise" mark (owner decision, Oct 2026; replaced the earlier Pentagon Hub): the
+emblem's raised-arms figure redrawn as connection lines that all meet at one
+point, with the red point above. Source mockup: `B · Rise-html/Converge.dc.html`.
+Each size has its own drawing; never scale one down past its range.
+
+| File | Use | Drawing |
+|---|---|---|
+| `logo-mark.svg` | 56px and up (login lockup) | both Vs + centre line, stroke 5.5, nodes, red point r=10.5 |
+| `logo-mark-48.svg` | ~33–55px (sidebar, top bar) | outer V + centre line, stroke 9, red point r=13 |
+| `favicon.svg` | 32px and below | outer V only, stroke 12, red point r=15 |
+| `logo-mark-white.svg` | dark backgrounds (navy) | white lines, no nodes, stroke 6.5, red point r=11 |
+| `app-icon.svg` | inside the app icon | no nodes, stroke 7, red point r=11.5 |
+
 - App icons: `app-icon-512.png`, `app-icon-192.png`, `apple-touch-icon.png`
-  (mark at 78% on white), built by `npm run build:assets`.
-- Lockup: mark + wordmark, mark height ≈ 1.3× the wordmark's font size. The
+  (`app-icon.svg` at 74% on white), built by `npm run build:assets`.
+- Lockup: mark + wordmark, mark height ≈ 1.4× the wordmark's font size. The
   login page adds the tagline underneath.
 - The only hex values outside the token file are the brand SVG files and
   the chevron inside the select arrow (a data URI cannot read tokens).
