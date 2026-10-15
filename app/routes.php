@@ -21,8 +21,11 @@ $router->post('/logout', [AuthController::class, 'logout'], public: true);
 $router->get('/', [DashboardController::class, 'index']);
 $router->get('/activity', [DashboardController::class, 'activity']);
 
-// Any device, whatever its category: forwards to the category's own page.
+// Any device, whatever its category: forwards to the category's own page,
+// and the shared status switch and notes log post here.
 $router->get('/devices/{id}', [DeviceController::class, 'show']);
+$router->post('/devices/{id}/status', [DeviceController::class, 'status']);
+$router->post('/devices/{id}/notes', [DeviceController::class, 'addNote']);
 
 // Device categories (config/modules.php)
 categories()->registerRoutes($router);

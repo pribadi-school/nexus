@@ -100,6 +100,21 @@ function request_path(): string
     return '/' . trim(rawurldecode((string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH)), '/');
 }
 
+/** Path + query of the current request, e.g. "/studytouch?status=problem". */
+function request_uri(): string
+{
+    $uri = (string) ($_SERVER['REQUEST_URI'] ?? '/');
+    return str_starts_with($uri, '/') ? $uri : '/';
+}
+
+/** $path if it is a page on this site ("/x?y"), else $fallback. Guards redirects. */
+function safe_path(?string $path, string $fallback): string
+{
+    return is_string($path) && str_starts_with($path, '/') && !str_starts_with($path, '//') && !str_contains($path, '\\')
+        ? $path
+        : $fallback;
+}
+
 /** True when $path is the current page or a page below it. */
 function is_active(string $path): bool
 {

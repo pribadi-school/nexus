@@ -101,7 +101,7 @@ final class Database
 
     /**
      * Runs $fn inside a transaction and returns its result. Rolls back and
-     * rethrows on any error.
+     * rethrows on any error. Nested calls join the outer transaction.
      *
      * @template T
      * @param callable(): T $fn
@@ -109,6 +109,9 @@ final class Database
      */
     public function transaction(callable $fn): mixed
     {
+        if ($this->pdo->inTransaction()) {
+            return $fn();
+        }
         $this->pdo->beginTransaction();
         try {
             $result = $fn();

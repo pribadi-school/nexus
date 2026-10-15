@@ -57,10 +57,37 @@ final class CategoryRegistry
         return null;
     }
 
+    /** @return list<LookupList> Every category's editable lists. */
+    public function lists(): array
+    {
+        $lists = [];
+        foreach ($this->categories as $category) {
+            array_push($lists, ...$category->lists());
+        }
+        return $lists;
+    }
+
+    /** The editable list whose page contains $path ("/studytouch/rooms/4" -> rooms). */
+    public function listForPath(string $path): ?LookupList
+    {
+        foreach ($this->lists() as $list) {
+            if ($path === $list->path || str_starts_with($path, $list->path . '/')) {
+                return $list;
+            }
+        }
+        return null;
+    }
+
     public function registerRoutes(Router $router): void
     {
         foreach ($this->categories as $category) {
             $category->registerRoutes($router);
+            foreach ($category->lists() as $list) {
+                $router->get($list->path, [LookupController::class, 'index']);
+                $router->post($list->path, [LookupController::class, 'store']);
+                $router->post($list->path . '/{id}', [LookupController::class, 'update']);
+                $router->post($list->path . '/{id}/delete', [LookupController::class, 'destroy']);
+            }
         }
     }
 

@@ -26,6 +26,12 @@ export async function request(url, options = {}) {
   return data;
 }
 
+/** Markup for a sprite icon, matching PHP's icon() helper. */
+export function iconHtml(name, extraClass = '') {
+  const sprite = document.querySelector('svg.icon use')?.getAttribute('href')?.split('#')[0] ?? '/assets/icons/sprite.svg';
+  return `<svg class="icon ${extraClass}" aria-hidden="true" focusable="false"><use href="${sprite}#i-${name}"></use></svg>`;
+}
+
 /** Show a button or link as working (spinner, disabled) until reset. */
 export function setBusy(button, busy) {
   if (!button) return;

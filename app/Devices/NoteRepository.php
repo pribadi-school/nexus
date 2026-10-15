@@ -41,6 +41,25 @@ final class NoteRepository
     }
 
     /**
+     * One device's notes log, newest first.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function forDevice(int $deviceId, int $limit = 200): array
+    {
+        $rows = db()->all(
+            self::SELECT . ' WHERE n.device_id = ? ORDER BY n.created_at DESC, n.id DESC LIMIT ' . max(1, $limit),
+            [$deviceId],
+        );
+        return array_map([$this, 'hydrate'], $rows);
+    }
+
+    public function countForDevice(int $deviceId): int
+    {
+        return (int) db()->value('SELECT COUNT(*) FROM device_notes WHERE device_id = ?', [$deviceId]);
+    }
+
+    /**
      * @param array<string, mixed> $row
      * @return array<string, mixed>
      */

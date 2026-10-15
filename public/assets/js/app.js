@@ -3,6 +3,9 @@
 
 import { initConfirm } from './confirm.js';
 import { initFeed } from './feed.js';
+import { initLiveFilters } from './filters.js';
+import { initNoteForms } from './note-form.js';
+import { initStatusToggles } from './status-toggle.js';
 import { setBusy } from './util.js';
 
 function initDismiss() {
@@ -24,7 +27,7 @@ function initBusyForms() {
   });
   // Coming back with the Back button must not leave a spinner behind.
   window.addEventListener('pageshow', () => {
-    document.querySelectorAll('.is-busy').forEach((el) => setBusy(el, false));
+    document.querySelectorAll('[aria-busy="true"]').forEach((el) => setBusy(el, false));
   });
 }
 
@@ -32,3 +35,6 @@ initDismiss();
 initBusyForms();
 initConfirm();
 initFeed();
+initLiveFilters();
+initStatusToggles();
+initNoteForms();

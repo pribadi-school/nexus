@@ -78,6 +78,7 @@ $name = (string) ($user['name'] ?? '');
   <?php endforeach ?>
 </nav>
 
+<div class="toast-region" id="toasts" role="status" aria-live="polite"></div>
 <?= partial('partials/confirm-dialog') ?>
 </body>
 </html>

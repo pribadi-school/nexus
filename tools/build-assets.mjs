@@ -21,7 +21,7 @@ const mod = (...p) => join(root, 'node_modules', ...p);
 const ICONS = [
   'layout-dashboard', 'presentation', 'cctv', 'laptop', 'users', 'user-plus',
   'user-round-check', 'circle-user-round', 'log-out', 'search', 'plus', 'x',
-  'check', 'chevron-right', 'chevron-left', 'chevron-down', 'arrow-right',
+  'check', 'chevron-right', 'chevron-left', 'chevron-down', 'chevron-up', 'arrow-right',
   'arrow-left-right', 'triangle-alert', 'circle-alert', 'circle-check', 'info',
   'wrench', 'cpu', 'message-square-text', 'refresh-cw', 'sliders-horizontal',
   'pencil', 'trash-2', 'upload', 'download', 'menu', 'settings', 'shield-check',

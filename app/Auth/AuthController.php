@@ -63,10 +63,7 @@ final class AuthController
         Auth::login($user);
         $this->rememberName((string) $user['name']);
 
-        $intended = Session::pull('auth.intended', '/');
-        // Only ever redirect within this site.
-        $to = is_string($intended) && str_starts_with($intended, '/') && !str_starts_with($intended, '//') ? $intended : '/';
-        return Response::redirect($to);
+        return Response::redirect(safe_path(Session::pull('auth.intended'), '/'));
     }
 
     /** POST /logout */

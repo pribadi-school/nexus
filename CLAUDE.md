@@ -10,22 +10,50 @@ completely separate from the school's WordPress site. UI language: English.
 
 1. **Done:** logo assets, layout (sidebar / bottom nav), sign-in, Dashboard
    (category tiles, "Needs attention", recent-activity feed), sample data.
-2. **Next: StudyTouch.** List (table on desktop, cards on phones) with room,
-   model, serial, firmware, status, last updated; status toggle switch;
-   problem rows highlighted; filter by status and room + search; detail view
-   with the shared notes log; add/edit/delete (confirm); editable rooms list.
-   Build the shared pieces here: notes-log component, status toggle,
-   `StatusService` (status change + automatic note in one transaction).
-3. **Then CCTV:** cameras grouped by area, editable areas, IP, SD card size,
-   last checked, filters.
-4. **Then Chromebooks:** serial, student, class, status; editable class list;
-   search, filters; reassign with history (`chromebook_assignments`); CSV
-   import (preview first) and export.
+2. **Done: StudyTouch** (`app/Modules/StudyTouch`): list (table ≥900px,
+   cards below) with live search + status/room filters, instant status
+   switch, problem rows highlighted, detail page (status, notes log,
+   details), add/edit/delete, editable rooms list at `/studytouch/rooms`.
+   Use it as the template for the next two modules.
+3. **Next: CCTV:** cameras grouped by area (list grouped under area headings),
+   editable areas (`cctv_areas`, a `LookupList`), label, exact location,
+   model, IP (optional, `ip` rule), SD card GB, last checked ("Mark as
+   checked" should set `last_checked_at`), filters by area and status.
+4. **Then Chromebooks:** serial, student, class, status ("OK"); editable
+   class list; search by serial or student; filters; reassign with history
+   (`chromebook_assignments`, write an `assignment` note); CSV import
+   (upload → preview → confirm) and CSV export. May need paging (hundreds).
 5. **Then** `docs/deploy-cpanel.md`: subdomain, MySQL database + user,
    importing the migrations, `.env`, cPanel Git "Update from Remote".
 
-Each category currently routes to `App\Devices\ComingSoonController`; replace
-that in the category's `registerRoutes()` when its pages are built.
+CCTV and Chromebooks still route to `App\Devices\ComingSoonController`;
+replace that in the category's `registerRoutes()` when their pages are built.
+
+### Shared device building blocks (reuse them, don't copy them)
+
+- `App\Devices\DeviceService`: create / update / changeStatus / addNote /
+  delete for the shared `devices` row. `changeStatus` writes the status note
+  in the same transaction. A duplicate serial throws `DeviceServiceError`
+  (field `serial_number`) for the form to show.
+- `App\Devices\DeviceController`: `POST /devices/{id}/status` (JSON for
+  fetch, redirect to `return` otherwise) and `POST /devices/{id}/notes`
+  (kind, body, optional `set_status`).
+- `views/partials/status-toggle.php`: the switch. `instant => true` (lists)
+  saves via fetch + toast; `false` (detail page) posts and reloads.
+- `views/partials/notes-log.php`: add-note form (kinds from
+  `Category::noteKinds()`, "Also mark as …" checkbox) + entries
+  (`partials/note-entry.php`, also used by the dashboard feed).
+- `App\Devices\LookupList` + `LookupRepository` + `LookupController` +
+  `views/lists/index.php`: editable lists. Declare them in
+  `Category::lists()`; routes are added automatically under the list's path.
+- `App\Core\Validator`: form rules (`required`, `max:N`, `int`, `exists:table`,
+  `in:a,b`, `ip`, `min_value:N`, `max_value:N`) with friendly messages.
+- Front-end: `filters.js` (`form[data-live-filter]` + `[data-results]`;
+  the controller returns `{html}` for fetch), `status-toggle.js`,
+  `toast.js`, `note-form.js`, `confirm.js`. Styles in `devices.css`.
+- A list page's controller returns the `_results` partial as JSON when
+  `$request->isFetch()`; rows carry `data-device-row="{id}"` so the switch
+  can re-highlight them.
 
 ## Stack and decisions
 
@@ -74,17 +102,17 @@ public/              document root: index.php (front controller), .htaccess,
                      assets/{css,js,fonts,brand,icons}, favicon.ico, manifest
 app/bootstrap.php    autoloader (App\ -> app/), .env, config, error handler, session
 app/routes.php       all routes; categories add theirs via registerRoutes()
-app/helpers.php      e(), url(), asset(), icon(), csrf_field(), partial(),
+app/helpers.php      e(), url(), asset(), icon(), csrf_field(), partial(), safe_path(), request_uri(),
                      time helpers (format_datetime, time_ago, day_label), plural()
-app/Core/            App, Router, Request, Response, View, Database, Session,
+app/Core/            App, Router, Request, Response, View, Database, Session, Validator,
                      Csrf, Env, Config, ErrorHandler, Migrations, Navigation
 app/Auth/            Auth (session user), AuthController, UserRepository, LoginThrottle
-app/Devices/         shared device layer: Category (abstract), CategoryRegistry,
-                     Status, NoteKind, DeviceRepository, NoteRepository,
-                     DeviceController (/devices/{id} -> category page)
+app/Devices/         shared device layer: Category (abstract), CategoryRegistry, DeviceService,
+                     Status, NoteKind, DeviceRepository, NoteRepository, Lookup* (editable lists),
+                     DeviceController (/devices/{id}, status switch, notes)
 app/Modules/<Name>/  one folder per area: Dashboard, StudyTouch, Cctv, Chromebooks
                      (Category class, controllers, views/)
-views/               layouts/{app,auth}.php, partials/ (lockup, avatar, flashes,
+views/               layouts/{app,auth}.php, lists/, partials/ (lockup, avatar, flashes, status-toggle, notes-log,
                      empty-state, note-entry, confirm-dialog), auth/, errors/, devices/
 config/              app.php, auth.php, database.php, modules.php (category list)
 database/migrations/ NNN_name.sql, imported in order (phpMyAdmin or bin/migrate.php)

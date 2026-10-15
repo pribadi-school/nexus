@@ -6,7 +6,7 @@ namespace App\Modules\StudyTouch;
 
 use App\Core\Router;
 use App\Devices\Category;
-use App\Devices\ComingSoonController;
+use App\Devices\LookupList;
 use App\Devices\NoteKind;
 
 /** Interactive boards in classrooms and other rooms. Detail table: studytouch_boards. */
@@ -37,11 +37,31 @@ final class StudyTouchCategory extends Category
         return [NoteKind::REPORT, NoteKind::PROBLEM, NoteKind::FIX, NoteKind::FIRMWARE];
     }
 
+    public function lists(): array
+    {
+        return [new LookupList(
+            table: 'rooms',
+            path: '/studytouch/rooms',
+            title: 'Rooms',
+            singular: 'room',
+            intro: 'The rooms StudyTouch boards are in. Each board belongs to one room.',
+            category: $this,
+            usageSql: "SELECT b.room_id AS id, COUNT(*) AS n
+                       FROM studytouch_boards b JOIN devices d ON d.id = b.device_id AND d.deleted_at IS NULL
+                       GROUP BY b.room_id",
+            usageNoun: ['board', 'boards'],
+        )];
+    }
+
     public function registerRoutes(Router $router): void
     {
-        // Placeholder until the StudyTouch pages are built.
-        $router->get('/studytouch', [ComingSoonController::class, 'show']);
-        $router->get('/studytouch/{id}', [ComingSoonController::class, 'show']);
+        $router->get('/studytouch', [StudyTouchController::class, 'index']);
+        $router->get('/studytouch/new', [StudyTouchController::class, 'create']);
+        $router->post('/studytouch', [StudyTouchController::class, 'store']);
+        $router->get('/studytouch/{id}', [StudyTouchController::class, 'show']);
+        $router->get('/studytouch/{id}/edit', [StudyTouchController::class, 'edit']);
+        $router->post('/studytouch/{id}', [StudyTouchController::class, 'update']);
+        $router->post('/studytouch/{id}/delete', [StudyTouchController::class, 'destroy']);
     }
 
     public function describe(array $ids): array

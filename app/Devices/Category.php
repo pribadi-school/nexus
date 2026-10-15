@@ -67,4 +67,16 @@ abstract class Category
     {
         return [NoteKind::REPORT, NoteKind::PROBLEM, NoteKind::FIX];
     }
+
+    /** @return list<LookupList> Editable lists this category owns (rooms, areas, classes). */
+    public function lists(): array
+    {
+        return [];
+    }
+
+    /** "Classroom 7B", for headings, toasts and confirmations about one device. */
+    public function title(int $deviceId): string
+    {
+        return $this->describe([$deviceId])[$deviceId]['title'] ?? $this->noun()[0] . ' #' . $deviceId;
+    }
 }
