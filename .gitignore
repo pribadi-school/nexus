@@ -1,0 +1,19 @@
+# Secrets: never commit
+.env
+
+# Local dev database and tooling
+.dev/
+node_modules/
+
+# Runtime files (folders are kept via .gitkeep)
+storage/sessions/*
+storage/logs/*
+storage/cache/*
+!storage/**/.gitkeep
+
+# OS / editor
+Thumbs.db
+.DS_Store
+*.swp
+.idea/
+.vscode/

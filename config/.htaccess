@@ -1,0 +1,2 @@
+# App code, config and SQL files are never served to a browser.
+Require all denied

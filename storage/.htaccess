@@ -1,0 +1,2 @@
+# Nothing in storage/ is ever served to a browser.
+Require all denied
