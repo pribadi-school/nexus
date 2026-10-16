@@ -58,7 +58,12 @@ $return = request_uri();
             <th scope="row"><a class="data-table__link" href="/studytouch/<?= (int) $board['id'] ?>"><?= e($board['room_name']) ?></a></th>
             <td><?= e($board['model'] ?? '–') ?></td>
             <td class="num"><?= e($board['firmware_version'] ?? '–') ?></td>
-            <td><?= partial('partials/status-toggle', ['category' => $category, 'device' => $board, 'title' => $board['room_name'], 'return' => $return]) ?></td>
+            <td>
+              <?= partial('partials/status-toggle', ['category' => $category, 'device' => $board, 'title' => $board['room_name'], 'return' => $return]) ?>
+              <?php if ($problem && $board['latest_note']): ?>
+                <p class="status-note" title="<?= e($board['latest_note']) ?>"><?= e($board['latest_note']) ?> <span class="status-note__time">· <?= e(time_ago($board['latest_note_at'])) ?></span></p>
+              <?php endif ?>
+            </td>
             <td class="data-table__muted">
               <time datetime="<?= e(iso_time($board['updated_at'])) ?>" title="<?= e(format_datetime($board['updated_at'])) ?><?= $board['updated_by_name'] ? ' by ' . e($board['updated_by_name']) : '' ?>"><?= e(time_ago($board['updated_at'])) ?></time>
             </td>
@@ -75,6 +80,9 @@ $return = request_uri();
         <a class="device-card__main" href="/studytouch/<?= (int) $board['id'] ?>">
           <span class="device-card__title"><?= e($board['room_name']) ?></span>
           <span class="device-card__meta"><?= e($board['model'] ?? 'No model yet') ?></span>
+          <?php if ($problem && $board['latest_note']): ?>
+            <span class="status-note"><?= e($board['latest_note']) ?> <span class="status-note__time">· <?= e(time_ago($board['latest_note_at'])) ?></span></span>
+          <?php endif ?>
           <span class="device-card__meta">
             <?= $board['firmware_version'] ? 'Firmware ' . e($board['firmware_version']) . ' · ' : '' ?>Updated <?= e(time_ago($board['updated_at'])) ?>
           </span>

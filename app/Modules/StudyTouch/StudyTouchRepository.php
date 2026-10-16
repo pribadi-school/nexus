@@ -13,8 +13,16 @@ final class StudyTouchRepository
     private const SELECT = "SELECT d.id, d.serial_number, d.model, d.status, d.status_changed_at,
                                    d.updated_at, d.created_at, d.last_checked_at,
                                    b.firmware_version, b.room_id, r.name AS room_name,
-                                   uu.name AS updated_by_name, uc.name AS created_by_name
+                                   uu.name AS updated_by_name, uc.name AS created_by_name,
+                                   n.body AS latest_note, n.created_at AS latest_note_at
                             FROM devices d
+                            -- Latest note a person wrote (not the automatic status lines),
+                            -- shown under the status of boards with a problem.
+                            LEFT JOIN device_notes n ON n.id = (
+                                SELECT n2.id FROM device_notes n2
+                                WHERE n2.device_id = d.id AND n2.kind <> 'status'
+                                ORDER BY n2.created_at DESC, n2.id DESC LIMIT 1
+                            )
                             JOIN studytouch_boards b ON b.device_id = d.id
                             JOIN rooms r ON r.id = b.room_id
                             LEFT JOIN users uu ON uu.id = d.updated_by

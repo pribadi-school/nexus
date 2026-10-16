@@ -131,6 +131,23 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* Latest note under the status of a device with a problem. Hidden as soon
+   as the switch flips the row back to OK (status-toggle.js drops .is-problem). */
+.status-note {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 32ch;
+  margin-top: 2px;
+  font-size: var(--fs-caption);
+  line-height: 1.4;
+  color: var(--color-foreground-alt);
+}
+.device-card .status-note { max-width: none; }
+.status-note__time { color: var(--color-muted-foreground); white-space: nowrap; }
+[data-device-row]:not(.is-problem) .status-note { display: none; }
+
 /* In a card the status word sits under the switch, leaving room for the details. */
 .device-card .switch {
   flex-direction: column;
