@@ -49,7 +49,7 @@ $other = $isOk ? Status::PROBLEM : Status::OK;
     <div class="field">
       <label class="field__label" for="note-body">What happened?</label>
       <textarea class="input textarea" id="note-body" name="body" rows="3" maxlength="<?= DeviceController::NOTE_MAX ?>" required
-                placeholder="e.g. Touch does not respond on the left side. Teacher reported it this morning."><?= e($draft['body'] ?? '') ?></textarea>
+                placeholder="<?= e($category->noteExample()) ?>"><?= e($draft['body'] ?? '') ?></textarea>
     </div>
 
     <div class="note-form__footer">

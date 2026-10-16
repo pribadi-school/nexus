@@ -104,6 +104,17 @@ final class DeviceService
         return $noteId;
     }
 
+    /** Records that someone looked at the device and found it as listed. */
+    public function markChecked(int $deviceId, ?int $userId): void
+    {
+        $now = Database::now();
+        db()->update('devices', [
+            'last_checked_at' => $now,
+            'updated_by' => $userId,
+            'updated_at' => $now,
+        ], ['id' => $deviceId]);
+    }
+
     /** Hides the device everywhere. Its row and notes stay in the database. */
     public function delete(int $deviceId, ?int $userId): void
     {

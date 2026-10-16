@@ -68,6 +68,12 @@ abstract class Category
         return [NoteKind::REPORT, NoteKind::PROBLEM, NoteKind::FIX];
     }
 
+    /** Placeholder for the note box: a typical note for this kind of device. */
+    public function noteExample(): string
+    {
+        return 'e.g. Does not turn on. Reported this morning.';
+    }
+
     /** @return list<LookupList> Editable lists this category owns (rooms, areas, classes). */
     public function lists(): array
     {

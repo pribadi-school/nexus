@@ -37,6 +37,11 @@ final class StudyTouchCategory extends Category
         return [NoteKind::REPORT, NoteKind::PROBLEM, NoteKind::FIX, NoteKind::FIRMWARE];
     }
 
+    public function noteExample(): string
+    {
+        return 'e.g. Touch does not respond on the left side. Teacher reported it this morning.';
+    }
+
     public function lists(): array
     {
         return [new LookupList(

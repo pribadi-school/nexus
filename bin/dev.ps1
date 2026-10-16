@@ -9,7 +9,9 @@
     powershell -ExecutionPolicy Bypass -File bin\dev.ps1 -Reset    wipe the local database and start fresh
     powershell -ExecutionPolicy Bypass -File bin\dev.ps1 -Stop     stop the local database
 
-  LocalWP somewhere else? Set NEXUS_LOCALWP to its folder first.
+  LocalWP is looked for in E:\LocalWP, C:\Program Files (x86)\Local,
+  C:\Program Files\Local and %APPDATA%\Local. Somewhere else? Set
+  NEXUS_LOCALWP to its folder first.
 #>
 param(
   [switch]$Reset,
@@ -20,8 +22,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
-$LocalWP = if ($env:NEXUS_LOCALWP) { $env:NEXUS_LOCALWP } else { 'E:\LocalWP' }
-$Services = Join-Path $LocalWP 'resources\extraResources\lightning-services'
+$ServicesPath = 'resources\extraResources\lightning-services'
+$LocalWP = if ($env:NEXUS_LOCALWP) { $env:NEXUS_LOCALWP } else {
+  $candidates = @('E:\LocalWP', "${env:ProgramFiles(x86)}\Local", "$env:ProgramFiles\Local", "$env:APPDATA\Local")
+  $found = $candidates | Where-Object { $_ -and (Test-Path (Join-Path $_ $ServicesPath)) } | Select-Object -First 1
+  if (-not $found) { throw "Could not find LocalWP in: $($candidates -join ', '). Set NEXUS_LOCALWP to its folder." }
+  $found
+}
+$Services = Join-Path $LocalWP $ServicesPath
 
 function Find-Service([string]$pattern, [string]$relative) {
   $dir = Get-ChildItem -Path $Services -Directory -Filter $pattern -ErrorAction SilentlyContinue |
@@ -105,18 +113,23 @@ GRANT ALL ON nexus.* TO 'nexus'@'localhost';
 GRANT ALL ON nexus.* TO 'nexus'@'127.0.0.1';
 "@
 
-$PhpArgs = @(
-  '-n',
-  '-d', "extension_dir=$PhpDir\ext",
-  '-d', 'extension=pdo_mysql',
-  '-d', 'extension=mbstring',
-  '-d', 'extension=openssl',
-  '-d', 'extension=fileinfo',
-  '-d', 'memory_limit=256M',
-  '-d', 'upload_max_filesize=10M',
-  '-d', 'post_max_size=12M',
-  '-d', 'date.timezone=UTC'
-)
+# PHP settings go in a generated php.ini rather than -d flags: an unquoted
+# extension_dir with "(x86)" in it is an INI syntax error, and Windows
+# PowerShell 5.1 mangles embedded quotes in native arguments.
+$PhpIni = Join-Path $Root '.dev\php.ini'
+@"
+; Created by bin\dev.ps1 on every run. Do not edit.
+extension_dir="$PhpDir\ext"
+extension=pdo_mysql
+extension=mbstring
+extension=openssl
+extension=fileinfo
+memory_limit=256M
+upload_max_filesize=10M
+post_max_size=12M
+date.timezone=UTC
+"@ | Set-Content -Path $PhpIni -Encoding ascii
+$PhpArgs = @('-c', $PhpIni)
 
 & $Php @PhpArgs (Join-Path $Root 'bin\migrate.php') --seed
 if ($LASTEXITCODE -ne 0) { throw 'Migrations failed.' }

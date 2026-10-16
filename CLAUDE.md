@@ -15,18 +15,20 @@ completely separate from the school's WordPress site. UI language: English.
    switch, problem rows highlighted, detail page (status, notes log,
    details), add/edit/delete, editable rooms list at `/studytouch/rooms`.
    Use it as the template for the next two modules.
-3. **Next: CCTV:** cameras grouped by area (list grouped under area headings),
-   editable areas (`cctv_areas`, a `LookupList`), label, exact location,
-   model, IP (optional, `ip` rule), SD card GB, last checked ("Mark as
-   checked" should set `last_checked_at`), filters by area and status.
-4. **Then Chromebooks:** serial, student, class, status ("OK"); editable
+3. **Done: CCTV** (`app/Modules/Cctv`): list grouped under area headings
+   (one fixed-width table per area so columns line up; cards below 900px),
+   live search + status/area filters, detail page, add/edit/delete (moving
+   area writes a note), editable areas at `/cctv/areas`, "Mark as checked"
+   (`POST /cctv/{id}/checked` → `DeviceService::markChecked`, sets
+   `last_checked_at`; on the list and the detail page).
+4. **Next: Chromebooks:** serial, student, class, status ("OK"); editable
    class list; search by serial or student; filters; reassign with history
    (`chromebook_assignments`, write an `assignment` note); CSV import
    (upload → preview → confirm) and CSV export. May need paging (hundreds).
 5. **Then** `docs/deploy-cpanel.md`: subdomain, MySQL database + user,
    importing the migrations, `.env`, cPanel Git "Update from Remote".
 
-CCTV and Chromebooks still route to `App\Devices\ComingSoonController`;
+Chromebooks still route to `App\Devices\ComingSoonController`;
 replace that in the category's `registerRoutes()` when their pages are built.
 
 ### Shared device building blocks (reuse them, don't copy them)
@@ -40,7 +42,7 @@ replace that in the category's `registerRoutes()` when their pages are built.
   (kind, body, optional `set_status`).
 - `views/partials/status-toggle.php`: the switch. `instant => true` (lists)
   saves via fetch + toast; `false` (detail page) posts and reloads.
-- `views/partials/notes-log.php`: add-note form (kinds from
+- `views/partials/notes-log.php`: add-note form (placeholder from `Category::noteExample()`, kinds from
   `Category::noteKinds()`, "Also mark as …" checkbox) + entries
   (`partials/note-entry.php`, also used by the dashboard feed).
 - `App\Devices\LookupList` + `LookupRepository` + `LookupController` +
@@ -83,14 +85,16 @@ powershell -ExecutionPolicy Bypass -File bin\dev.ps1 -Reset   # wipe local DB, r
 powershell -ExecutionPolicy Bypass -File bin\dev.ps1 -Stop    # stop the local DB
 ```
 
-- Uses LocalWP's bundled PHP 8.2 and MariaDB 10.11 (`E:\LocalWP`; override
-  with `NEXUS_LOCALWP`). Database files live in `.dev/mariadb` (ignored), on
+- Uses LocalWP's bundled PHP 8.2 and MariaDB 10.11 (looked for in
+  `E:\LocalWP`, `C:\Program Files (x86)\Local`, `C:\Program Files\Local`,
+  `%APPDATA%\Local`; `NEXUS_LOCALWP` overrides). PHP settings go in a
+  generated `.dev/php.ini` passed with `-c` (a `-d extension_dir=` path with
+  "(x86)" breaks PHP's INI parser). Database files live in `.dev/mariadb` (ignored), on
   port 3307. The first run writes a local `.env` (the local sign-in password
   is `APP_PASSWORD` there), applies migrations and loads the sample data.
 - The Claude preview config is `.claude/launch.json` → `nexus`.
 - `php bin/migrate.php [--seed|--status]` applies pending migrations (needs
-  the same `-n -d extension=...` flags dev.ps1 passes, so run it through
-  dev.ps1 or copy those flags).
+  `-c .dev\php.ini`, which dev.ps1 writes, so run dev.ps1 once first).
 - Dev machine notes: no standalone PHP/Composer/MySQL/Python on PATH. From
   the Bash tool, curl cannot reach the local server; use PowerShell
   (`Invoke-WebRequest`) or the browser preview.
