@@ -90,10 +90,10 @@ final class Validator
             'int' => ctype_digit($value) ? null : "$label must be a whole number.",
             'min_value' => ctype_digit($value) && (int) $value >= (int) $arg ? null : "$label must be at least $arg.",
             'max_value' => ctype_digit($value) && (int) $value <= (int) $arg ? null : "$label must be $arg or less.",
-            'in' => in_array($value, explode(',', (string) $arg), true) ? null : 'Choose a valid ' . lcfirst($label) . '.',
+            'in' => in_array($value, explode(',', (string) $arg), true) ? null : 'Choose a valid ' . $this->lower($label) . '.',
             'ip' => filter_var($value, FILTER_VALIDATE_IP) !== false ? null : "$label must be an IP address such as 192.168.1.20.",
             'email' => filter_var($value, FILTER_VALIDATE_EMAIL) !== false ? null : "$label must be an email address such as name@pribadidepok.sch.id.",
-            'exists' => $this->exists((string) $arg, $value) ? null : 'That ' . lcfirst($label) . ' no longer exists. Choose another one.',
+            'exists' => $this->exists((string) $arg, $value) ? null : 'That ' . $this->lower($label) . ' no longer exists. Choose another one.',
             default => null,
         };
     }
@@ -105,10 +105,16 @@ final class Validator
         // Pick-from-a-list fields read better as "Choose a room."
         foreach ($rules as $rule) {
             if (str_starts_with($rule, 'exists:') || str_starts_with($rule, 'in:')) {
-                return 'Choose a ' . lcfirst($label) . '.';
+                return 'Choose a ' . $this->lower($label) . '.';
             }
         }
         return ucfirst($label) . ' is required.';
+    }
+
+    /** "Room" -> "room" for mid-sentence use, but acronyms stay ("SD card size", "IP address"). */
+    private function lower(string $label): string
+    {
+        return preg_match('/^[A-Z]{2}/', $label) ? $label : lcfirst($label);
     }
 
     private function exists(string $table, string $value): bool

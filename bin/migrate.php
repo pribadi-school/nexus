@@ -46,8 +46,8 @@ foreach ($pending as $version) {
 }
 
 if (in_array('--seed', $args, true)) {
-    // StudyTouch boards come from a migration (real data), so they don't count.
-    if ((int) db()->value("SELECT COUNT(*) FROM devices WHERE category <> 'studytouch'") === 0) {
+    // StudyTouch boards and CCTV cameras come from migrations (real data), so only Chromebooks count.
+    if ((int) db()->value("SELECT COUNT(*) FROM devices WHERE category = 'chromebook'") === 0) {
         echo 'Loading sample data ... ';
         $runFile(BASE_PATH . '/database/seeds/sample_data.sql');
         echo "done\n";

@@ -19,12 +19,15 @@ completely separate from the school's WordPress site. UI language: English.
    (known by room); model is a choice from `StudyTouchCategory::MODELS`
    ("StudyTouch" / "Merah Putih", no type number); firmware starts as
    `CURRENT_FIRMWARE` (v2.0.290925, 29 Sep 2025).
-3. **Done: CCTV** (`app/Modules/Cctv`): list grouped under area headings
-   (one fixed-width table per area so columns line up; cards below 900px),
-   live search + status/area filters, detail page, add/edit/delete (moving
-   area writes a note), editable areas at `/cctv/areas`, "Mark as checked"
-   (`POST /cctv/{id}/checked` → `DeviceService::markChecked`, sets
-   `last_checked_at`; on the list and the detail page).
+3. **Done: CCTV** (`app/Modules/Cctv`): a camera is just its **spot**
+   (`cctv_cameras.label`), **type** (`devices.model`, one of
+   `CctvCategory::TYPES`: "C200" / "Old version") and **SD card size**
+   (`CctvCategory::SD_SIZES`: 32/64/128/256 GB). The list shows only those
+   plus the status switch, in the order cameras were added (the school's
+   sheet order), with search by spot and type/status filters. No areas,
+   location, IP or serial (dropped in migration 004). "Mark as checked"
+   (`POST /cctv/{id}/checked` → `DeviceService::markChecked`) is on the
+   detail page only. The 55 real cameras come from migration 004.
 4. **Done: Chromebooks** (`app/Modules/Chromebooks`), organised by
    **academic year**: each Chromebook belongs to one yearly batch
    (`chromebooks.academic_year`) and has an asset ID like `2026-05`
@@ -196,18 +199,20 @@ Tables (see `database/migrations/001_initial_schema.sql` for details):
   created_by/updated_by → users, timestamps, deleted_at. `active_serial` is a
   generated column so serials are unique per category among non-deleted devices.
 - `studytouch_boards` (room_id → rooms, firmware_version),
-  `cctv_cameras` (area_id → cctv_areas, label, location, ip_address, sd_card_gb),
+  `cctv_cameras` (label = spot, sd_card_gb; type is devices.model),
   `chromebooks` (academic_year, asset_id, student_name, student_email,
   assigned_at), `chromebook_assignments` (history; class_name only on rows
   from before migration 003).
 - `device_notes`: the shared notes log (kind, body, meta JSON, user_id, created_at).
-- `rooms`, `cctv_areas`: editable lists (name unique, sort_order). (A
-  `classes` list existed until migration 003.)
+- `rooms`: editable list (name unique, sort_order). (`classes` existed until
+  migration 003, `cctv_areas` until 004.)
   `rooms` starts with Grade 1–6, Grade 7A–7C, Grade 8A–12B (A and B) and
   ICT Lab. Migration 002 also adds the real StudyTouch boards, one per room
   (Merah Putih in Grade 2, Grade 8A and ICT Lab; StudyTouch elsewhere), so
-  sample data has no boards, `migrate.php --seed` ignores StudyTouch when
-  deciding whether to seed, and the clear script keeps boards and rooms.
+  sample data has no boards. Migration 004 likewise adds the 55 real CCTV
+  cameras. So sample data only adds Chromebooks, `migrate.php --seed` seeds
+  only when there are no Chromebooks, and the clear script removes only
+  Chromebooks (and the two sample people).
 - `users`: names of people who signed in. `login_attempts`: failed sign-ins.
 - `schema_migrations`: applied migration versions.
 

@@ -12,20 +12,14 @@ use App\Core\Session;
 use App\Core\Validator;
 use App\Core\View;
 use App\Devices\DeviceService;
-use App\Devices\DeviceServiceError;
-use App\Devices\LookupRepository;
 use App\Devices\NoteRepository;
 use App\Devices\Status;
 
 final class CctvController
 {
     private const LABELS = [
-        'area_id' => 'Area',
-        'label' => 'Label',
-        'location' => 'Exact location',
-        'model' => 'Model',
-        'serial_number' => 'Serial number',
-        'ip_address' => 'IP address',
+        'label' => 'Spot',
+        'model' => 'Type',
         'sd_card_gb' => 'SD card size',
         'status' => 'Status',
     ];
@@ -39,20 +33,17 @@ final class CctvController
         $this->cameras = new CctvRepository();
     }
 
-    /** GET /cctv?status=&area=&q= (fetch(): just the results, as JSON) */
+    /** GET /cctv?status=&type=&q= (fetch(): just the results, as JSON) */
     public function index(Request $request): Response
     {
-        $area = $request->query('area');
         $filters = [
             'status' => in_array($request->query('status'), Status::ALL, true) ? $request->query('status') : null,
-            'area' => $area !== null && ctype_digit($area) ? (int) $area : null,
+            'type' => in_array($request->query('type'), CctvCategory::TYPES, true) ? $request->query('type') : null,
             'q' => $request->query('q') !== null ? mb_substr((string) $request->query('q'), 0, 100) : null,
         ];
-        $cameras = $this->cameras->search($filters);
         $data = [
             'category' => $this->category,
-            'cameras' => $cameras,
-            'groups' => CctvRepository::groupByArea($cameras),
+            'cameras' => $this->cameras->search($filters),
             'counts' => $this->cameras->counts(),
             'filters' => $filters,
             'filtered' => array_filter($filters, static fn ($v) => $v !== null) !== [],
@@ -61,8 +52,6 @@ final class CctvController
         if ($request->isFetch()) {
             return Response::json(['html' => View::partial('Cctv::_results', $data)]);
         }
-
-        $data['areas'] = $this->areas()->options();
         return Response::html(View::render('Cctv::index', $data, 'layouts/app', 'CCTV'));
     }
 
@@ -83,14 +72,9 @@ final class CctvController
     /** GET /cctv/new */
     public function create(Request $request): Response
     {
-        $area = $request->query('area');
         return $this->form(null, [
-            'area_id' => $area !== null && ctype_digit($area) ? (int) $area : null,
             'label' => null,
-            'location' => null,
             'model' => null,
-            'serial_number' => null,
-            'ip_address' => null,
             'sd_card_gb' => null,
             'status' => Status::OK,
         ], []);
@@ -105,12 +89,7 @@ final class CctvController
             return $this->form(null, $data, $v->errors());
         }
 
-        try {
-            $id = $this->cameras->create($this->category, $data, Auth::id());
-        } catch (DeviceServiceError $e) {
-            return $this->form(null, $data, [$e->field => $this->serialTakenMessage()]);
-        }
-
+        $id = $this->cameras->create($this->category, $this->typed($data), Auth::id());
         Session::flash('success', 'Camera ' . $data['label'] . ' added.');
         return Response::redirect($this->category->detailPath($id));
     }
@@ -132,12 +111,7 @@ final class CctvController
             return $this->form($camera, $data, $v->errors());
         }
 
-        try {
-            $this->cameras->update($camera, $data, Auth::id());
-        } catch (DeviceServiceError $e) {
-            return $this->form($camera, $data, [$e->field => $this->serialTakenMessage()]);
-        }
-
+        $this->cameras->update($camera, $this->typed($data), Auth::id());
         Session::flash('success', 'Changes saved.');
         return Response::redirect($this->category->detailPath((int) $camera['id']));
     }
@@ -164,14 +138,20 @@ final class CctvController
     private function rules(): array
     {
         return [
-            'area_id' => ['required', 'int', 'exists:cctv_areas'],
             'label' => ['required', 'max:100'],
-            'location' => ['max:160'],
-            'model' => ['max:100'],
-            'serial_number' => ['max:64'],
-            'ip_address' => ['max:45', 'ip'],
-            'sd_card_gb' => ['int', 'max_value:65535'],
+            'model' => ['required', 'in:' . implode(',', CctvCategory::TYPES)],
+            'sd_card_gb' => ['int', 'in:' . implode(',', CctvCategory::SD_SIZES)],
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $data validated form values
+     * @return array<string, mixed>
+     */
+    private function typed(array $data): array
+    {
+        $data['sd_card_gb'] = $data['sd_card_gb'] === null ? null : (int) $data['sd_card_gb'];
+        return $data;
     }
 
     /**
@@ -187,8 +167,6 @@ final class CctvController
             'camera' => $camera,
             'values' => $values,
             'errors' => $errors,
-            'areas' => $this->areas()->options(),
-            'models' => $this->cameras->models(),
         ], 'layouts/app', $title), $errors === [] ? 200 : 422);
     }
 
@@ -197,15 +175,5 @@ final class CctvController
     {
         return $this->cameras->find((int) $request->param('id'))
             ?? throw HttpException::notFound('That camera does not exist or was deleted.');
-    }
-
-    private function areas(): LookupRepository
-    {
-        return new LookupRepository($this->category->lists()[0]);
-    }
-
-    private function serialTakenMessage(): string
-    {
-        return 'Another camera already has this serial number.';
     }
 }

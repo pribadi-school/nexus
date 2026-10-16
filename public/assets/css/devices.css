@@ -417,31 +417,6 @@
 .toast .icon-btn:hover { background: var(--color-surface-page); color: var(--color-foreground); }
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } }
 
-/* ------------------------------------------- CCTV: groups by area --- */
-.area-group + .area-group { margin-top: var(--space-5); }
-.area-group__title {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  margin: 0 0 var(--space-2);
-  font-size: var(--fs-body);
-  font-weight: 600;
-  color: var(--color-foreground);
-}
-.area-group__count { font-size: var(--fs-caption); font-weight: 500; color: var(--color-muted-foreground); }
-.checked-cell { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-1) var(--space-2); white-space: normal; }
-.check-form { margin: 0; }
-/* One table per area: fixed column widths so the areas line up. */
-.cctv-table { table-layout: fixed; }
-.cctv-table th:nth-child(1) { width: 17%; }
-.cctv-table th:nth-child(2) { width: 20%; }
-.cctv-table th:nth-child(3) { width: 15%; }
-.cctv-table th:nth-child(4) { width: 13%; }
-.cctv-table th:nth-child(5) { width: 8%; }
-.cctv-table th:nth-child(6) { width: 13%; }
-.cctv-table th:nth-child(7) { width: 14%; }
-.cctv-table td { overflow-wrap: anywhere; }
-
 /* ------------------------------------------------------ Chromebooks --- */
 .results__bar {
   display: flex;

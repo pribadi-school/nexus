@@ -15,7 +15,7 @@ $problem = $camera['status'] === Status::PROBLEM;
 <header class="page-header">
   <div>
     <h1 class="page-title"><?= e($camera['label']) ?></h1>
-    <p class="page-subtitle"><?= e(implode(' · ', array_filter([$camera['area_name'], $camera['model']]))) ?></p>
+    <p class="page-subtitle"><?= e(implode(' · ', array_filter([$camera['model'], $camera['sd_card_gb'] !== null ? (int) $camera['sd_card_gb'] . ' GB SD card' : null]))) ?></p>
   </div>
   <div class="page-actions">
     <form method="post" action="/cctv/<?= $id ?>/checked" data-busy-on-submit>
@@ -51,11 +51,8 @@ $problem = $camera['status'] === Status::PROBLEM;
     <section class="card detail__info" aria-labelledby="details-title">
       <div class="card__header"><h2 class="card__title" id="details-title">Details</h2></div>
       <dl class="details">
-        <div><dt>Area</dt><dd><?= e($camera['area_name']) ?></dd></div>
-        <div><dt>Location</dt><dd><?= e($camera['location'] ?? '–') ?></dd></div>
-        <div><dt>Model</dt><dd><?= e($camera['model'] ?? '–') ?></dd></div>
-        <div><dt>Serial number</dt><dd class="num"><?= e($camera['serial_number'] ?? '–') ?></dd></div>
-        <div><dt>IP address</dt><dd class="num"><?= e($camera['ip_address'] ?? '–') ?></dd></div>
+        <div><dt>Spot</dt><dd><?= e($camera['label']) ?></dd></div>
+        <div><dt>Type</dt><dd><?= e($camera['model'] ?? '–') ?></dd></div>
         <div><dt>SD card</dt><dd class="num"><?= $camera['sd_card_gb'] !== null ? (int) $camera['sd_card_gb'] . ' GB' : '–' ?></dd></div>
         <div>
           <dt>Last checked</dt>

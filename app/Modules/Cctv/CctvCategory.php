@@ -6,11 +6,16 @@ namespace App\Modules\Cctv;
 
 use App\Core\Router;
 use App\Devices\Category;
-use App\Devices\LookupList;
 
-/** Cameras, grouped by area. Detail table: cctv_cameras. */
+/** Cameras, each known by its spot. Detail table: cctv_cameras. */
 final class CctvCategory extends Category
 {
+    /** Camera types, kept in devices.model: the newer C200 or the older cameras. */
+    public const TYPES = ['C200', 'Old version'];
+
+    /** SD card sizes in GB; 256 is what the cameras are being upgraded to. */
+    public const SD_SIZES = [32, 64, 128, 256];
+
     public function key(): string
     {
         return 'cctv';
@@ -36,22 +41,6 @@ final class CctvCategory extends Category
         return 'e.g. Picture is blurry at night. Lens needs cleaning.';
     }
 
-    public function lists(): array
-    {
-        return [new LookupList(
-            table: 'cctv_areas',
-            path: '/cctv/areas',
-            title: 'Areas',
-            singular: 'area',
-            intro: 'The areas cameras are grouped under on the CCTV page. Each camera belongs to one area.',
-            category: $this,
-            usageSql: "SELECT c.area_id AS id, COUNT(*) AS n
-                       FROM cctv_cameras c JOIN devices d ON d.id = c.device_id AND d.deleted_at IS NULL
-                       GROUP BY c.area_id",
-            usageNoun: ['camera', 'cameras'],
-        )];
-    }
-
     public function registerRoutes(Router $router): void
     {
         $router->get('/cctv', [CctvController::class, 'index']);
@@ -70,10 +59,9 @@ final class CctvCategory extends Category
             return [];
         }
         $rows = db()->all(
-            'SELECT d.id, c.label, a.name AS area
+            'SELECT d.id, d.model, c.label
              FROM devices d
              JOIN cctv_cameras c ON c.device_id = d.id
-             JOIN cctv_areas a ON a.id = c.area_id
              WHERE d.id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
             $ids,
         );
@@ -82,7 +70,7 @@ final class CctvCategory extends Category
         foreach ($rows as $row) {
             $out[(int) $row['id']] = [
                 'title' => $row['label'],
-                'context' => 'CCTV · ' . $row['area'],
+                'context' => 'CCTV' . ($row['model'] ? ' · ' . $row['model'] : ''),
             ];
         }
         return $out;
