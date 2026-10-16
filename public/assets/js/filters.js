@@ -63,7 +63,8 @@ function initForm(form) {
   results.addEventListener('click', (event) => {
     if (!event.target.closest('[data-clear-filters]')) return;
     event.preventDefault();
-    form.querySelectorAll('input, select').forEach((control) => { control.value = ''; });
+    // Hidden inputs are context (e.g. the Chromebook year tab), not filters.
+    form.querySelectorAll('input:not([type="hidden"]), select').forEach((control) => { control.value = ''; });
     run();
   });
 }

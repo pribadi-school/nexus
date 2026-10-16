@@ -3,7 +3,6 @@
  * @var \App\Modules\Chromebooks\ChromebookCategory $category
  * @var array<string, mixed> $chromebook
  * @var list<array<string, mixed>> $history  newest first
- * @var list<array{id:int, name:string}> $classes
  * @var list<array<string, mixed>> $notes
  * @var int $noteCount
  */
@@ -11,19 +10,20 @@ use App\Devices\Status;
 
 $id = (int) $chromebook['id'];
 $problem = $chromebook['status'] === Status::PROBLEM;
-$serial = $chromebook['serial_number'] ?? 'Chromebook #' . $id;
-$title = $chromebook['student_name'] ?? $serial;
+$label = $chromebook['asset_id'] ?? $chromebook['serial_number'] ?? '#' . $id;
+$title = $chromebook['student_name'] ?? 'Chromebook ' . $label;
+$back = '/chromebooks?year=' . (int) $chromebook['academic_year'];
 $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? '';
 ?>
-<a class="back-link" href="/chromebooks"><?= icon('chevron-left', 'icon--sm') ?>Chromebooks</a>
+<a class="back-link" href="<?= e($back) ?>"><?= icon('chevron-left', 'icon--sm') ?>Chromebooks <?= (int) $chromebook['academic_year'] ?></a>
 
 <header class="page-header">
   <div>
     <h1 class="page-title"><?= e($title) ?></h1>
     <p class="page-subtitle">
       <?= e(implode(' · ', array_filter([
-          $chromebook['student_name'] !== null ? $chromebook['class_name'] : 'Not assigned',
-          $chromebook['student_name'] !== null ? $serial : null,
+          $chromebook['student_name'] !== null ? $chromebook['asset_id'] : 'Not assigned',
+          'Academic year ' . $chromebook['academic_year'],
           $chromebook['model'],
       ]))) ?>
     </p>
@@ -31,7 +31,7 @@ $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? 
   <div class="page-actions">
     <a class="btn btn--secondary" href="/chromebooks/<?= $id ?>/edit"><?= icon('pencil', 'icon--sm') ?>Edit</a>
     <form method="post" action="/chromebooks/<?= $id ?>/delete"
-          data-confirm="Delete Chromebook <?= e($serial) ?>?"
+          data-confirm="Delete Chromebook <?= e($label) ?>?"
           data-confirm-text="It disappears from every list. Its notes and assignment history are kept in the database."
           data-confirm-button="Delete Chromebook" data-confirm-tone="danger">
       <?= csrf_field() ?>
@@ -43,7 +43,7 @@ $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? 
 <div class="detail detail--with-assign">
     <section class="card status-card detail__status<?= $problem ? ' is-problem' : '' ?>" aria-labelledby="status-title" data-device-row="<?= $id ?>">
       <h2 class="status-card__title" id="status-title">Status</h2>
-      <?= partial('partials/status-toggle', ['category' => $category, 'device' => $chromebook, 'title' => $serial, 'return' => request_uri(), 'large' => true, 'instant' => false]) ?>
+      <?= partial('partials/status-toggle', ['category' => $category, 'device' => $chromebook, 'title' => $label, 'return' => request_uri(), 'large' => true, 'instant' => false]) ?>
       <p class="status-card__since">
         <?php if ($chromebook['status_changed_at']): ?>
           Since <time datetime="<?= e(iso_time($chromebook['status_changed_at'])) ?>" title="<?= e(format_datetime($chromebook['status_changed_at'])) ?>"><?= e(time_ago($chromebook['status_changed_at'])) ?></time>
@@ -61,15 +61,11 @@ $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? 
                  value="<?= e($chromebook['student_name'] ?? '') ?>" placeholder="Full name">
         </div>
         <div class="field">
-          <label class="field__label" for="class_id">Class</label>
-          <select class="select" id="class_id" name="class_id">
-            <option value="">No class</option>
-            <?php foreach ($classes as $class): ?>
-              <option value="<?= (int) $class['id'] ?>"<?= (int) ($chromebook['class_id'] ?? 0) === (int) $class['id'] ? ' selected' : '' ?>><?= e($class['name']) ?></option>
-            <?php endforeach ?>
-          </select>
+          <label class="field__label" for="student_email">Email</label>
+          <input class="input" id="student_email" name="student_email" type="email" maxlength="160" autocomplete="off" spellcheck="false"
+                 value="<?= e($chromebook['student_email'] ?? '') ?>" placeholder="name@pribadidepok.sch.id">
         </div>
-        <p class="field__hint assign-form__hint">Change the name or class and save to reassign it. Empty both to mark it as returned. The change is kept in the history below.</p>
+        <p class="field__hint assign-form__hint">Change the name and save to give it to another student. Empty the name to mark it as returned. The change is kept in the history below.</p>
         <div class="assign-form__actions">
           <button type="submit" class="btn btn--primary"><?= icon('arrow-left-right', 'icon--sm') ?>Save assignment</button>
         </div>
@@ -102,7 +98,9 @@ $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? 
     <section class="card detail__info" aria-labelledby="details-title">
       <div class="card__header"><h2 class="card__title" id="details-title">Details</h2></div>
       <dl class="details">
-        <div><dt>Serial number</dt><dd class="num"><?= e($chromebook['serial_number'] ?? '–') ?></dd></div>
+        <div><dt>Asset ID</dt><dd class="num"><?= e($chromebook['asset_id'] ?? '–') ?></dd></div>
+        <div><dt>Academic year</dt><dd><?= (int) $chromebook['academic_year'] ?></dd></div>
+        <div><dt>Serial number</dt><dd class="num"><?= e($chromebook['serial_number'] ?? 'Not recorded yet') ?></dd></div>
         <div><dt>Model</dt><dd><?= e($chromebook['model'] ?? '–') ?></dd></div>
         <div>
           <dt>Last updated</dt>

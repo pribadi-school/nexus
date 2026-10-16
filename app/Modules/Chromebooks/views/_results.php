@@ -1,7 +1,7 @@
 <?php
 /**
- * One page of Chromebooks for the current filters. Also returned on its own
- * to filters.js when filters change.
+ * One page of one academic year's Chromebooks for the current filters. Also
+ * returned on its own to filters.js when filters change.
  *
  * @var \App\Modules\Chromebooks\ChromebookCategory $category
  * @var list<array<string, mixed>> $chromebooks
@@ -9,31 +9,34 @@
  * @var int $page
  * @var int $pages
  * @var array{total:int, ok:int, problem:int, unassigned:int} $counts
- * @var array{status:?string, class:?int, q:?string} $filters
+ * @var array{year:int, status:?string, q:?string} $filters
  * @var bool $filtered
  */
 use App\Devices\Status;
 use App\Modules\Chromebooks\ChromebookRepository;
 
+$year = $filters['year'];
 $query = array_filter([
+    'year' => $year,
     'q' => $filters['q'],
     'status' => $filters['status'],
-    'class' => $filters['class'] === 0 ? 'none' : $filters['class'],
 ], static fn ($v) => $v !== null);
 $pageUrl = static fn (int $p): string => '/chromebooks?' . http_build_query($query + ($p > 1 ? ['page' => $p] : []));
-$exportUrl = '/chromebooks/export' . ($query ? '?' . http_build_query($query) : '');
+$exportUrl = '/chromebooks/export?' . http_build_query($query);
+$clearUrl = '/chromebooks?year=' . $year;
 $return = request_uri();
 $first = ($page - 1) * ChromebookRepository::PER_PAGE + 1;
 $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
+$label = static fn (array $c): string => (string) ($c['asset_id'] ?? $c['serial_number'] ?? '#' . $c['id']);
 ?>
 <?php if ($counts['total'] === 0): ?>
   <section class="card">
     <?= partial('partials/empty-state', [
         'icon' => 'laptop',
-        'title' => 'No Chromebooks yet',
-        'text' => 'Add them one by one, or import a CSV file with serial number, student and class for each one.',
-        'actionHref' => '/chromebooks/import',
-        'actionLabel' => 'Import a CSV file',
+        'title' => "No Chromebooks for $year yet",
+        'text' => "Import the $year list (Excel or CSV, with asset ID, serial number, student and email), or add them one by one.",
+        'actionHref' => "/chromebooks/import?year=$year",
+        'actionLabel' => "Import the $year list",
     ]) ?>
   </section>
 <?php elseif ($chromebooks === []): ?>
@@ -41,8 +44,8 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
     <div class="empty-state">
       <?= icon('search', 'icon--xl') ?>
       <p class="empty-state__title">No Chromebooks match</p>
-      <p class="empty-state__text">Try another class or status, or check the serial or student name.</p>
-      <div class="empty-state__actions"><a class="btn btn--secondary" href="/chromebooks" data-clear-filters>Clear filters</a></div>
+      <p class="empty-state__text">Try another status, or check the asset ID, serial or student name.</p>
+      <div class="empty-state__actions"><a class="btn btn--secondary" href="<?= e($clearUrl) ?>" data-clear-filters>Clear filters</a></div>
     </div>
   </section>
 <?php else: ?>
@@ -53,9 +56,9 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
       <?php elseif ($filtered): ?>
         Showing <?= $matching ?> of <?= e($category->count($counts['total'])) ?>
       <?php else: ?>
-        <?= e($category->count($counts['total'])) ?>, sorted by class and student
+        <?= e($category->count($counts['total'])) ?>, sorted by asset ID
       <?php endif ?>
-      <?php if ($filtered): ?> · <a href="/chromebooks" data-clear-filters>Clear filters</a><?php endif ?>
+      <?php if ($filtered): ?> · <a href="<?= e($clearUrl) ?>" data-clear-filters>Clear filters</a><?php endif ?>
     </p>
     <a class="btn btn--ghost btn--sm" href="<?= e($exportUrl) ?>" download><?= icon('download', 'icon--sm') ?>Export CSV<?= $filtered ? ' (' . $matching . ')' : '' ?></a>
   </div>
@@ -65,10 +68,9 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
     <table class="data-table">
       <thead>
         <tr>
+          <th scope="col">Asset ID</th>
           <th scope="col">Student</th>
-          <th scope="col">Class</th>
           <th scope="col">Serial number</th>
-          <th scope="col">Model</th>
           <th scope="col">Status</th>
           <th scope="col">Last updated</th>
         </tr>
@@ -76,11 +78,13 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
       <tbody>
         <?php foreach ($chromebooks as $c): $problem = $c['status'] === Status::PROBLEM; ?>
           <tr class="<?= $problem ? 'is-problem' : '' ?>" data-device-row="<?= (int) $c['id'] ?>">
-            <th scope="row"><a class="data-table__link<?= $c['student_name'] === null ? ' is-unassigned' : '' ?>" href="/chromebooks/<?= (int) $c['id'] ?>"><?= e($student($c)) ?></a></th>
-            <td><?= e($c['class_name'] ?? '–') ?></td>
+            <th scope="row" class="num nowrap"><a class="data-table__link" href="/chromebooks/<?= (int) $c['id'] ?>"><?= e($c['asset_id'] ?? '–') ?></a></th>
+            <td>
+              <a class="data-table__link<?= $c['student_name'] === null ? ' is-unassigned' : '' ?>" href="/chromebooks/<?= (int) $c['id'] ?>"><?= e($student($c)) ?></a>
+              <?php if ($c['student_email']): ?><span class="data-table__sub"><?= e($c['student_email']) ?></span><?php endif ?>
+            </td>
             <td class="num"><?= e($c['serial_number'] ?? '–') ?></td>
-            <td><?= e($c['model'] ?? '–') ?></td>
-            <td><?= partial('partials/status-toggle', ['category' => $category, 'device' => $c, 'title' => $c['serial_number'] ?? $student($c), 'return' => $return]) ?></td>
+            <td><?= partial('partials/status-toggle', ['category' => $category, 'device' => $c, 'title' => $label($c), 'return' => $return]) ?></td>
             <td class="data-table__muted">
               <time datetime="<?= e(iso_time($c['updated_at'])) ?>" title="<?= e(format_datetime($c['updated_at'])) ?><?= $c['updated_by_name'] ? ' by ' . e($c['updated_by_name']) : '' ?>"><?= e(time_ago($c['updated_at'])) ?></time>
             </td>
@@ -95,11 +99,10 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
     <?php foreach ($chromebooks as $c): $problem = $c['status'] === Status::PROBLEM; ?>
       <li class="device-card<?= $problem ? ' is-problem' : '' ?>" data-device-row="<?= (int) $c['id'] ?>">
         <a class="device-card__main" href="/chromebooks/<?= (int) $c['id'] ?>">
-          <span class="device-card__title<?= $c['student_name'] === null ? ' is-unassigned' : '' ?>"><?= e($student($c)) ?><?= $c['class_name'] ? ' · ' . e($c['class_name']) : '' ?></span>
-          <span class="device-card__meta num"><?= e($c['serial_number'] ?? '–') ?></span>
-          <span class="device-card__meta"><?= e($c['model'] ?? '') ?></span>
+          <span class="device-card__title<?= $c['student_name'] === null ? ' is-unassigned' : '' ?>"><?= e($student($c)) ?></span>
+          <span class="device-card__meta num"><?= e(implode(' · ', array_filter([$c['asset_id'], $c['serial_number'] ?? 'No serial yet']))) ?></span>
         </a>
-        <?= partial('partials/status-toggle', ['category' => $category, 'device' => $c, 'title' => $c['serial_number'] ?? $student($c), 'return' => $return]) ?>
+        <?= partial('partials/status-toggle', ['category' => $category, 'device' => $c, 'title' => $label($c), 'return' => $return]) ?>
       </li>
     <?php endforeach ?>
   </ul>

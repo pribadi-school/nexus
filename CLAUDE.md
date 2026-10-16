@@ -25,17 +25,27 @@ completely separate from the school's WordPress site. UI language: English.
    area writes a note), editable areas at `/cctv/areas`, "Mark as checked"
    (`POST /cctv/{id}/checked` → `DeviceService::markChecked`, sets
    `last_checked_at`; on the list and the detail page).
-4. **Done: Chromebooks** (`app/Modules/Chromebooks`): list sorted by class
-   and student, 50 per page (`?page=`), search by serial or student,
-   status/class filters (class `none` = no class), editable classes at
-   `/chromebooks/classes`. Student and class are set on add, then only
-   through "Assigned to" on the detail page (`POST /chromebooks/{id}/assign`
-   → `ChromebookRepository::assign`: closes the open history row, opens a
-   new one, writes an `assignment` note; both empty = returned). CSV:
-   `ChromebookCsv` — export honours the filters; import is upload →
-   preview (plan kept in the session) → confirm, matches on serial,
-   accepts `,` or `;` and Indonesian headers (nama, kelas), skips bad rows,
-   applies everything in one transaction.
+4. **Done: Chromebooks** (`app/Modules/Chromebooks`), organised by
+   **academic year**: each Chromebook belongs to one yearly batch
+   (`chromebooks.academic_year`) and has an asset ID like `2026-05`
+   (unique among non-deleted, checked in `ChromebookRepository`), a serial
+   (optional; the 2026 list has none yet), a student and their school
+   email. No classes (dropped in migration 003). The list has a tab per
+   year from `ChromebookCategory::FIRST_YEAR` (2024) to now (`?year=`,
+   default newest), sorted by asset ID, 50 per page, search by asset ID,
+   serial, student or email, status filter. Student + email are set on add,
+   then through "Assigned to" on the detail page (`POST /chromebooks/{id}/assign`
+   → `ChromebookRepository::assign`: a new student closes the open history
+   row, opens a new one, writes an `assignment` note; a new email alone is
+   just saved; empty name = returned). `ChromebookCsv`: CSV export of the
+   filtered year; import of one year's list from **.xlsx (first sheet,
+   needs ext-zip + SimpleXML) or CSV**: upload → preview (plan kept in the
+   session) → confirm. It finds the header in the first 10 rows (English or
+   Indonesian names: ID, Serial Number/Seri, Nama, Email; others ignored),
+   strips "REG-1234" from names, matches on asset ID else serial, refuses
+   asset IDs from another year, never clears with empty cells, applies in
+   one transaction. Real student data is uploaded on the server, never
+   committed.
 5. **Next:** `docs/deploy-cpanel.md`: subdomain, MySQL database + user,
    importing the migrations, `.env`, cPanel Git "Update from Remote".
 
@@ -57,7 +67,7 @@ completely separate from the school's WordPress site. UI language: English.
   `views/lists/index.php`: editable lists. Declare them in
   `Category::lists()`; routes are added automatically under the list's path.
 - `App\Core\Validator`: form rules (`required`, `max:N`, `int`, `exists:table`,
-  `in:a,b`, `ip`, `min_value:N`, `max_value:N`) with friendly messages.
+  `in:a,b`, `ip`, `email`, `min_value:N`, `max_value:N`) with friendly messages.
 - Front-end: `filters.js` (`form[data-live-filter]` + `[data-results]`;
   the controller returns `{html}` for fetch), `status-toggle.js`,
   `toast.js`, `note-form.js`, `confirm.js`. Styles in `devices.css`.
@@ -187,16 +197,17 @@ Tables (see `database/migrations/001_initial_schema.sql` for details):
   generated column so serials are unique per category among non-deleted devices.
 - `studytouch_boards` (room_id → rooms, firmware_version),
   `cctv_cameras` (area_id → cctv_areas, label, location, ip_address, sd_card_gb),
-  `chromebooks` (student_name, class_id → classes, assigned_at),
-  `chromebook_assignments` (history; class_name copied as text).
+  `chromebooks` (academic_year, asset_id, student_name, student_email,
+  assigned_at), `chromebook_assignments` (history; class_name only on rows
+  from before migration 003).
 - `device_notes`: the shared notes log (kind, body, meta JSON, user_id, created_at).
-- `rooms`, `cctv_areas`, `classes`: editable lists (name unique, sort_order).
-  `classes` starts with 7A–7C, 8A–8B, 9A–9B, 10A–10B, 11A–11B, 12A–12B.
+- `rooms`, `cctv_areas`: editable lists (name unique, sort_order). (A
+  `classes` list existed until migration 003.)
   `rooms` starts with Grade 1–6, Grade 7A–7C, Grade 8A–12B (A and B) and
   ICT Lab. Migration 002 also adds the real StudyTouch boards, one per room
   (Merah Putih in Grade 2, Grade 8A and ICT Lab; StudyTouch elsewhere), so
   sample data has no boards, `migrate.php --seed` ignores StudyTouch when
-  deciding whether to seed, and the clear script keeps boards, rooms, classes.
+  deciding whether to seed, and the clear script keeps boards and rooms.
 - `users`: names of people who signed in. `login_attempts`: failed sign-ins.
 - `schema_migrations`: applied migration versions.
 
@@ -248,5 +259,5 @@ deployed yet.
 - Deploy = `git push`, then cPanel → Git → "Update from Remote". Nothing to build.
 - On the server: create `.env` from `.env.example` (APP_ENV=production,
   APP_DEBUG=false, a long APP_PASSWORD, DB credentials); `storage/` must be
-  writable; PHP 8.1+ with pdo_mysql and mbstring.
+  writable; PHP 8.1+ with pdo_mysql, mbstring, and zip + SimpleXML for .xlsx imports (CSV works without).
 - New migrations are imported by hand in phpMyAdmin, in order.

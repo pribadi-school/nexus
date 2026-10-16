@@ -92,6 +92,7 @@ final class Validator
             'max_value' => ctype_digit($value) && (int) $value <= (int) $arg ? null : "$label must be $arg or less.",
             'in' => in_array($value, explode(',', (string) $arg), true) ? null : 'Choose a valid ' . lcfirst($label) . '.',
             'ip' => filter_var($value, FILTER_VALIDATE_IP) !== false ? null : "$label must be an IP address such as 192.168.1.20.",
+            'email' => filter_var($value, FILTER_VALIDATE_EMAIL) !== false ? null : "$label must be an email address such as name@pribadidepok.sch.id.",
             'exists' => $this->exists((string) $arg, $value) ? null : 'That ' . lcfirst($label) . ' no longer exists. Choose another one.',
             default => null,
         };

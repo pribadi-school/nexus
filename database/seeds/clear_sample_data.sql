@@ -2,7 +2,7 @@
 -- entering real data. Run it in phpMyAdmin (SQL tab) BEFORE adding real
 -- cameras or Chromebooks: it deletes every CCTV camera and Chromebook with
 -- their notes, the CCTV areas, and the two sample people. The StudyTouch
--- boards, rooms and classes stay (they are the school's real ones).
+-- boards and rooms stay (they are the school's real ones).
 
 SET NAMES utf8mb4;
 

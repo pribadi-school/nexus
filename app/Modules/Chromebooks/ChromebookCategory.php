@@ -6,13 +6,18 @@ namespace App\Modules\Chromebooks;
 
 use App\Core\Router;
 use App\Devices\Category;
-use App\Devices\LookupList;
 use App\Devices\NoteKind;
 use App\Devices\Status;
 
-/** Student Chromebooks with assignment history. Detail tables: chromebooks, chromebook_assignments. */
+/**
+ * Student Chromebooks, one batch per academic year (asset IDs like 2026-05),
+ * with assignment history. Detail tables: chromebooks, chromebook_assignments.
+ */
 final class ChromebookCategory extends Category
 {
+    /** The first batch; the page always shows a tab for every year from here to now. */
+    public const FIRST_YEAR = 2024;
+
     public function key(): string
     {
         return 'chromebook';
@@ -53,23 +58,6 @@ final class ChromebookCategory extends Category
         return 'e.g. Screen cracked in the bottom corner. Student reported it after class.';
     }
 
-    public function lists(): array
-    {
-        return [new LookupList(
-            table: 'classes',
-            path: '/chromebooks/classes',
-            title: 'Classes',
-            singular: 'class',
-            intro: 'The classes Chromebooks are assigned to. History keeps the class name as it was, so renaming a class (for example at the yearly move up) does not change old records.',
-            category: $this,
-            usageSql: "SELECT c.class_id AS id, COUNT(*) AS n
-                       FROM chromebooks c JOIN devices d ON d.id = c.device_id AND d.deleted_at IS NULL
-                       WHERE c.class_id IS NOT NULL
-                       GROUP BY c.class_id",
-            usageNoun: ['Chromebook', 'Chromebooks'],
-        )];
-    }
-
     public function registerRoutes(Router $router): void
     {
         $router->get('/chromebooks', [ChromebookController::class, 'index']);
@@ -93,27 +81,28 @@ final class ChromebookCategory extends Category
             return [];
         }
         $rows = db()->all(
-            'SELECT d.id, d.serial_number, c.student_name, k.name AS class_name
+            'SELECT d.id, d.serial_number, c.asset_id, c.student_name
              FROM devices d
              JOIN chromebooks c ON c.device_id = d.id
-             LEFT JOIN classes k ON k.id = c.class_id
              WHERE d.id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
             $ids,
         );
 
         $out = [];
         foreach ($rows as $row) {
-            $serial = $row['serial_number'] ?? '';
+            $label = $row['asset_id'] ?? $row['serial_number'] ?? '#' . $row['id'];
             $out[(int) $row['id']] = $row['student_name']
-                ? [
-                    'title' => $row['student_name'] . ($row['class_name'] ? ' (' . $row['class_name'] . ')' : ''),
-                    'context' => 'Chromebook · ' . $serial,
-                ]
-                : [
-                    'title' => 'Chromebook ' . $serial,
-                    'context' => 'Chromebook · Not assigned',
-                ];
+                ? ['title' => $row['student_name'], 'context' => 'Chromebook · ' . $label]
+                : ['title' => 'Chromebook ' . $label, 'context' => 'Chromebook · Not assigned'];
         }
         return $out;
+    }
+
+    /** @return list<int> Every academic year from the first batch to now (or the latest batch, if later), newest first. */
+    public function years(): array
+    {
+        $now = (int) (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Jakarta')))->format('Y');
+        $latest = (int) db()->value('SELECT MAX(academic_year) FROM chromebooks');
+        return range(max($now, $latest), self::FIRST_YEAR);
     }
 }

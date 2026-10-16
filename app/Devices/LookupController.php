@@ -11,7 +11,7 @@ use App\Core\Session;
 use App\Core\View;
 
 /**
- * One page per editable list (rooms, CCTV areas, classes): add, rename,
+ * One page per editable list (rooms, CCTV areas): add, rename,
  * reorder, delete. Which list is decided by the URL, e.g. /studytouch/rooms.
  */
 final class LookupController

@@ -124,6 +124,7 @@ extension=pdo_mysql
 extension=mbstring
 extension=openssl
 extension=fileinfo
+extension=zip
 memory_limit=256M
 upload_max_filesize=10M
 post_max_size=12M

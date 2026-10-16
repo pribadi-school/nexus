@@ -6,7 +6,7 @@ namespace App\Devices;
 
 /**
  * An editable list of names that devices point to: rooms (StudyTouch), areas
- * (CCTV), classes (Chromebooks). One generic page manages every list; a
+ * (CCTV). One generic page manages every list; a
  * category declares its lists in Category::lists().
  *
  * The table needs: id, name (unique), sort_order, created_at.

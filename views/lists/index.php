@@ -1,6 +1,6 @@
 <?php
 /**
- * One editable list (rooms, CCTV areas, classes): add, rename, reorder, delete.
+ * One editable list (rooms, CCTV areas): add, rename, reorder, delete.
  *
  * @var \App\Devices\LookupList $list
  * @var list<array{id:int, name:string, used:int}> $items

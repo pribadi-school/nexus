@@ -1,34 +1,34 @@
 <?php
 /**
- * Add / edit a Chromebook. Student and class are set here only when adding;
- * after that they change through "Reassign" on the Chromebook's page, so the
- * history stays complete.
+ * Add / edit a Chromebook. Student and email are set here only when adding;
+ * after that they change through "Assigned to" on the Chromebook's page, so
+ * the history stays complete.
  *
  * @var \App\Modules\Chromebooks\ChromebookCategory $category
  * @var array<string, mixed>|null $chromebook  null when adding
  * @var array<string, mixed> $values
  * @var array<string, string> $errors
- * @var list<array{id:int, name:string}> $classes
+ * @var list<int> $years  newest first
  * @var list<string> $models
  */
 use App\Devices\Status;
 
 $adding = $chromebook === null;
 $action = $adding ? '/chromebooks' : '/chromebooks/' . (int) $chromebook['id'];
-$cancel = $adding ? '/chromebooks' : '/chromebooks/' . (int) $chromebook['id'];
+$cancel = $adding ? '/chromebooks?year=' . (int) $values['academic_year'] : '/chromebooks/' . (int) $chromebook['id'];
 $field = static fn (string $name): string => $errors[$name] ?? '';
 $invalid = static fn (string $name): string => $field($name) ? ' aria-invalid="true" aria-describedby="' . $name . '-error"' : '';
 $error = static fn (string $name): string => $field($name) ? '<p class="field__error" id="' . $name . '-error">' . e($field($name)) . '</p>' : '';
 ?>
-<a class="back-link" href="<?= e($cancel) ?>"><?= icon('chevron-left', 'icon--sm') ?><?= $adding ? 'Chromebooks' : e($chromebook['serial_number'] ?? 'Chromebook') ?></a>
+<a class="back-link" href="<?= e($cancel) ?>"><?= icon('chevron-left', 'icon--sm') ?><?= $adding ? 'Chromebooks' : e($chromebook['asset_id'] ?? $chromebook['serial_number'] ?? 'Chromebook') ?></a>
 
 <header class="page-header">
   <div>
     <h1 class="page-title"><?= $adding ? 'Add a Chromebook' : 'Edit Chromebook' ?></h1>
     <p class="page-subtitle">
       <?= $adding
-          ? 'Adding many? <a href="/chromebooks/import">Import a CSV file</a> instead.'
-          : 'Student, class, status and notes are changed on the Chromebook\'s page.' ?>
+          ? 'Adding a whole year? <a href="/chromebooks/import?year=' . (int) $values['academic_year'] . '">Import the list</a> instead.'
+          : 'Student, status and notes are changed on the Chromebook\'s page.' ?>
     </p>
   </div>
 </header>
@@ -44,12 +44,30 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
   <?php endif ?>
 
   <div class="form-grid">
+    <div class="field<?= $field('academic_year') ? ' has-error' : '' ?>">
+      <label class="field__label" for="academic_year">Academic year <span class="field__required">required</span></label>
+      <select class="select" id="academic_year" name="academic_year" required<?= $invalid('academic_year') ?>>
+        <?php foreach ($years as $y): ?>
+          <option value="<?= $y ?>"<?= (int) ($values['academic_year'] ?? 0) === $y ? ' selected' : '' ?>><?= $y ?></option>
+        <?php endforeach ?>
+      </select>
+      <?= $error('academic_year') ?>
+      <p class="field__hint">The batch it was handed out in.</p>
+    </div>
+
+    <div class="field<?= $field('asset_id') ? ' has-error' : '' ?>">
+      <label class="field__label" for="asset_id">Asset ID</label>
+      <input class="input num" id="asset_id" name="asset_id" type="text" maxlength="20" autocomplete="off" spellcheck="false"
+             value="<?= e($values['asset_id'] ?? '') ?>" placeholder="e.g. <?= (int) ($values['academic_year'] ?? $years[0]) ?>-01"<?= $invalid('asset_id') ?>>
+      <?= $error('asset_id') ?>
+    </div>
+
     <div class="field<?= $field('serial_number') ? ' has-error' : '' ?>">
-      <label class="field__label" for="serial_number">Serial number <span class="field__required">required</span></label>
-      <input class="input num" id="serial_number" name="serial_number" type="text" maxlength="64" required autocomplete="off"
+      <label class="field__label" for="serial_number">Serial number</label>
+      <input class="input num" id="serial_number" name="serial_number" type="text" maxlength="64" autocomplete="off"
              autocapitalize="characters" spellcheck="false" value="<?= e($values['serial_number'] ?? '') ?>"<?= $invalid('serial_number') ?>>
       <?= $error('serial_number') ?>
-      <p class="field__hint">On the sticker under the Chromebook.</p>
+      <p class="field__hint">On the sticker under the Chromebook. Can be added later.</p>
     </div>
 
     <div class="field<?= $field('model') ? ' has-error' : '' ?>">
@@ -69,16 +87,11 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
         <p class="field__hint">Leave empty if it is not given to anyone yet.</p>
       </div>
 
-      <div class="field<?= $field('class_id') ? ' has-error' : '' ?>">
-        <label class="field__label" for="class_id">Class</label>
-        <select class="select" id="class_id" name="class_id"<?= $invalid('class_id') ?>>
-          <option value="">No class</option>
-          <?php foreach ($classes as $class): ?>
-            <option value="<?= (int) $class['id'] ?>"<?= (int) ($values['class_id'] ?? 0) === (int) $class['id'] ? ' selected' : '' ?>><?= e($class['name']) ?></option>
-          <?php endforeach ?>
-        </select>
-        <?= $error('class_id') ?>
-        <p class="field__hint">Missing a class? <a href="/chromebooks/classes">Edit the class list</a>.</p>
+      <div class="field<?= $field('student_email') ? ' has-error' : '' ?>">
+        <label class="field__label" for="student_email">Student email</label>
+        <input class="input" id="student_email" name="student_email" type="email" maxlength="160" autocomplete="off" spellcheck="false"
+               value="<?= e($values['student_email'] ?? '') ?>" placeholder="name@pribadidepok.sch.id"<?= $invalid('student_email') ?>>
+        <?= $error('student_email') ?>
       </div>
 
       <fieldset class="choice-group field--full">

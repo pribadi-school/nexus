@@ -13,17 +13,18 @@ use App\Core\Validator;
 use App\Core\View;
 use App\Devices\DeviceService;
 use App\Devices\DeviceServiceError;
-use App\Devices\LookupRepository;
 use App\Devices\NoteRepository;
 use App\Devices\Status;
 
 final class ChromebookController
 {
     private const LABELS = [
+        'academic_year' => 'Academic year',
+        'asset_id' => 'Asset ID',
         'serial_number' => 'Serial number',
         'model' => 'Model',
         'student_name' => 'Student',
-        'class_id' => 'Class',
+        'student_email' => 'Email',
         'status' => 'Status',
     ];
 
@@ -39,7 +40,7 @@ final class ChromebookController
         $this->chromebooks = new ChromebookRepository();
     }
 
-    /** GET /chromebooks?status=&class=&q=&page= (fetch(): just the results, as JSON) */
+    /** GET /chromebooks?year=&status=&q=&page= (fetch(): just the results, as JSON) */
     public function index(Request $request): Response
     {
         $filters = $this->filters($request);
@@ -57,24 +58,26 @@ final class ChromebookController
             'matching' => $result['total'],
             'page' => $page,
             'pages' => $pages,
-            'counts' => $this->chromebooks->counts(),
+            'counts' => $this->chromebooks->counts($filters['year']),
             'filters' => $filters,
-            'filtered' => array_filter($filters, static fn ($v) => $v !== null) !== [],
+            'filtered' => $filters['status'] !== null || $filters['q'] !== null,
         ];
 
         if ($request->isFetch()) {
             return Response::json(['html' => View::partial('Chromebooks::_results', $data)]);
         }
 
-        $data['classes'] = $this->classes()->options();
-        return Response::html(View::render('Chromebooks::index', $data, 'layouts/app', 'Chromebooks'));
+        $data['years'] = $this->category->years();
+        $data['yearCounts'] = $this->chromebooks->yearCounts();
+        return Response::html(View::render('Chromebooks::index', $data, 'layouts/app', 'Chromebooks ' . $filters['year']));
     }
 
-    /** GET /chromebooks/export?status=&class=&q= : the filtered list as CSV */
+    /** GET /chromebooks/export?year=&status=&q= : the filtered list as CSV */
     public function export(Request $request): Response
     {
-        $rows = $this->chromebooks->search($this->filters($request), 1, null)['rows'];
-        $name = 'chromebooks-' . (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Jakarta')))->format('Y-m-d') . '.csv';
+        $filters = $this->filters($request);
+        $rows = $this->chromebooks->search($filters, 1, null)['rows'];
+        $name = 'chromebooks-' . $filters['year'] . '-' . (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Jakarta')))->format('Y-m-d') . '.csv';
         return new Response(ChromebookCsv::export($rows, $this->category), 200, [
             'Content-Type' => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="' . $name . '"',
@@ -85,43 +88,49 @@ final class ChromebookController
     /** GET /chromebooks/import/example : a small file showing the columns */
     public function example(Request $request): Response
     {
-        $classes = array_column($this->classes()->options(), 'name');
+        $year = $this->category->years()[0];
         $body = "\xEF\xBB\xBF" . implode(',', ChromebookCsv::COLUMNS) . "\r\n"
-            . 'NXK6ESN00999901,Example Student,' . ($classes[0] ?? '7A') . ",Acer Chromebook 311,OK\r\n"
-            . "NXK6ESN00999902,,,Acer Chromebook 311,OK\r\n";
+            . "$year-01,NXJAESN0015199901,Example Student,example@pribadidepok.sch.id,Acer Chromebook 311,OK\r\n"
+            . "$year-02,,Another Student,,,OK\r\n";
         return new Response($body, 200, [
             'Content-Type' => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="chromebooks-example.csv"',
         ]);
     }
 
-    /** GET /chromebooks/import */
+    /** GET /chromebooks/import?year= */
     public function importForm(Request $request): Response
     {
         Session::forget(self::IMPORT_KEY);
-        return $this->importPage(null, null);
+        return $this->importPage(null, null, $this->year($request->query('year')));
     }
 
     /** POST /chromebooks/import : read the file and show what would happen */
     public function importPreview(Request $request): Response
     {
+        $year = $this->year($request->input('academic_year'));
         $file = $request->files['file'] ?? null;
         $error = match (true) {
-            !is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE => 'Choose a CSV file first.',
+            !is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE => 'Choose a file first.',
             $file['error'] !== UPLOAD_ERR_OK => 'The file could not be uploaded. Try again.',
             $file['size'] > 2 * 1024 * 1024 => 'The file is too big (2 MB at most).',
             default => null,
         };
         if ($error !== null) {
-            return $this->importPage(null, $error, 422);
+            return $this->importPage(null, $error, $year, 422);
         }
 
-        $plan = ChromebookCsv::plan((string) file_get_contents($file['tmp_name']), $this->chromebooks);
-        if ($plan['error'] !== null) {
-            return $this->importPage(null, $plan['error'], 422);
+        $name = basename((string) $file['name']);
+        $table = ChromebookCsv::read((string) $file['tmp_name'], $name);
+        if (is_string($table)) {
+            return $this->importPage(null, $table, $year, 422);
         }
-        Session::put(self::IMPORT_KEY, ['rows' => $plan['rows'], 'file' => basename((string) $file['name'])]);
-        return $this->importPage($plan + ['file' => basename((string) $file['name'])], null);
+        $plan = ChromebookCsv::plan($table, $year, $this->chromebooks);
+        if ($plan['error'] !== null) {
+            return $this->importPage(null, $plan['error'], $year, 422);
+        }
+        Session::put(self::IMPORT_KEY, ['rows' => $plan['rows'], 'file' => $name, 'year' => $year]);
+        return $this->importPage($plan + ['file' => $name], null, $year);
     }
 
     /** POST /chromebooks/import/confirm */
@@ -133,11 +142,11 @@ final class ChromebookController
             return Response::redirect('/chromebooks/import');
         }
         try {
-            $result = ChromebookCsv::apply($saved['rows'], $this->category, $this->chromebooks, Auth::id());
+            $result = ChromebookCsv::apply($saved['rows'], (int) $saved['year'], $this->category, $this->chromebooks, Auth::id());
         } catch (DeviceServiceError) {
-            // Someone added the same serial between preview and confirm.
-            Session::flash('error', 'A serial number in the file was just added by someone else. Nothing was imported; check the file again.');
-            return Response::redirect('/chromebooks/import');
+            // Someone added the same asset ID or serial between preview and confirm.
+            Session::flash('error', 'An asset ID or serial number in the file was just added by someone else. Nothing was imported; check the file again.');
+            return Response::redirect('/chromebooks/import?year=' . (int) $saved['year']);
         }
 
         $parts = array_filter([
@@ -145,7 +154,7 @@ final class ChromebookController
             $result['updated'] ? $this->category->count($result['updated']) . ' updated' : null,
         ]);
         Session::flash('success', $parts === [] ? 'Nothing to import: no changes.' : 'Import done: ' . implode(', ', $parts) . '.');
-        return Response::redirect($this->category->path());
+        return Response::redirect($this->yearPath((int) $saved['year']));
     }
 
     /** GET /chromebooks/{id} */
@@ -159,22 +168,21 @@ final class ChromebookController
             'category' => $this->category,
             'chromebook' => $chromebook,
             'history' => $this->chromebooks->history($id),
-            'classes' => $this->classes()->options(),
             'notes' => $notes->forDevice($id),
             'noteCount' => $notes->countForDevice($id),
-            'assignErrors' => [],
         ], 'layouts/app', $this->category->title($id) . ' · Chromebooks'));
     }
 
-    /** GET /chromebooks/new */
+    /** GET /chromebooks/new?year= */
     public function create(Request $request): Response
     {
-        $class = $request->query('class');
         return $this->form(null, [
+            'academic_year' => $this->year($request->query('year')),
+            'asset_id' => null,
             'serial_number' => null,
             'model' => null,
             'student_name' => null,
-            'class_id' => $class !== null && ctype_digit($class) ? (int) $class : null,
+            'student_email' => null,
             'status' => Status::OK,
         ], []);
     }
@@ -187,15 +195,15 @@ final class ChromebookController
         if ($v->fails()) {
             return $this->form(null, $data, $v->errors());
         }
-        $data['class_id'] = $data['class_id'] === null ? null : (int) $data['class_id'];
+        $data['academic_year'] = (int) $data['academic_year'];
 
         try {
             $id = $this->chromebooks->create($this->category, $data, Auth::id());
         } catch (DeviceServiceError $e) {
-            return $this->form(null, $data, [$e->field => $this->serialTakenMessage()]);
+            return $this->form(null, $data, [$e->field => $this->takenMessage($e)]);
         }
 
-        Session::flash('success', 'Chromebook ' . $data['serial_number'] . ' added.');
+        Session::flash('success', 'Chromebook ' . ($data['asset_id'] ?? $data['serial_number'] ?? '') . ' added.');
         return Response::redirect($this->category->detailPath($id));
     }
 
@@ -215,18 +223,19 @@ final class ChromebookController
         if ($v->fails()) {
             return $this->form($chromebook, $data + $chromebook, $v->errors());
         }
+        $data['academic_year'] = (int) $data['academic_year'];
 
         try {
             $this->chromebooks->update($chromebook, $data, Auth::id());
         } catch (DeviceServiceError $e) {
-            return $this->form($chromebook, $data + $chromebook, [$e->field => $this->serialTakenMessage()]);
+            return $this->form($chromebook, $data + $chromebook, [$e->field => $this->takenMessage($e)]);
         }
 
         Session::flash('success', 'Changes saved.');
         return Response::redirect($this->category->detailPath((int) $chromebook['id']));
     }
 
-    /** POST /chromebooks/{id}/assign (student_name, class_id; both empty = not assigned) */
+    /** POST /chromebooks/{id}/assign (student_name, student_email; empty name = not assigned) */
     public function assign(Request $request): Response
     {
         $chromebook = $this->chromebook($request);
@@ -237,16 +246,13 @@ final class ChromebookController
             return Response::redirect($this->category->detailPath((int) $chromebook['id']) . '#assign');
         }
 
-        $changed = $this->chromebooks->assign(
-            $chromebook,
-            $data['student_name'],
-            $data['class_id'] === null ? null : (int) $data['class_id'],
-            Auth::id(),
-        );
+        $changed = $this->chromebooks->assign($chromebook, $data['student_name'], $data['student_email'], Auth::id());
+        $label = 'Chromebook ' . $this->label($chromebook);
         Session::flash($changed ? 'success' : 'info', match (true) {
             !$changed => 'Nothing changed: it was already assigned that way.',
-            $data['student_name'] === null => 'Chromebook ' . $chromebook['serial_number'] . ' is now not assigned to a student.',
-            default => 'Chromebook ' . $chromebook['serial_number'] . ' is now assigned to ' . $data['student_name'] . '.',
+            $data['student_name'] === null => "$label is now not assigned to a student.",
+            $data['student_name'] === $chromebook['student_name'] => 'Email saved.',
+            default => "$label is now assigned to {$data['student_name']}.",
         });
         return Response::redirect($this->category->detailPath((int) $chromebook['id']));
     }
@@ -256,27 +262,45 @@ final class ChromebookController
     {
         $chromebook = $this->chromebook($request);
         (new DeviceService())->delete((int) $chromebook['id'], Auth::id());
-        Session::flash('success', 'Chromebook ' . ($chromebook['serial_number'] ?? '#' . $chromebook['id']) . ' was deleted.');
-        return Response::redirect($this->category->path());
+        Session::flash('success', 'Chromebook ' . $this->label($chromebook) . ' was deleted.');
+        return Response::redirect($this->yearPath((int) $chromebook['academic_year']));
     }
 
-    /** @return array{status:?string, class:?int, q:?string} */
+    /** @return array{year:int, status:?string, q:?string} */
     private function filters(Request $request): array
     {
-        $class = $request->query('class');
         return [
+            'year' => $this->year($request->query('year')),
             'status' => in_array($request->query('status'), Status::ALL, true) ? $request->query('status') : null,
-            // "none" = Chromebooks without a class.
-            'class' => $class === 'none' ? 0 : ($class !== null && ctype_digit($class) ? (int) $class : null),
             'q' => $request->query('q') !== null ? mb_substr((string) $request->query('q'), 0, 100) : null,
         ];
+    }
+
+    /** A valid academic year from the request, else the newest one. */
+    private function year(mixed $value): int
+    {
+        $years = $this->category->years();
+        return is_string($value) && ctype_digit($value) && in_array((int) $value, $years, true) ? (int) $value : $years[0];
+    }
+
+    private function yearPath(int $year): string
+    {
+        return $this->category->path() . '?year=' . $year;
+    }
+
+    /** @param array<string, mixed> $chromebook */
+    private function label(array $chromebook): string
+    {
+        return (string) ($chromebook['asset_id'] ?? $chromebook['serial_number'] ?? '#' . $chromebook['id']);
     }
 
     /** @return array<string, list<string>> */
     private function rules(): array
     {
         return [
-            'serial_number' => ['required', 'max:64'],
+            'academic_year' => ['required', 'in:' . implode(',', $this->category->years())],
+            'asset_id' => ['max:20'],
+            'serial_number' => ['max:64'],
             'model' => ['max:100'],
         ];
     }
@@ -286,7 +310,7 @@ final class ChromebookController
     {
         return [
             'student_name' => ['max:120'],
-            'class_id' => ['int', 'exists:classes'],
+            'student_email' => ['max:160', 'email'],
         ];
     }
 
@@ -303,18 +327,20 @@ final class ChromebookController
             'chromebook' => $chromebook,
             'values' => $values,
             'errors' => $errors,
-            'classes' => $this->classes()->options(),
+            'years' => $this->category->years(),
             'models' => $this->chromebooks->models(),
         ], 'layouts/app', $title), $errors === [] ? 200 : 422);
     }
 
     /** @param array<string, mixed>|null $plan */
-    private function importPage(?array $plan, ?string $error, int $status = 200): Response
+    private function importPage(?array $plan, ?string $error, int $year, int $status = 200): Response
     {
         return Response::html(View::render('Chromebooks::import', [
             'category' => $this->category,
             'plan' => $plan,
             'error' => $error,
+            'year' => $year,
+            'years' => $this->category->years(),
         ], 'layouts/app', 'Import Chromebooks'), $status);
     }
 
@@ -325,13 +351,10 @@ final class ChromebookController
             ?? throw HttpException::notFound('That Chromebook does not exist or was deleted.');
     }
 
-    private function classes(): LookupRepository
+    private function takenMessage(DeviceServiceError $e): string
     {
-        return new LookupRepository($this->category->lists()[0]);
-    }
-
-    private function serialTakenMessage(): string
-    {
-        return 'Another Chromebook already has this serial number.';
+        return $e->field === 'asset_id'
+            ? 'Another Chromebook already has this asset ID.'
+            : 'Another Chromebook already has this serial number.';
     }
 }

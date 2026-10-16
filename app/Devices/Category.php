@@ -74,7 +74,7 @@ abstract class Category
         return 'e.g. Does not turn on. Reported this morning.';
     }
 
-    /** @return list<LookupList> Editable lists this category owns (rooms, areas, classes). */
+    /** @return list<LookupList> Editable lists this category owns (rooms, CCTV areas). */
     public function lists(): array
     {
         return [];
