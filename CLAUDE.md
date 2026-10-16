@@ -14,22 +14,26 @@ completely separate from the school's WordPress site. UI language: English.
    cards below) with live search + status/room filters, instant status
    switch, problem rows highlighted, detail page (status, notes log,
    details), add/edit/delete, editable rooms list at `/studytouch/rooms`.
-   Use it as the template for the next two modules.
+   The template the other modules follow.
 3. **Done: CCTV** (`app/Modules/Cctv`): list grouped under area headings
    (one fixed-width table per area so columns line up; cards below 900px),
    live search + status/area filters, detail page, add/edit/delete (moving
    area writes a note), editable areas at `/cctv/areas`, "Mark as checked"
    (`POST /cctv/{id}/checked` → `DeviceService::markChecked`, sets
    `last_checked_at`; on the list and the detail page).
-4. **Next: Chromebooks:** serial, student, class, status ("OK"); editable
-   class list; search by serial or student; filters; reassign with history
-   (`chromebook_assignments`, write an `assignment` note); CSV import
-   (upload → preview → confirm) and CSV export. May need paging (hundreds).
-5. **Then** `docs/deploy-cpanel.md`: subdomain, MySQL database + user,
+4. **Done: Chromebooks** (`app/Modules/Chromebooks`): list sorted by class
+   and student, 50 per page (`?page=`), search by serial or student,
+   status/class filters (class `none` = no class), editable classes at
+   `/chromebooks/classes`. Student and class are set on add, then only
+   through "Assigned to" on the detail page (`POST /chromebooks/{id}/assign`
+   → `ChromebookRepository::assign`: closes the open history row, opens a
+   new one, writes an `assignment` note; both empty = returned). CSV:
+   `ChromebookCsv` — export honours the filters; import is upload →
+   preview (plan kept in the session) → confirm, matches on serial,
+   accepts `,` or `;` and Indonesian headers (nama, kelas), skips bad rows,
+   applies everything in one transaction.
+5. **Next:** `docs/deploy-cpanel.md`: subdomain, MySQL database + user,
    importing the migrations, `.env`, cPanel Git "Update from Remote".
-
-Chromebooks still route to `App\Devices\ComingSoonController`;
-replace that in the category's `registerRoutes()` when their pages are built.
 
 ### Shared device building blocks (reuse them, don't copy them)
 
@@ -117,7 +121,7 @@ app/Devices/         shared device layer: Category (abstract), CategoryRegistry,
 app/Modules/<Name>/  one folder per area: Dashboard, StudyTouch, Cctv, Chromebooks
                      (Category class, controllers, views/)
 views/               layouts/{app,auth}.php, lists/, partials/ (lockup, avatar, flashes, status-toggle, notes-log,
-                     empty-state, note-entry, confirm-dialog), auth/, errors/, devices/
+                     empty-state, note-entry, confirm-dialog), auth/, errors/
 config/              app.php, auth.php, database.php, modules.php (category list)
 database/migrations/ NNN_name.sql, imported in order (phpMyAdmin or bin/migrate.php)
 database/seeds/      sample_data.sql, clear_sample_data.sql

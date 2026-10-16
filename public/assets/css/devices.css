@@ -424,3 +424,91 @@
 .cctv-table th:nth-child(6) { width: 13%; }
 .cctv-table th:nth-child(7) { width: 14%; }
 .cctv-table td { overflow-wrap: anywhere; }
+
+/* ------------------------------------------------------ Chromebooks --- */
+.results__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.results__bar .results__summary { margin: 0; }
+.is-unassigned { color: var(--color-muted-foreground); font-style: italic; font-weight: 500; }
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.pager__info { font-size: var(--fs-ui); color: var(--color-muted-foreground); }
+.btn.is-disabled { opacity: 0.45; pointer-events: none; }
+
+/* Detail page with the assignment card under the status (desktop: left column). */
+@media (min-width: 1024px) {
+  .detail--with-assign {
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas: 'status notes' 'assign notes' 'info notes';
+  }
+  .detail__assign { grid-area: assign; }
+}
+.assign-form {
+  display: grid;
+  gap: var(--space-3);
+  padding: 0 var(--space-4) var(--space-4);
+}
+@media (min-width: 640px) { .assign-form { grid-template-columns: 3fr 2fr; } }
+@media (min-width: 768px) { .assign-form { padding: 0 var(--space-5) var(--space-4); } }
+.assign-form__hint, .assign-form__actions { grid-column: 1 / -1; margin: 0; }
+.assign-form__actions { display: flex; justify-content: flex-end; }
+
+.history__title {
+  margin: 0;
+  padding: var(--space-3) var(--space-4) var(--space-2);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--fs-ui);
+  font-weight: 600;
+  color: var(--color-muted-foreground);
+}
+.history { list-style: none; margin: 0; padding: 0 var(--space-4) var(--space-3); }
+@media (min-width: 768px) { .history__title, .history { padding-left: var(--space-5); padding-right: var(--space-5); } }
+.history__item {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 var(--space-3);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.history__item:last-child { border-bottom: 0; }
+.history__who { font-weight: 500; }
+.history__item.is-current .history__who { font-weight: 600; color: var(--color-action); }
+.history__when { font-size: var(--fs-ui); color: var(--color-muted-foreground); }
+.history__empty { margin: 0; padding: 0 var(--space-4) var(--space-4); color: var(--color-muted-foreground); font-size: var(--fs-ui); }
+
+/* Import */
+.import-help { margin: var(--space-4) 0 0; font-size: var(--fs-ui); color: var(--color-foreground-alt); }
+.import-help p, .import-help ul { margin: 0 0 var(--space-2); }
+.import-help ul { padding-left: var(--space-5); }
+.import-summary { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-4); margin-bottom: var(--space-4); }
+.import-summary__file { display: flex; align-items: center; gap: var(--space-2); margin: 0; font-weight: 600; }
+.import-summary__counts { display: flex; flex-wrap: wrap; gap: var(--space-2); list-style: none; margin: 0; padding: 0; }
+.import-summary__note { margin: 0; font-size: var(--fs-ui); color: var(--color-muted-foreground); }
+.import-summary__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.import-tag {
+  display: inline-block;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm, 6px);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.import-tag--success { background: var(--color-success-tint); color: var(--color-success); }
+.import-tag--action { background: var(--color-action-tint); color: var(--color-action); }
+.import-tag--neutral { background: var(--color-surface-muted); color: var(--color-muted-foreground); }
+.import-tag--problem { background: var(--color-problem-tint); color: var(--color-problem); }
+/* The preview is read on any screen size, so it keeps the table on phones. */
+.table-card--always { display: block; }
