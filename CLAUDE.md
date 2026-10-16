@@ -11,10 +11,14 @@ completely separate from the school's WordPress site. UI language: English.
 1. **Done:** logo assets, layout (sidebar / bottom nav), sign-in, Dashboard
    (category tiles, "Needs attention", recent-activity feed), sample data.
 2. **Done: StudyTouch** (`app/Modules/StudyTouch`): list (table ≥900px,
-   cards below) with live search + status/room filters, instant status
+   cards below) with live search + status filter (no room filter: one
+   board per room, so search covers it), instant status
    switch, problem rows highlighted, detail page (status, notes log,
    details), add/edit/delete, editable rooms list at `/studytouch/rooms`.
-   The template the other modules follow.
+   The template the other modules follow. Boards have no serial number
+   (known by room); model is a choice from `StudyTouchCategory::MODELS`
+   ("StudyTouch" / "Merah Putih", no type number); firmware starts as
+   `CURRENT_FIRMWARE` (v2.0.290925, 29 Sep 2025).
 3. **Done: CCTV** (`app/Modules/Cctv`): list grouped under area headings
    (one fixed-width table per area so columns line up; cards below 900px),
    live search + status/area filters, detail page, add/edit/delete (moving
@@ -188,6 +192,11 @@ Tables (see `database/migrations/001_initial_schema.sql` for details):
 - `device_notes`: the shared notes log (kind, body, meta JSON, user_id, created_at).
 - `rooms`, `cctv_areas`, `classes`: editable lists (name unique, sort_order).
   `classes` starts with 7A–7C, 8A–8B, 9A–9B, 10A–10B, 11A–11B, 12A–12B.
+  `rooms` starts with Grade 1–6, Grade 7A–7C, Grade 8A–12B (A and B) and
+  ICT Lab. Migration 002 also adds the real StudyTouch boards, one per room
+  (Merah Putih in Grade 2, Grade 8A and ICT Lab; StudyTouch elsewhere), so
+  sample data has no boards, `migrate.php --seed` ignores StudyTouch when
+  deciding whether to seed, and the clear script keeps boards, rooms, classes.
 - `users`: names of people who signed in. `login_attempts`: failed sign-ins.
 - `schema_migrations`: applied migration versions.
 

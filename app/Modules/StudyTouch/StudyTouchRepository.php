@@ -22,7 +22,7 @@ final class StudyTouchRepository
                             WHERE d.category = 'studytouch' AND d.deleted_at IS NULL";
 
     /**
-     * @param array{status:?string, room:?int, q:?string} $filters
+     * @param array{status:?string, q:?string} $filters
      * @return list<array<string, mixed>>
      */
     public function search(array $filters): array
@@ -34,14 +34,10 @@ final class StudyTouchRepository
             $sql .= ' AND d.status = ?';
             $params[] = $filters['status'];
         }
-        if ($filters['room'] !== null) {
-            $sql .= ' AND b.room_id = ?';
-            $params[] = $filters['room'];
-        }
         if ($filters['q'] !== null) {
             $like = '%' . addcslashes($filters['q'], '%_\\') . '%';
-            $sql .= ' AND (d.serial_number LIKE ? OR d.model LIKE ? OR r.name LIKE ? OR b.firmware_version LIKE ?)';
-            array_push($params, $like, $like, $like, $like);
+            $sql .= ' AND (d.model LIKE ? OR r.name LIKE ? OR b.firmware_version LIKE ?)';
+            array_push($params, $like, $like, $like);
         }
 
         return db()->all($sql . ' ORDER BY r.sort_order, r.name, d.id', $params);
@@ -65,24 +61,24 @@ final class StudyTouchRepository
         return ['total' => $total, 'ok' => $total - $problem, 'problem' => $problem];
     }
 
-    /** @return list<string> Values already used, to suggest while typing. */
-    public function distinct(string $column): array
+    /** @return list<string> Firmware versions already used, to suggest while typing. */
+    public function firmwareVersions(): array
     {
-        $sql = match ($column) {
-            'model' => "SELECT DISTINCT d.model AS v FROM devices d WHERE d.category = 'studytouch' AND d.model IS NOT NULL",
-            'firmware_version' => 'SELECT DISTINCT b.firmware_version AS v FROM studytouch_boards b WHERE b.firmware_version IS NOT NULL',
-        };
-        return array_column(db()->all($sql . ' ORDER BY v'), 'v');
+        return array_column(db()->all(
+            'SELECT DISTINCT b.firmware_version AS v FROM studytouch_boards b WHERE b.firmware_version IS NOT NULL ORDER BY v',
+        ), 'v');
     }
 
     /**
-     * @param array{room_id:int, model:?string, serial_number:?string, firmware_version:?string, status:string} $data
+     * Boards are known by their room, so no serial number is kept.
+     *
+     * @param array{room_id:int, model:string, firmware_version:?string, status:string} $data
      */
     public function create(StudyTouchCategory $category, array $data, ?int $userId): int
     {
         return db()->transaction(function () use ($category, $data, $userId): int {
             $id = (new DeviceService())->create($category, [
-                'serial_number' => $data['serial_number'],
+                'serial_number' => null,
                 'model' => $data['model'],
                 'status' => $data['status'],
             ], $userId);
@@ -99,14 +95,14 @@ final class StudyTouchRepository
      * Saves changes; a new firmware version is logged in the notes.
      *
      * @param array<string, mixed> $board the current row (from find())
-     * @param array{room_id:int, model:?string, serial_number:?string, firmware_version:?string} $data
+     * @param array{room_id:int, model:string, firmware_version:?string} $data
      */
     public function update(array $board, array $data, ?int $userId): void
     {
         db()->transaction(function () use ($board, $data, $userId): void {
             $service = new DeviceService();
             $service->update((int) $board['id'], [
-                'serial_number' => $data['serial_number'],
+                'serial_number' => $board['serial_number'],
                 'model' => $data['model'],
             ], $userId);
             db()->update('studytouch_boards', [

@@ -17,7 +17,7 @@ $return = request_uri();
     <?= partial('partials/empty-state', [
         'icon' => 'presentation',
         'title' => 'No boards yet',
-        'text' => 'Add the StudyTouch boards one by one: room, model, serial number and firmware. Start by adding the rooms they are in.',
+        'text' => 'Add the StudyTouch boards one by one: room, model and firmware.',
         'actionHref' => '/studytouch/new',
         'actionLabel' => 'Add the first board',
     ]) ?>
@@ -27,7 +27,7 @@ $return = request_uri();
     <div class="empty-state">
       <?= icon('search', 'icon--xl') ?>
       <p class="empty-state__title">No boards match</p>
-      <p class="empty-state__text">Try another room or status, or check the spelling in the search.</p>
+      <p class="empty-state__text">Try another status, or check the spelling in the search.</p>
       <div class="empty-state__actions"><a class="btn btn--secondary" href="/studytouch" data-clear-filters>Clear filters</a></div>
     </div>
   </section>
@@ -47,7 +47,6 @@ $return = request_uri();
         <tr>
           <th scope="col">Room</th>
           <th scope="col">Model</th>
-          <th scope="col">Serial number</th>
           <th scope="col">Firmware</th>
           <th scope="col">Status</th>
           <th scope="col">Last updated</th>
@@ -58,7 +57,6 @@ $return = request_uri();
           <tr class="<?= $problem ? 'is-problem' : '' ?>" data-device-row="<?= (int) $board['id'] ?>">
             <th scope="row"><a class="data-table__link" href="/studytouch/<?= (int) $board['id'] ?>"><?= e($board['room_name']) ?></a></th>
             <td><?= e($board['model'] ?? '–') ?></td>
-            <td class="num"><?= e($board['serial_number'] ?? '–') ?></td>
             <td class="num"><?= e($board['firmware_version'] ?? '–') ?></td>
             <td><?= partial('partials/status-toggle', ['category' => $category, 'device' => $board, 'title' => $board['room_name'], 'return' => $return]) ?></td>
             <td class="data-table__muted">
@@ -76,7 +74,7 @@ $return = request_uri();
       <li class="device-card<?= $problem ? ' is-problem' : '' ?>" data-device-row="<?= (int) $board['id'] ?>">
         <a class="device-card__main" href="/studytouch/<?= (int) $board['id'] ?>">
           <span class="device-card__title"><?= e($board['room_name']) ?></span>
-          <span class="device-card__meta"><?= e(implode(' · ', array_filter([$board['model'], $board['serial_number']]))) ?: 'No model or serial yet' ?></span>
+          <span class="device-card__meta"><?= e($board['model'] ?? 'No model yet') ?></span>
           <span class="device-card__meta">
             <?= $board['firmware_version'] ? 'Firmware ' . e($board['firmware_version']) . ' · ' : '' ?>Updated <?= e(time_ago($board['updated_at'])) ?>
           </span>

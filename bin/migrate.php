@@ -46,7 +46,8 @@ foreach ($pending as $version) {
 }
 
 if (in_array('--seed', $args, true)) {
-    if ((int) db()->value('SELECT COUNT(*) FROM devices') === 0) {
+    // StudyTouch boards come from a migration (real data), so they don't count.
+    if ((int) db()->value("SELECT COUNT(*) FROM devices WHERE category <> 'studytouch'") === 0) {
         echo 'Loading sample data ... ';
         $runFile(BASE_PATH . '/database/seeds/sample_data.sql');
         echo "done\n";

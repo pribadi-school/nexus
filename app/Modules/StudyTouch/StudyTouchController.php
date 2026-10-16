@@ -12,7 +12,6 @@ use App\Core\Session;
 use App\Core\Validator;
 use App\Core\View;
 use App\Devices\DeviceService;
-use App\Devices\DeviceServiceError;
 use App\Devices\LookupRepository;
 use App\Devices\NoteRepository;
 use App\Devices\Status;
@@ -22,7 +21,6 @@ final class StudyTouchController
     private const LABELS = [
         'room_id' => 'Room',
         'model' => 'Model',
-        'serial_number' => 'Serial number',
         'firmware_version' => 'Firmware version',
         'status' => 'Status',
     ];
@@ -36,13 +34,11 @@ final class StudyTouchController
         $this->boards = new StudyTouchRepository();
     }
 
-    /** GET /studytouch?status=&room=&q= (fetch(): just the results, as JSON) */
+    /** GET /studytouch?status=&q= (fetch(): just the results, as JSON) */
     public function index(Request $request): Response
     {
-        $room = $request->query('room');
         $filters = [
             'status' => in_array($request->query('status'), Status::ALL, true) ? $request->query('status') : null,
-            'room' => $room !== null && ctype_digit($room) ? (int) $room : null,
             'q' => $request->query('q') !== null ? mb_substr((string) $request->query('q'), 0, 100) : null,
         ];
         $data = [
@@ -57,7 +53,6 @@ final class StudyTouchController
             return Response::json(['html' => View::partial('StudyTouch::_results', $data)]);
         }
 
-        $data['rooms'] = $this->rooms()->options();
         return Response::html(View::render('StudyTouch::index', $data, 'layouts/app', 'StudyTouch'));
     }
 
@@ -82,8 +77,7 @@ final class StudyTouchController
         return $this->form(null, [
             'room_id' => $room !== null && ctype_digit($room) ? (int) $room : null,
             'model' => null,
-            'serial_number' => null,
-            'firmware_version' => null,
+            'firmware_version' => StudyTouchCategory::CURRENT_FIRMWARE,
             'status' => Status::OK,
         ], []);
     }
@@ -97,11 +91,7 @@ final class StudyTouchController
             return $this->form(null, $data, $v->errors());
         }
 
-        try {
-            $id = $this->boards->create($this->category, $data, Auth::id());
-        } catch (DeviceServiceError $e) {
-            return $this->form(null, $data, [$e->field => $this->serialTakenMessage()]);
-        }
+        $id = $this->boards->create($this->category, $data, Auth::id());
 
         Session::flash('success', 'Board added to ' . $this->category->title($id) . '.');
         return Response::redirect($this->category->detailPath($id));
@@ -124,11 +114,7 @@ final class StudyTouchController
             return $this->form($board, $data, $v->errors());
         }
 
-        try {
-            $this->boards->update($board, $data, Auth::id());
-        } catch (DeviceServiceError $e) {
-            return $this->form($board, $data, [$e->field => $this->serialTakenMessage()]);
-        }
+        $this->boards->update($board, $data, Auth::id());
 
         Session::flash('success', 'Changes saved.');
         return Response::redirect($this->category->detailPath((int) $board['id']));
@@ -148,8 +134,7 @@ final class StudyTouchController
     {
         return [
             'room_id' => ['required', 'int', 'exists:rooms'],
-            'model' => ['max:100'],
-            'serial_number' => ['max:64'],
+            'model' => ['required', 'in:' . implode(',', StudyTouchCategory::MODELS)],
             'firmware_version' => ['max:40'],
         ];
     }
@@ -168,8 +153,8 @@ final class StudyTouchController
             'values' => $values,
             'errors' => $errors,
             'rooms' => $this->rooms()->options(),
-            'models' => $this->boards->distinct('model'),
-            'firmwares' => $this->boards->distinct('firmware_version'),
+            'models' => StudyTouchCategory::MODELS,
+            'firmwares' => $this->boards->firmwareVersions(),
         ], 'layouts/app', $title), $errors === [] ? 200 : 422);
     }
 
@@ -183,10 +168,5 @@ final class StudyTouchController
     private function rooms(): LookupRepository
     {
         return new LookupRepository($this->category->lists()[0]);
-    }
-
-    private function serialTakenMessage(): string
-    {
-        return 'Another board already has this serial number.';
     }
 }

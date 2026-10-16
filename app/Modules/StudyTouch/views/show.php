@@ -15,7 +15,7 @@ $problem = $board['status'] === Status::PROBLEM;
 <header class="page-header">
   <div>
     <h1 class="page-title"><?= e($board['room_name']) ?></h1>
-    <p class="page-subtitle"><?= e(implode(' · ', array_filter(['StudyTouch board', $board['model']]))) ?></p>
+    <p class="page-subtitle"><?= e($board['model'] === 'Merah Putih' ? 'Merah Putih board' : 'StudyTouch board') ?></p>
   </div>
   <div class="page-actions">
     <a class="btn btn--secondary" href="/studytouch/<?= $id ?>/edit"><?= icon('pencil', 'icon--sm') ?>Edit</a>
@@ -51,7 +51,6 @@ $problem = $board['status'] === Status::PROBLEM;
       <dl class="details">
         <div><dt>Room</dt><dd><?= e($board['room_name']) ?></dd></div>
         <div><dt>Model</dt><dd><?= e($board['model'] ?? '–') ?></dd></div>
-        <div><dt>Serial number</dt><dd class="num"><?= e($board['serial_number'] ?? '–') ?></dd></div>
         <div><dt>Firmware</dt><dd class="num"><?= e($board['firmware_version'] ?? '–') ?></dd></div>
         <div>
           <dt>Last updated</dt>

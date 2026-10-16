@@ -1,7 +1,8 @@
 -- Nexus: sample data, so the UI has something to show.
 --
 -- For local development and a first look on the server. Every person and
--- device here is made up. Import AFTER the migrations. Remove it all again
+-- device here is made up. StudyTouch boards are not: they are the school's
+-- real ones, added by migration 002. Import AFTER the migrations. Remove it all again
 -- with database/seeds/clear_sample_data.sql before entering real data.
 -- Times are relative to the moment you import, so the feed looks recent.
 
@@ -15,53 +16,8 @@ SET @rina = (SELECT id FROM users WHERE name = 'Rina Wulandari');
 SET @budi = (SELECT id FROM users WHERE name = 'Budi Santoso');
 
 -- Lists ------------------------------------------------------------------------
-INSERT INTO rooms (name, sort_order) VALUES
-  ('Classroom 7A', 10), ('Classroom 7B', 20), ('Classroom 8A', 30),
-  ('Classroom 9A', 40), ('Science Lab', 50), ('Library', 60);
-
 INSERT INTO cctv_areas (name, sort_order) VALUES
   ('Lobby', 10), ('Parking', 20), ('Floor 1', 30), ('Floor 2', 40), ('Floor 3', 50);
-
--- StudyTouch boards ----------------------------------------------------------------
-INSERT INTO devices (category, serial_number, model, status, status_changed_at, last_checked_at, created_by, updated_by, created_at, updated_at)
-VALUES ('studytouch', 'ST75-2304-0012', 'StudyTouch ST-75 Pro', 'ok', UTC_TIMESTAMP() - INTERVAL 60 DAY, UTC_TIMESTAMP() - INTERVAL 3 DAY, @rina, @rina, UTC_TIMESTAMP() - INTERVAL 60 DAY, UTC_TIMESTAMP() - INTERVAL 3 DAY);
-SET @d = LAST_INSERT_ID();
-INSERT INTO studytouch_boards (device_id, room_id, firmware_version) VALUES (@d, (SELECT id FROM rooms WHERE name = 'Classroom 7A'), '3.2.1');
-INSERT INTO device_notes (device_id, user_id, kind, body, meta, created_at) VALUES
-  (@d, @rina, 'firmware', 'Updated firmware from 3.1.4 to 3.2.1. Touch calibration redone afterwards.', '{"from":"3.1.4","to":"3.2.1"}', UTC_TIMESTAMP() - INTERVAL 3 DAY);
-
-INSERT INTO devices (category, serial_number, model, status, status_changed_at, last_checked_at, created_by, updated_by, created_at, updated_at)
-VALUES ('studytouch', 'ST75-2304-0013', 'StudyTouch ST-75 Pro', 'problem', UTC_TIMESTAMP() - INTERVAL 2 HOUR, UTC_TIMESTAMP() - INTERVAL 2 HOUR, @rina, @budi, UTC_TIMESTAMP() - INTERVAL 60 DAY, UTC_TIMESTAMP() - INTERVAL 2 HOUR);
-SET @d = LAST_INSERT_ID();
-INSERT INTO studytouch_boards (device_id, room_id, firmware_version) VALUES (@d, (SELECT id FROM rooms WHERE name = 'Classroom 7B'), '3.1.4');
-INSERT INTO device_notes (device_id, user_id, kind, body, meta, created_at) VALUES
-  (@d, @budi, 'problem', 'Touch does not respond on the left third of the screen. Teacher is using the laptop + projector for now.', NULL, UTC_TIMESTAMP() - INTERVAL 2 HOUR - INTERVAL 1 MINUTE),
-  (@d, @budi, 'status', 'Status changed to Has problem', '{"from":"ok","to":"problem"}', UTC_TIMESTAMP() - INTERVAL 2 HOUR);
-
-INSERT INTO devices (category, serial_number, model, status, status_changed_at, last_checked_at, created_by, updated_by, created_at, updated_at)
-VALUES ('studytouch', 'ST86-2310-0101', 'StudyTouch ST-86 Pro', 'ok', UTC_TIMESTAMP() - INTERVAL 1 DAY, UTC_TIMESTAMP() - INTERVAL 1 DAY, @rina, @rina, UTC_TIMESTAMP() - INTERVAL 45 DAY, UTC_TIMESTAMP() - INTERVAL 1 DAY);
-SET @d = LAST_INSERT_ID();
-INSERT INTO studytouch_boards (device_id, room_id, firmware_version) VALUES (@d, (SELECT id FROM rooms WHERE name = 'Science Lab'), '3.2.1');
-INSERT INTO device_notes (device_id, user_id, kind, body, meta, created_at) VALUES
-  (@d, @rina, 'problem', 'No HDMI signal from the teacher desk port.', NULL, UTC_TIMESTAMP() - INTERVAL 4 DAY),
-  (@d, @rina, 'status', 'Status changed to Has problem', '{"from":"ok","to":"problem"}', UTC_TIMESTAMP() - INTERVAL 4 DAY),
-  (@d, @rina, 'fix', 'Replaced the HDMI cable under the desk. Signal is back.', NULL, UTC_TIMESTAMP() - INTERVAL 1 DAY - INTERVAL 1 MINUTE),
-  (@d, @rina, 'status', 'Status changed to Running well', '{"from":"problem","to":"ok"}', UTC_TIMESTAMP() - INTERVAL 1 DAY);
-
-INSERT INTO devices (category, serial_number, model, status, status_changed_at, last_checked_at, created_by, updated_by, created_at, updated_at)
-VALUES ('studytouch', 'ST75-2304-0014', 'StudyTouch ST-75 Pro', 'ok', UTC_TIMESTAMP() - INTERVAL 60 DAY, UTC_TIMESTAMP() - INTERVAL 9 DAY, @rina, @rina, UTC_TIMESTAMP() - INTERVAL 60 DAY, UTC_TIMESTAMP() - INTERVAL 9 DAY);
-SET @d = LAST_INSERT_ID();
-INSERT INTO studytouch_boards (device_id, room_id, firmware_version) VALUES (@d, (SELECT id FROM rooms WHERE name = 'Classroom 8A'), '3.2.1');
-
-INSERT INTO devices (category, serial_number, model, status, status_changed_at, last_checked_at, created_by, updated_by, created_at, updated_at)
-VALUES ('studytouch', 'ST75-2304-0015', 'StudyTouch ST-75 Pro', 'ok', UTC_TIMESTAMP() - INTERVAL 60 DAY, UTC_TIMESTAMP() - INTERVAL 9 DAY, @rina, @rina, UTC_TIMESTAMP() - INTERVAL 60 DAY, UTC_TIMESTAMP() - INTERVAL 9 DAY);
-SET @d = LAST_INSERT_ID();
-INSERT INTO studytouch_boards (device_id, room_id, firmware_version) VALUES (@d, (SELECT id FROM rooms WHERE name = 'Classroom 9A'), '3.2.1');
-
-INSERT INTO devices (category, serial_number, model, status, status_changed_at, last_checked_at, created_by, updated_by, created_at, updated_at)
-VALUES ('studytouch', 'ST86-2310-0102', 'StudyTouch ST-86 Pro', 'ok', UTC_TIMESTAMP() - INTERVAL 45 DAY, UTC_TIMESTAMP() - INTERVAL 20 DAY, @rina, @rina, UTC_TIMESTAMP() - INTERVAL 45 DAY, UTC_TIMESTAMP() - INTERVAL 20 DAY);
-SET @d = LAST_INSERT_ID();
-INSERT INTO studytouch_boards (device_id, room_id, firmware_version) VALUES (@d, (SELECT id FROM rooms WHERE name = 'Library'), '3.1.4');
 
 -- CCTV cameras ------------------------------------------------------------------
 INSERT INTO devices (category, serial_number, model, status, status_changed_at, last_checked_at, created_by, updated_by, created_at, updated_at)

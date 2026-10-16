@@ -3,9 +3,8 @@
  * @var \App\Modules\StudyTouch\StudyTouchCategory $category
  * @var list<array<string, mixed>> $boards
  * @var array{total:int, ok:int, problem:int} $counts
- * @var array{status:?string, room:?int, q:?string} $filters
+ * @var array{status:?string, q:?string} $filters
  * @var bool $filtered
- * @var list<array{id:int, name:string}> $rooms
  */
 ?>
 <header class="page-header">
@@ -29,7 +28,7 @@
     <?= icon('search', 'icon--sm') ?>
     <label class="visually-hidden" for="filter-q">Search boards</label>
     <input class="input" id="filter-q" type="search" name="q" value="<?= e($filters['q'] ?? '') ?>"
-           placeholder="Search room, model, serial, firmware" autocomplete="off" enterkeyhint="search">
+           placeholder="Search room, model, firmware" autocomplete="off" enterkeyhint="search">
   </div>
   <div class="filters__field">
     <label class="visually-hidden" for="filter-status">Status</label>
@@ -37,15 +36,6 @@
       <option value="">All statuses</option>
       <option value="ok"<?= $filters['status'] === 'ok' ? ' selected' : '' ?>>Running well (<?= $counts['ok'] ?>)</option>
       <option value="problem"<?= $filters['status'] === 'problem' ? ' selected' : '' ?>>Has problem (<?= $counts['problem'] ?>)</option>
-    </select>
-  </div>
-  <div class="filters__field">
-    <label class="visually-hidden" for="filter-room">Room</label>
-    <select class="select" id="filter-room" name="room">
-      <option value="">All rooms</option>
-      <?php foreach ($rooms as $room): ?>
-        <option value="<?= (int) $room['id'] ?>"<?= $filters['room'] === (int) $room['id'] ? ' selected' : '' ?>><?= e($room['name']) ?></option>
-      <?php endforeach ?>
     </select>
   </div>
   <button type="submit" class="btn btn--secondary filters__apply">Apply</button>

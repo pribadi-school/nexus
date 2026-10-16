@@ -7,7 +7,7 @@
  * @var array<string, mixed> $values
  * @var array<string, string> $errors
  * @var list<array{id:int, name:string}> $rooms
- * @var list<string> $models
+ * @var list<string> $models  StudyTouchCategory::MODELS
  * @var list<string> $firmwares
  */
 use App\Devices\Status;
@@ -59,28 +59,23 @@ $field = static fn (string $name): string => $errors[$name] ?? '';
     </div>
 
     <div class="field<?= $field('model') ? ' has-error' : '' ?>">
-      <label class="field__label" for="model">Model</label>
-      <input class="input" id="model" name="model" type="text" maxlength="100" list="model-options" autocomplete="off"
-             value="<?= e($values['model'] ?? '') ?>" placeholder="e.g. StudyTouch ST-75 Pro"<?= $field('model') ? ' aria-invalid="true" aria-describedby="model-error"' : '' ?>>
-      <datalist id="model-options"><?php foreach ($models as $m): ?><option value="<?= e($m) ?>"><?php endforeach ?></datalist>
+      <label class="field__label" for="model">Model <span class="field__required">required</span></label>
+      <select class="select" id="model" name="model" required<?= $field('model') ? ' aria-invalid="true" aria-describedby="model-error"' : '' ?>>
+        <option value="">Choose a model</option>
+        <?php foreach ($models as $m): ?>
+          <option value="<?= e($m) ?>"<?= ($values['model'] ?? null) === $m ? ' selected' : '' ?>><?= e($m) ?></option>
+        <?php endforeach ?>
+      </select>
       <?php if ($field('model')): ?><p class="field__error" id="model-error"><?= e($field('model')) ?></p><?php endif ?>
-    </div>
-
-    <div class="field<?= $field('serial_number') ? ' has-error' : '' ?>">
-      <label class="field__label" for="serial_number">Serial number</label>
-      <input class="input num" id="serial_number" name="serial_number" type="text" maxlength="64" autocomplete="off"
-             autocapitalize="characters" spellcheck="false" value="<?= e($values['serial_number'] ?? '') ?>"<?= $field('serial_number') ? ' aria-invalid="true" aria-describedby="serial_number-error"' : '' ?>>
-      <?php if ($field('serial_number')): ?><p class="field__error" id="serial_number-error"><?= e($field('serial_number')) ?></p><?php endif ?>
-      <p class="field__hint">On the sticker at the back of the board.</p>
     </div>
 
     <div class="field<?= $field('firmware_version') ? ' has-error' : '' ?>">
       <label class="field__label" for="firmware_version">Firmware version</label>
       <input class="input num" id="firmware_version" name="firmware_version" type="text" maxlength="40" list="firmware-options"
-             autocomplete="off" spellcheck="false" value="<?= e($values['firmware_version'] ?? '') ?>" placeholder="e.g. 3.2.1"<?= $field('firmware_version') ? ' aria-invalid="true" aria-describedby="firmware_version-error"' : '' ?>>
+             autocomplete="off" spellcheck="false" value="<?= e($values['firmware_version'] ?? '') ?>" placeholder="e.g. <?= e(\App\Modules\StudyTouch\StudyTouchCategory::CURRENT_FIRMWARE) ?>"<?= $field('firmware_version') ? ' aria-invalid="true" aria-describedby="firmware_version-error"' : '' ?>>
       <datalist id="firmware-options"><?php foreach ($firmwares as $f): ?><option value="<?= e($f) ?>"><?php endforeach ?></datalist>
       <?php if ($field('firmware_version')): ?><p class="field__error" id="firmware_version-error"><?= e($field('firmware_version')) ?></p><?php endif ?>
-      <?php if (!$adding): ?><p class="field__hint">A new version is recorded in the notes automatically.</p><?php endif ?>
+      <p class="field__hint">All boards run <?= e(\App\Modules\StudyTouch\StudyTouchCategory::CURRENT_FIRMWARE) ?> (29 September 2025).<?= $adding ? '' : ' A new version is recorded in the notes automatically.' ?></p>
     </div>
 
     <?php if ($adding): ?>

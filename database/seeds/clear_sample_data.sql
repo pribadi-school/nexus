@@ -1,16 +1,15 @@
 -- Removes everything database/seeds/sample_data.sql added, so you can start
 -- entering real data. Run it in phpMyAdmin (SQL tab) BEFORE adding real
--- devices: it deletes every device, note, room and CCTV area, and the two
--- sample people. The class list stays.
+-- cameras or Chromebooks: it deletes every CCTV camera and Chromebook with
+-- their notes, the CCTV areas, and the two sample people. The StudyTouch
+-- boards, rooms and classes stay (they are the school's real ones).
 
 SET NAMES utf8mb4;
 
-DELETE FROM device_notes;
+DELETE FROM device_notes WHERE device_id IN (SELECT id FROM devices WHERE category <> 'studytouch');
 DELETE FROM chromebook_assignments;
 DELETE FROM chromebooks;
 DELETE FROM cctv_cameras;
-DELETE FROM studytouch_boards;
-DELETE FROM devices;
-DELETE FROM rooms;
+DELETE FROM devices WHERE category <> 'studytouch';
 DELETE FROM cctv_areas;
 DELETE FROM users WHERE name IN ('Rina Wulandari', 'Budi Santoso');

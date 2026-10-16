@@ -12,6 +12,12 @@ use App\Devices\NoteKind;
 /** Interactive boards in classrooms and other rooms. Detail table: studytouch_boards. */
 final class StudyTouchCategory extends Category
 {
+    /** The two kinds of board the school has; the exact type number is not tracked. */
+    public const MODELS = ['StudyTouch', 'Merah Putih'];
+
+    /** Every board runs this version (released 29 September 2025); new boards start with it. */
+    public const CURRENT_FIRMWARE = 'v2.0.290925';
+
     public function key(): string
     {
         return 'studytouch';
@@ -87,7 +93,7 @@ final class StudyTouchCategory extends Category
         foreach ($rows as $row) {
             $out[(int) $row['id']] = [
                 'title' => $row['room'],
-                'context' => 'StudyTouch' . ($row['model'] ? ' · ' . $row['model'] : ''),
+                'context' => 'StudyTouch' . ($row['model'] && $row['model'] !== 'StudyTouch' ? ' · ' . $row['model'] : ''),
             ];
         }
         return $out;
