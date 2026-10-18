@@ -40,10 +40,23 @@ function url(string $path, array $query = []): string
     return $path . ($query ? '?' . http_build_query($query) : '');
 }
 
-/** URL of a file in public/assets, with a version so browsers re-fetch it after a change. */
+/**
+ * URL of a file in public/assets, with a version so browsers re-fetch it after
+ * a change. The version comes from the copy the web server actually serves:
+ * on cPanel that is the published copy in public_html (bin/publish-cpanel.php),
+ * not the repository. Versioning by the repository file once let a browser
+ * cache old CSS under a new version between `git pull` and the publish step
+ * (assets are cached for a year), so pages kept the old styles.
+ */
 function asset(string $path): string
 {
-    $file = BASE_PATH . '/public/assets/' . $path;
+    static $servedRoot = null;
+    $servedRoot ??= dirname((string) ($_SERVER['SCRIPT_FILENAME'] ?? '')) . '/assets/';
+
+    $file = $servedRoot . $path;
+    if (!is_file($file)) {
+        $file = BASE_PATH . '/public/assets/' . $path;
+    }
     $version = is_file($file) ? (string) filemtime($file) : '0';
     return '/assets/' . $path . '?v=' . $version;
 }
