@@ -85,9 +85,7 @@ if (editor) {
       add(row);
     } else if (form.matches('[data-item-remove]')) {
       event.preventDefault();
-      const name = row.dataset.contentName;
-      animateChange(() => row.remove());
-      update(`Removed ${name}. Save changes to update this TV.`);
+      removeRow(row);
     } else if (form.matches('[data-item-move]')) {
       event.preventDefault();
       const items = rows();
@@ -115,6 +113,17 @@ if (editor) {
     const target = document.elementFromPoint(x, y);
     return target && (list.contains(target) || empty.contains(target));
   };
+  // Dropping a playlist item back on the library removes it from the playlist.
+  const removeArea = library.closest('[data-library-panel]') ?? library;
+  const inRemoveArea = (x, y) => {
+    const target = document.elementFromPoint(x, y);
+    return !!target && removeArea.contains(target);
+  };
+  const removeRow = row => {
+    const name = row.dataset.contentName;
+    animateChange(() => row.remove());
+    update(`Removed ${name}. Save changes to update this TV.`);
+  };
   const stopDrag = () => {
     if (!dragging) return;
     dragging.row.classList.remove('is-dragging');
@@ -123,20 +132,33 @@ if (editor) {
     dragging = null;
     animateChange(() => slot.remove());
     list.classList.remove('is-drop-active');
+    removeArea.classList.remove('is-drop-remove');
     document.body.classList.remove('is-signage-dragging');
   };
+  // The whole card drags, the thumbnail link included: a press that moves
+  // 6px drags, a plain click still opens the link. Only real controls
+  // (buttons, fields) keep their own behaviour.
+  let suppressClick = false;
   editor.addEventListener('pointerdown', event => {
     const row = event.target.closest('[data-editor-item]');
-    if (!row || event.pointerType !== 'mouse' || event.button !== 0 || saving || event.target.closest('a, button, input, select, textarea')) return;
+    if (!row || event.pointerType !== 'mouse' || event.button !== 0 || saving || event.target.closest('button, input, select, textarea')) return;
     event.preventDefault();
     dragging = {row, fromLibrary: library.contains(row), pointerId: event.pointerId, x: event.clientX, y: event.clientY, active: false};
-    row.setPointerCapture(event.pointerId);
   });
+  // After a real drag, the release must not also follow the thumbnail link.
+  editor.addEventListener('click', event => {
+    if (!suppressClick) return;
+    suppressClick = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, true);
   window.addEventListener('pointermove', event => {
     if (!dragging || event.pointerId !== dragging.pointerId) return;
     if (!dragging.active) {
       if (Math.hypot(event.clientX - dragging.x, event.clientY - dragging.y) < 6) return;
       dragging.active = true;
+      // Capture only once it is a drag, so a plain click reaches the link.
+      dragging.row.setPointerCapture(event.pointerId);
       dragging.ghost = dragging.row.cloneNode(true);
       dragging.ghost.classList.add('signage-drag-ghost');
       dragging.ghost.setAttribute('aria-hidden', 'true');
@@ -155,17 +177,28 @@ if (editor) {
       const before = candidates.find(row => event.clientY < row.getBoundingClientRect().top + row.getBoundingClientRect().height / 2) ?? null;
       if (slot.parentElement !== list || slot.nextElementSibling !== before) animateChange(() => list.insertBefore(slot, before));
     } else slot.remove();
+    removeArea.classList.toggle('is-drop-remove', !dragging.fromLibrary && inRemoveArea(event.clientX, event.clientY));
     if (event.clientY > innerHeight - 40) window.scrollBy(0, 16);
     else if (event.clientY < 60) window.scrollBy(0, -16);
   });
   window.addEventListener('pointerup', event => {
     if (!dragging || event.pointerId !== dragging.pointerId) return;
+    if (dragging.active) {
+      suppressClick = true;
+      // No click follows if the release lands outside the editor.
+      setTimeout(() => { suppressClick = false; }, 0);
+    }
     if (dragging.active && inDropArea(event.clientX, event.clientY)) {
       if (dragging.fromLibrary) add(dragging.row, slot.parentElement === list ? slot : null);
       else {
         animateChange(() => list.insertBefore(dragging.row, slot.parentElement === list ? slot : null));
         update();
       }
+    } else if (dragging.active && !dragging.fromLibrary && inRemoveArea(event.clientX, event.clientY)) {
+      const row = dragging.row;
+      stopDrag();
+      removeRow(row);
+      return;
     }
     stopDrag();
   });
