@@ -1,6 +1,6 @@
 <?php
 /**
- * One page of one academic year's Chromebooks for the current filters. Also
+ * One page of Chromebooks (every year, or one) for the current filters. Also
  * returned on its own to filters.js when filters change.
  *
  * @var \App\Modules\Chromebooks\ChromebookCategory $category
@@ -9,7 +9,7 @@
  * @var int $page
  * @var int $pages
  * @var array{total:int, ok:int, problem:int, unassigned:int} $counts
- * @var array{year:int, status:?string, q:?string} $filters
+ * @var array{year:?int, status:?string, q:?string} $filters  year null = every year
  * @var bool $filtered
  */
 use App\Devices\Status;
@@ -23,7 +23,8 @@ $query = array_filter([
 ], static fn ($v) => $v !== null);
 $pageUrl = static fn (int $p): string => '/chromebooks?' . http_build_query($query + ($p > 1 ? ['page' => $p] : []));
 $exportUrl = '/chromebooks/export?' . http_build_query($query);
-$clearUrl = '/chromebooks?year=' . $year;
+$clearUrl = '/chromebooks';
+$importYear = $year ?? categories()->get('chromebook')->years()[0];
 $first = ($page - 1) * ChromebookRepository::PER_PAGE + 1;
 $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
 ?>
@@ -31,10 +32,10 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
   <section class="card">
     <?= partial('partials/empty-state', [
         'icon' => 'laptop',
-        'title' => "No Chromebooks for $year yet",
-        'text' => "Import the $year list (Excel or CSV, with asset ID, serial number, student and email), or add them one by one.",
-        'actionHref' => "/chromebooks/import?year=$year",
-        'actionLabel' => "Import the $year list",
+        'title' => $year !== null ? "No Chromebooks for $year yet" : 'No Chromebooks yet',
+        'text' => "Import a year's list (Excel or CSV, with asset ID, serial number, student and email), or add them one by one.",
+        'actionHref' => "/chromebooks/import?year=$importYear",
+        'actionLabel' => "Import the $importYear list",
     ]) ?>
   </section>
 <?php elseif ($chromebooks === []): ?>
@@ -42,7 +43,7 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
     <div class="empty-state">
       <?= icon('search', 'icon--xl') ?>
       <p class="empty-state__title">No Chromebooks match</p>
-      <p class="empty-state__text">Try another status, or check the asset ID, serial or student name.</p>
+      <p class="empty-state__text">Try another year or status, or check the asset ID, serial or student name.</p>
       <div class="empty-state__actions"><a class="btn btn--secondary" href="<?= e($clearUrl) ?>" data-clear-filters>Clear filters</a></div>
     </div>
   </section>
@@ -54,7 +55,7 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
       <?php elseif ($filtered): ?>
         Showing <?= $matching ?> of <?= e($category->count($counts['total'])) ?>
       <?php else: ?>
-        <?= e($category->count($counts['total'])) ?>, sorted by asset ID
+        <?= e($category->count($counts['total'])) ?>, newest year first
       <?php endif ?>
       <?php if ($filtered): ?> · <a href="<?= e($clearUrl) ?>" data-clear-filters>Clear filters</a><?php endif ?>
     </p>

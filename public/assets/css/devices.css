@@ -504,32 +504,5 @@
 /* The preview is read on any screen size, so it keeps the table on phones. */
 .table-card--always { display: block; }
 
-/* ------------------------------------------- year tabs (Chromebooks) --- */
-/* One tab per academic year batch; plain links, so they work without JS. */
-.year-tabs {
-  display: flex;
-  gap: var(--space-1);
-  overflow-x: auto;
-  margin-bottom: var(--space-4);
-  /* The base line is drawn inside the bar, so the active tab's 2px line can
-     sit on it without the bar overflowing (a stray scrollbar otherwise). */
-  box-shadow: inset 0 -1px 0 var(--color-border);
-}
-.year-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--touch-target);
-  padding: 0 var(--space-4);
-  border-bottom: 2px solid transparent;
-  color: var(--color-muted-foreground);
-  font-weight: 600;
-  white-space: nowrap;
-  transition: color var(--motion-ui) var(--ease-standard), border-color var(--motion-ui) var(--ease-standard);
-}
-.year-tab:hover { color: var(--color-foreground); text-decoration: none; }
-.year-tab[aria-current="page"] { color: var(--color-action); border-bottom-color: var(--color-action); }
-.year-tab__count { font-size: var(--fs-caption); font-weight: 500; color: var(--color-muted-foreground); }
-.year-tab__problem { color: var(--color-problem); }
 .data-table__sub { display: block; font-size: var(--fs-caption); font-weight: 400; color: var(--color-muted-foreground); }
 .data-table .nowrap { white-space: nowrap; }

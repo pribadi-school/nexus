@@ -37,11 +37,11 @@ final class ChromebookRepository
                             LEFT JOIN users uc ON uc.id = d.created_by
                             WHERE d.category = 'chromebook' AND d.deleted_at IS NULL";
 
-    /** By asset ID (2026-9 before 2026-10), then Chromebooks without one. */
-    private const ORDER = ' ORDER BY c.asset_id IS NULL, CHAR_LENGTH(c.asset_id), c.asset_id, c.student_name, d.id';
+    /** Newest academic year first, then by asset ID (2026-9 before 2026-10), then Chromebooks without one. */
+    private const ORDER = ' ORDER BY c.academic_year DESC, c.asset_id IS NULL, CHAR_LENGTH(c.asset_id), c.asset_id, c.student_name, d.id';
 
     /**
-     * @param array{year:int, status:?string, q:?string} $filters
+     * @param array{year:?int, status:?string, q:?string} $filters  year null = every year
      * @return array{rows:list<array<string, mixed>>, total:int}
      */
     public function search(array $filters, int $page = 1, ?int $perPage = self::PER_PAGE): array
@@ -62,8 +62,12 @@ final class ChromebookRepository
     /** @return array{0:string, 1:list<mixed>} */
     private function where(array $filters): array
     {
-        $sql = ' AND c.academic_year = ?';
-        $params = [$filters['year']];
+        $sql = '';
+        $params = [];
+        if ($filters['year'] !== null) {
+            $sql .= ' AND c.academic_year = ?';
+            $params[] = $filters['year'];
+        }
         if ($filters['status'] !== null && Status::isValid($filters['status'])) {
             $sql .= ' AND d.status = ?';
             $params[] = $filters['status'];
@@ -94,22 +98,22 @@ final class ChromebookRepository
         return db()->one(self::SELECT . ' AND c.asset_id = ?', [$assetId]);
     }
 
-    /** @return array{total:int, ok:int, problem:int, unassigned:int} for one academic year */
-    public function counts(int $year): array
+    /** @return array{total:int, ok:int, problem:int, unassigned:int} for one academic year, or every year when null */
+    public function counts(?int $year): array
     {
         $row = db()->one(
             "SELECT COUNT(*) AS total, COALESCE(SUM(d.status = 'problem'), 0) AS problem,
                     COALESCE(SUM(c.student_name IS NULL), 0) AS unassigned
              FROM devices d JOIN chromebooks c ON c.device_id = d.id
-             WHERE d.category = 'chromebook' AND d.deleted_at IS NULL AND c.academic_year = ?",
-            [$year],
+             WHERE d.category = 'chromebook' AND d.deleted_at IS NULL" . ($year !== null ? ' AND c.academic_year = ?' : ''),
+            $year !== null ? [$year] : [],
         );
         $total = (int) ($row['total'] ?? 0);
         $problem = (int) ($row['problem'] ?? 0);
         return ['total' => $total, 'ok' => $total - $problem, 'problem' => $problem, 'unassigned' => (int) ($row['unassigned'] ?? 0)];
     }
 
-    /** @return array<int, array{total:int, problem:int}> per academic year, for the year tabs */
+    /** @return array<int, array{total:int, problem:int}> per academic year, for the year filter */
     public function yearCounts(): array
     {
         $out = [];

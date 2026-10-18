@@ -60,7 +60,7 @@ final class ChromebookController
             'pages' => $pages,
             'counts' => $this->chromebooks->counts($filters['year']),
             'filters' => $filters,
-            'filtered' => $filters['status'] !== null || $filters['q'] !== null,
+            'filtered' => $filters['year'] !== null || $filters['status'] !== null || $filters['q'] !== null,
         ];
 
         if ($request->isFetch()) {
@@ -69,7 +69,7 @@ final class ChromebookController
 
         $data['years'] = $this->category->years();
         $data['yearCounts'] = $this->chromebooks->yearCounts();
-        return Response::html(View::render('Chromebooks::index', $data, 'layouts/app', 'Chromebooks ' . $filters['year']));
+        return Response::html(View::render('Chromebooks::index', $data, 'layouts/app', 'Chromebooks' . ($filters['year'] !== null ? ' ' . $filters['year'] : '')));
     }
 
     /** GET /chromebooks/export?year=&status=&q= : the filtered list as CSV */
@@ -77,7 +77,7 @@ final class ChromebookController
     {
         $filters = $this->filters($request);
         $rows = $this->chromebooks->search($filters, 1, null)['rows'];
-        $name = 'chromebooks-' . $filters['year'] . '-' . (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Jakarta')))->format('Y-m-d') . '.csv';
+        $name = 'chromebooks-' . ($filters['year'] ?? 'all-years') . '-' . (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Jakarta')))->format('Y-m-d') . '.csv';
         return new Response(ChromebookCsv::export($rows, $this->category), 200, [
             'Content-Type' => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="' . $name . '"',
@@ -266,14 +266,20 @@ final class ChromebookController
         return Response::redirect($this->yearPath((int) $chromebook['academic_year']));
     }
 
-    /** @return array{year:int, status:?string, q:?string} */
+    /** @return array{year:?int, status:?string, q:?string}  year null = every year */
     private function filters(Request $request): array
     {
         return [
-            'year' => $this->year($request->query('year')),
+            'year' => $this->optionalYear($request->query('year')),
             'status' => in_array($request->query('status'), Status::ALL, true) ? $request->query('status') : null,
             'q' => $request->query('q') !== null ? mb_substr((string) $request->query('q'), 0, 100) : null,
         ];
+    }
+
+    /** A valid academic year from the request, or null for every year (the list filter). */
+    private function optionalYear(mixed $value): ?int
+    {
+        return is_string($value) && ctype_digit($value) && in_array((int) $value, $this->category->years(), true) ? (int) $value : null;
     }
 
     /** A valid academic year from the request, else the newest one. */

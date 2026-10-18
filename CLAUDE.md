@@ -38,9 +38,10 @@ completely separate from the school's WordPress site. UI language: English.
    (`chromebooks.academic_year`) and has an asset ID like `2026-05`
    (unique among non-deleted, checked in `ChromebookRepository`), a serial
    (optional; the 2026 list has none yet), a student and their school
-   email. No classes (dropped in migration 003). The list has a tab per
-   year from `ChromebookCategory::FIRST_YEAR` (2024) to now (`?year=`,
-   default newest), sorted by asset ID, 50 per page, search by asset ID,
+   email. No classes (dropped in migration 003). The list shows every
+   year together (newest year first, then asset ID), with a year filter
+   (`?year=`, years from `ChromebookCategory::FIRST_YEAR` = 2024 to now;
+   no year tabs, owner decision Oct 2026), 50 per page, search by asset ID,
    serial, student or email, status filter. Student + email are set on add,
    then through "Assigned to" on the detail page (`POST /chromebooks/{id}/assign`
    → `ChromebookRepository::assign`: a new student closes the open history
