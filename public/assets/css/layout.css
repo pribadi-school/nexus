@@ -167,8 +167,9 @@
 
 .sidebar__brand {
   display: flex;
-  justify-content: center; /* centred in the sidebar, not hugging the left edge */
-  padding: 0 var(--space-3) var(--space-5);
+  justify-content: center; /* near the middle, not hugging the left edge */
+  /* Extra right padding nudges it 12px left of exact centre (owner request). */
+  padding: 0 var(--space-6) var(--space-5) var(--space-3);
   border-bottom: 1px solid var(--color-border);
 }
 .sidebar__brand .lockup { font-size: 32px; }
