@@ -297,8 +297,8 @@ deployed yet.
   `favicon-32.png`, `/favicon.ico`; rebuild with `npm run build:assets`.
   Size table in nexus-app.md §6. Mockup: `B · Rise-html/` (not committed).
 - Wordmark: "nexus", always lowercase, Space Grotesk 700, letter-spacing
-  −0.04em, `#1F4E9F`. Lockup (`partials/lockup.php`) = mark at 1.4× the
-  wordmark size; `large => true` uses the full mark (login), otherwise the
+  −0.04em, `#1F4E9F`. Lockup (`partials/lockup.php`) = mark at 1.25× the
+  wordmark size, centred in the sidebar (wordmark 32px there); `large => true` uses the full mark (login), otherwise the
   48 variant. Every size keeps all five arms. No tagline on the login page.
 - Icons: Lucide, via `icon('name')` from `public/assets/icons/sprite.svg`.
   To add one, put its name in `ICONS` in `tools/build-assets.mjs` and rebuild.

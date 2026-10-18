@@ -140,7 +140,7 @@ Each size has its own drawing, and every one keeps all five arms (owner request)
 
 - App icons: `app-icon-512.png`, `app-icon-192.png`, `apple-touch-icon.png`
   (`app-icon.svg` at 74% on white), built by `npm run build:assets`.
-- Lockup: mark + wordmark, mark height ≈ 1.4× the wordmark's font size. The
+- Lockup: mark + wordmark, mark height ≈ 1.25× the wordmark's font size (centred in the sidebar). The
   owner wants all five arms at every size.
 - The only hex values outside the token file are the brand SVG files and
   the chevron inside the select arrow (a data URI cannot read tokens).
