@@ -7,18 +7,26 @@ Target address: `https://nexus.pribadidepok.sch.id`
 | GitHub repository | `https://github.com/pribadi-school/nexus.git` |
 | Branch | `main` |
 | Repository folder | `/home/pribadisch/repositories/nexus` |
-| Website document root | `/home/pribadisch/repositories/nexus/public` |
+| Website document root | `/home/pribadisch/public_html/nexus` |
 
-The repository stays under `/home/pribadisch/repositories`. Only its `public`
-folder is web accessible. The school's main website is separate.
+The repository stays under `/home/pribadisch/repositories`. This hosting account
+requires website roots inside `public_html`. A publishing command copies only
+public assets there and creates an entry point loading the app from the
+repository. Settings, school data and uploaded videos stay outside the website
+root. The school's main website is separate.
 
 ## 1. Clone the code
 
-In **cPanel → Git Version Control → Create**, enable **Clone a Repository**.
-Enter the GitHub URL, repository folder, and name `nexus` from the table above.
-Click **Create**. If it already exists at this path, use **Manage → Pull or
-Deploy → Update from Remote** instead. Confirm the checked-out branch is `main`.
-The repository is public, so the HTTPS clone URL needs no GitHub password.
+In **cPanel → Terminal**, run:
+
+```bash
+mkdir -p /home/pribadisch/repositories
+git clone https://github.com/pribadi-school/nexus.git /home/pribadisch/repositories/nexus
+```
+
+The repository is public, so the HTTPS clone URL needs no GitHub password. If
+already cloned, use `git -C /home/pribadisch/repositories/nexus pull --ff-only origin main`
+instead. Terminal clones do not automatically appear in cPanel's Git interface.
 
 ## 2. Create the subdomain
 
@@ -26,12 +34,10 @@ Open **cPanel → Domains → Create a New Domain**.
 
 - Domain: `nexus.pribadidepok.sch.id`.
 - Disable **Share document root** with the primary domain.
-- Document root: `repositories/nexus/public` (relative to `/home/pribadisch`).
-  If the field accepts absolute paths, use the full document root above.
+- Document root: `nexus` after the fixed `/public_html/` prefix.
 
-Confirm the resulting absolute path. If cPanel forces the path inside
-`public_html`, stop here and check the hosting provider's document-root options
-before moving files. Keep the Git repository in the requested folder.
+Confirm the resulting absolute path is `/home/pribadisch/public_html/nexus`.
+Keep the Git repository in the requested folder.
 
 If the subdomain already exists, manage it rather than creating a duplicate.
 
@@ -49,6 +55,21 @@ resolves. Then enable **Force HTTPS Redirect** for this domain in **Domains**.
 Use **MultiPHP Manager** (or the host's PHP selector) to select PHP 8.2 or newer
 for this subdomain. Required extensions: `pdo_mysql`, `mbstring`, `fileinfo`;
 enable `zip` and `SimpleXML` for XLSX imports. No Composer or Node is needed.
+
+The terminal CLI must also use PHP 8.2+. Run `php -v`, then publish:
+
+```bash
+cd /home/pribadisch/repositories/nexus
+php bin/publish-cpanel.php
+```
+
+If `php -v` is older, use the host's PHP 8.2+ CLI path instead. The publishing
+script stops on an older PHP version. Its default target is exactly
+`/home/pribadisch/public_html/nexus`. It preserves host-managed `.htaccess`
+settings and `.well-known`, copies public assets, and writes the app entry
+point. It does not copy `.env`, private code, media, sessions or database files.
+It can publish before the database is configured; the site is ready only after
+the remaining steps are complete.
 
 For 500 MB video uploads, set the following for the subdomain in the PHP INI
 editor, subject to your hosting limits:
@@ -131,12 +152,17 @@ addresses do not work on the TVs. Pair Android TVs to the production URL.
 
 ## Later updates
 
-After pushing code to GitHub, use **Git Version Control → Manage → Pull or
-Deploy → Update from Remote**. Because the website serves this working copy's
-`public` folder, no **Deploy HEAD Commit** step or `.cpanel.yml` is needed.
-Avoid editing tracked source files in cPanel. `.env` and media are ignored by
-Git and remain on the server. Apply only pending migrations after backing up
-the database. Back up the database and media regularly, separately from Git.
+After pushing code to GitHub, run these in cPanel Terminal:
+
+```bash
+cd /home/pribadisch/repositories/nexus
+git pull --ff-only origin main && php bin/publish-cpanel.php
+```
+
+No **Deploy HEAD Commit** step or `.cpanel.yml` is needed. Avoid editing tracked
+source files in cPanel. `.env` and media are ignored by Git and remain on the
+server. Apply only pending migrations after backing up the database. Back up
+the database and media regularly, separately from Git.
 
 Reference: [cPanel Git Version Control](https://docs.cpanel.net/cpanel/files/git-version-control/)
 and [domain document roots](https://docs.cpanel.net/cpanel/domains/domains/manage-the-domain/).

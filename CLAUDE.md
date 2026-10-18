@@ -292,10 +292,12 @@ deployed yet.
 
 ## Deployment (summary; full guide in docs/deploy-cpanel.md)
 
-- cPanel Git Version Control clones the repo to `~/repositories/nexus`; the subdomain's
-  document root points at its `public/` folder. If a host cannot do that, the
-  root `.htaccess` forwards everything into `public/`.
-- Deploy = `git push`, then cPanel → Git → "Update from Remote". Nothing to build.
+- The repo is cloned in cPanel Terminal to `~/repositories/nexus`. This host
+  requires the subdomain root at `~/public_html/nexus`; `php bin/publish-cpanel.php`
+  publishes public assets and an entry point loading the repository's front controller.
+  Application settings and media stay outside the website root.
+- Deploy = `git push`, then Terminal `git pull --ff-only origin main && php bin/publish-cpanel.php`.
+  Nothing to build on the server.
 - On the server: create `.env` from `.env.example` (APP_ENV=production,
   APP_DEBUG=false, a long APP_PASSWORD, DB credentials); `storage/` must be
   writable; PHP 8.2+ with pdo_mysql, mbstring, fileinfo, and zip + SimpleXML for .xlsx imports (CSV works without).
