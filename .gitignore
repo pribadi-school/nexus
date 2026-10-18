@@ -21,3 +21,8 @@ Thumbs.db
 # Logo design mockups (reference only)
 B · Rise-html/
 B · Rise-html.zip
+
+# Local copies of the database folder / backups (never commit school data)
+database new/
+*.sql.bak
+nexus-backup*.sql

@@ -24,10 +24,8 @@ $query = array_filter([
 $pageUrl = static fn (int $p): string => '/chromebooks?' . http_build_query($query + ($p > 1 ? ['page' => $p] : []));
 $exportUrl = '/chromebooks/export?' . http_build_query($query);
 $clearUrl = '/chromebooks?year=' . $year;
-$return = request_uri();
 $first = ($page - 1) * ChromebookRepository::PER_PAGE + 1;
 $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
-$label = static fn (array $c): string => (string) ($c['asset_id'] ?? $c['serial_number'] ?? '#' . $c['id']);
 ?>
 <?php if ($counts['total'] === 0): ?>
   <section class="card">
@@ -71,7 +69,6 @@ $label = static fn (array $c): string => (string) ($c['asset_id'] ?? $c['serial_
           <th scope="col">Asset ID</th>
           <th scope="col">Student</th>
           <th scope="col">Serial number</th>
-          <th scope="col">Status</th>
           <th scope="col">Last updated</th>
         </tr>
       </thead>
@@ -82,9 +79,9 @@ $label = static fn (array $c): string => (string) ($c['asset_id'] ?? $c['serial_
             <td>
               <a class="data-table__link<?= $c['student_name'] === null ? ' is-unassigned' : '' ?>" href="/chromebooks/<?= (int) $c['id'] ?>"><?= e($student($c)) ?></a>
               <?php if ($c['student_email']): ?><span class="data-table__sub"><?= e($c['student_email']) ?></span><?php endif ?>
+              <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
             </td>
             <td class="num"><?= e($c['serial_number'] ?? '–') ?></td>
-            <td><?= partial('partials/status-toggle', ['category' => $category, 'device' => $c, 'title' => $label($c), 'return' => $return]) ?></td>
             <td class="data-table__muted">
               <time datetime="<?= e(iso_time($c['updated_at'])) ?>" title="<?= e(format_datetime($c['updated_at'])) ?><?= $c['updated_by_name'] ? ' by ' . e($c['updated_by_name']) : '' ?>"><?= e(time_ago($c['updated_at'])) ?></time>
             </td>
@@ -101,8 +98,9 @@ $label = static fn (array $c): string => (string) ($c['asset_id'] ?? $c['serial_
         <a class="device-card__main" href="/chromebooks/<?= (int) $c['id'] ?>">
           <span class="device-card__title<?= $c['student_name'] === null ? ' is-unassigned' : '' ?>"><?= e($student($c)) ?></span>
           <span class="device-card__meta num"><?= e(implode(' · ', array_filter([$c['asset_id'], $c['serial_number'] ?? 'No serial yet']))) ?></span>
+          <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
         </a>
-        <?= partial('partials/status-toggle', ['category' => $category, 'device' => $c, 'title' => $label($c), 'return' => $return]) ?>
+        <?= icon('chevron-right', 'device-card__chevron') ?>
       </li>
     <?php endforeach ?>
   </ul>

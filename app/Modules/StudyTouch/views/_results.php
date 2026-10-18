@@ -10,7 +10,7 @@
  */
 use App\Devices\Status;
 
-$return = request_uri();
+
 ?>
 <?php if ($counts['total'] === 0): ?>
   <section class="card">
@@ -48,22 +48,18 @@ $return = request_uri();
           <th scope="col">Room</th>
           <th scope="col">Model</th>
           <th scope="col">Firmware</th>
-          <th scope="col">Status</th>
           <th scope="col">Last updated</th>
         </tr>
       </thead>
       <tbody>
         <?php foreach ($boards as $board): $problem = $board['status'] === Status::PROBLEM; ?>
           <tr class="<?= $problem ? 'is-problem' : '' ?>" data-device-row="<?= (int) $board['id'] ?>">
-            <th scope="row"><a class="data-table__link" href="/studytouch/<?= (int) $board['id'] ?>"><?= e($board['room_name']) ?></a></th>
+            <th scope="row">
+              <a class="data-table__link" href="/studytouch/<?= (int) $board['id'] ?>"><?= e($board['room_name']) ?></a>
+              <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category, 'note' => $board['latest_note'], 'noteAt' => $board['latest_note_at']]) ?><?php endif ?>
+            </th>
             <td><?= e($board['model'] ?? '–') ?></td>
             <td class="num"><?= e($board['firmware_version'] ?? '–') ?></td>
-            <td>
-              <?= partial('partials/status-toggle', ['category' => $category, 'device' => $board, 'title' => $board['room_name'], 'return' => $return]) ?>
-              <?php if ($problem && $board['latest_note']): ?>
-                <p class="status-note" title="<?= e($board['latest_note']) ?>"><?= e($board['latest_note']) ?> <span class="status-note__time">· <?= e(time_ago($board['latest_note_at'])) ?></span></p>
-              <?php endif ?>
-            </td>
             <td class="data-table__muted">
               <time datetime="<?= e(iso_time($board['updated_at'])) ?>" title="<?= e(format_datetime($board['updated_at'])) ?><?= $board['updated_by_name'] ? ' by ' . e($board['updated_by_name']) : '' ?>"><?= e(time_ago($board['updated_at'])) ?></time>
             </td>
@@ -80,14 +76,12 @@ $return = request_uri();
         <a class="device-card__main" href="/studytouch/<?= (int) $board['id'] ?>">
           <span class="device-card__title"><?= e($board['room_name']) ?></span>
           <span class="device-card__meta"><?= e($board['model'] ?? 'No model yet') ?></span>
-          <?php if ($problem && $board['latest_note']): ?>
-            <span class="status-note"><?= e($board['latest_note']) ?> <span class="status-note__time">· <?= e(time_ago($board['latest_note_at'])) ?></span></span>
-          <?php endif ?>
+          <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category, 'note' => $board['latest_note'], 'noteAt' => $board['latest_note_at']]) ?><?php endif ?>
           <span class="device-card__meta">
             <?= $board['firmware_version'] ? 'Firmware ' . e($board['firmware_version']) . ' · ' : '' ?>Updated <?= e(time_ago($board['updated_at'])) ?>
           </span>
         </a>
-        <?= partial('partials/status-toggle', ['category' => $category, 'device' => $board, 'title' => $board['room_name'], 'return' => $return]) ?>
+        <?= icon('chevron-right', 'device-card__chevron') ?>
       </li>
     <?php endforeach ?>
   </ul>

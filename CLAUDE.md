@@ -12,8 +12,8 @@ completely separate from the school's WordPress site. UI language: English.
    (category tiles, "Needs attention", recent-activity feed), sample data.
 2. **Done: StudyTouch** (`app/Modules/StudyTouch`): list (table ≥900px,
    cards below) with live search + status filter (no room filter: one
-   board per room, so search covers it), instant status
-   switch, problem rows highlighted, detail page (status, notes log,
+   board per room, so search covers it),
+   problem rows highlighted, detail page (status, notes log,
    details), add/edit/delete, editable rooms list at `/studytouch/rooms`.
    The template the other modules follow. Boards have no serial number
    (known by room); model is a choice from `StudyTouchCategory::MODELS`
@@ -23,7 +23,7 @@ completely separate from the school's WordPress site. UI language: English.
    (`cctv_cameras.label`), **type** (`devices.model`, one of
    `CctvCategory::TYPES`: "C200" / "Old version") and **SD card size**
    (`CctvCategory::SD_SIZES`: 32/64/128/256 GB). The list shows only those
-   plus the status switch, in the order cameras were added (the school's
+   in the order cameras were added (the school's
    sheet order), with search by spot and type/status filters. No areas,
    location, IP or serial (dropped in migration 004). "Mark as checked"
    (`POST /cctv/{id}/checked` → `DeviceService::markChecked`) is on the
@@ -61,8 +61,11 @@ completely separate from the school's WordPress site. UI language: English.
 - `App\Devices\DeviceController`: `POST /devices/{id}/status` (JSON for
   fetch, redirect to `return` otherwise) and `POST /devices/{id}/notes`
   (kind, body, optional `set_status`).
-- `views/partials/status-toggle.php`: the switch. `instant => true` (lists)
-  saves via fetch + toast; `false` (detail page) posts and reloads.
+- `views/partials/status-toggle.php`: the switch, on device pages only
+  (`instant => false`: posts and reloads). **Lists have no status column**
+  (owner decision, Oct 2026): a problem row is red with
+  `partials/problem-flag.php` ("Has problem" chip + latest note if given)
+  under the device name; status is changed on the device page.
 - `views/partials/notes-log.php`: add-note form (placeholder from `Category::noteExample()`, kinds from
   `Category::noteKinds()`, "Also mark as …" checkbox) + entries
   (`partials/note-entry.php`, also used by the dashboard feed).

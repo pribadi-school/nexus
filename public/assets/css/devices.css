@@ -131,8 +131,17 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* Latest note under the status of a device with a problem. Hidden as soon
-   as the switch flips the row back to OK (status-toggle.js drops .is-problem). */
+/* Under a device's name in a list when it has a problem: "Has problem" chip
+   and the latest note. Lists have no status column; status is changed on the
+   device page. */
+.problem-flag {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: var(--space-1);
+  font-weight: 400;
+}
 .status-note {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -146,17 +155,7 @@
 }
 .device-card .status-note { max-width: none; }
 .status-note__time { color: var(--color-muted-foreground); white-space: nowrap; }
-[data-device-row]:not(.is-problem) .status-note { display: none; }
-
-/* In a card the status word sits under the switch, leaving room for the details. */
-.device-card .switch {
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  min-width: 84px;
-  padding: var(--space-2) 0;
-  font-size: var(--fs-caption);
-}
+.device-card__chevron { color: var(--color-muted-foreground); }
 
 /* ------------------------------------------------------- status switch --- */
 /* On (knob right, green) = Running well / OK; off (knob left, red) = Has problem. */

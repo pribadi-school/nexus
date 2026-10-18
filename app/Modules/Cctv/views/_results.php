@@ -1,6 +1,6 @@
 <?php
 /**
- * The cameras for the current filters: spot, type, SD card and status. Also
+ * The cameras for the current filters: spot, type and SD card. Also
  * returned on its own to filters.js when filters change.
  *
  * @var \App\Modules\Cctv\CctvCategory $category
@@ -10,7 +10,6 @@
  */
 use App\Devices\Status;
 
-$return = request_uri();
 $sd = static fn (array $camera): string => $camera['sd_card_gb'] !== null ? (int) $camera['sd_card_gb'] . ' GB' : '–';
 ?>
 <?php if ($counts['total'] === 0): ?>
@@ -49,16 +48,17 @@ $sd = static fn (array $camera): string => $camera['sd_card_gb'] !== null ? (int
           <th scope="col">Spot</th>
           <th scope="col">Type</th>
           <th scope="col">SD card</th>
-          <th scope="col">Status</th>
         </tr>
       </thead>
       <tbody>
         <?php foreach ($cameras as $camera): $problem = $camera['status'] === Status::PROBLEM; ?>
           <tr class="<?= $problem ? 'is-problem' : '' ?>" data-device-row="<?= (int) $camera['id'] ?>">
-            <th scope="row"><a class="data-table__link" href="/cctv/<?= (int) $camera['id'] ?>"><?= e($camera['label']) ?></a></th>
+            <th scope="row">
+              <a class="data-table__link" href="/cctv/<?= (int) $camera['id'] ?>"><?= e($camera['label']) ?></a>
+              <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
+            </th>
             <td><?= e($camera['model'] ?? '–') ?></td>
             <td class="num nowrap"><?= $sd($camera) ?></td>
-            <td><?= partial('partials/status-toggle', ['category' => $category, 'device' => $camera, 'title' => $camera['label'], 'return' => $return]) ?></td>
           </tr>
         <?php endforeach ?>
       </tbody>
@@ -72,8 +72,9 @@ $sd = static fn (array $camera): string => $camera['sd_card_gb'] !== null ? (int
         <a class="device-card__main" href="/cctv/<?= (int) $camera['id'] ?>">
           <span class="device-card__title"><?= e($camera['label']) ?></span>
           <span class="device-card__meta"><?= e(implode(' · ', array_filter([$camera['model'], $camera['sd_card_gb'] !== null ? $sd($camera) . ' SD card' : null]))) ?></span>
+          <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
         </a>
-        <?= partial('partials/status-toggle', ['category' => $category, 'device' => $camera, 'title' => $camera['label'], 'return' => $return]) ?>
+        <?= icon('chevron-right', 'device-card__chevron') ?>
       </li>
     <?php endforeach ?>
   </ul>
