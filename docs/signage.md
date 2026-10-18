@@ -10,10 +10,13 @@ See [Android TV installation and automatic startup](android-tv.md).
 ## Set up a display
 
 1. Open **Signage → Content**. Upload an MP4 or add a website URL.
-2. Open **Playlists**, create a playlist, and add content in playback order.
-   Videos play to the end; website items have a display time in seconds.
-3. Open **Screens**, add a screen, and assign its playlist. Select orientation,
-   video fit, and whether videos should be muted.
+2. Open **Screens** and add a screen. Each screen gets its own playlist.
+3. Open the screen: its playlist is on the left and the content library on the
+   right. Drag library content into the playlist, drag entries to reorder them,
+   then click **Save changes**. Videos play to the end; each website entry has
+   its own display time. Add, move and remove buttons also work with keyboard
+   and touch. On narrow screens the library appears below the playlist.
+   **Settings** opens orientation, video fit, mute and pairing/player controls.
 4. Copy the screen's player link from its edit page. Open it in the TV's browser
    or use it as a website item in AbleSign. The TV must be able to reach the
    Nexus address; `localhost` only works on the computer running Nexus.
@@ -22,8 +25,20 @@ Each player loops its playlist and checks for changes every 30 seconds.
 Pausing a screen stops playback after its next check. “Online” means the player
 recently checked in; it does not verify that the physical TV is switched on or
 that a third-party website rendered correctly. “Never connected” means there
-has not been a player check-in yet. Use **Preview playlist** on a playlist to check
-its content before assigning it to a TV.
+has not been a player check-in yet. Use **Settings → Open player** on a screen
+to check its content (enable playback first if the screen is paused).
+
+The Content library's three-dot menu can add a video or website directly to a
+selected TV's playlist. Websites added this way start at 30 seconds; change
+their duration in the screen editor. This direct action saves immediately.
+Dragging and editing inside a screen is a draft until **Save changes**.
+If another tab changes the same playlist, saving is refused so it cannot
+silently overwrite those changes.
+
+Existing screen assignments stay in place. An older shared playlist is copied
+when its screen is opened or edited, keeping item order and website timing.
+Each new screen starts with its own empty playlist. There is no separate
+playlist menu or assignment selector, and this update needs no SQL migration.
 
 The player starts videos muted by default. Playback with sound, and fullscreen,
 may require a click or TV-remote action depending on the browser. A website can

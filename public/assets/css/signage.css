@@ -17,6 +17,41 @@
 .signage-content-card__heading .icon-btn { flex: none; }
 .signage-content-card__meta, .signage-content-card__details { margin: var(--space-1) 0 0; font-size: var(--fs-ui); color: var(--color-muted-foreground); overflow-wrap: anywhere; }
 .signage-card-status { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.signage-content-menu { position: fixed; inset: auto; margin: 0; width: min(280px, calc(100vw - 32px)); max-height: 60vh; overflow-y: auto; padding: var(--space-2); border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-foreground); }
+.signage-content-menu__label { margin: var(--space-2) 0 var(--space-1); padding: var(--space-2); border-top: 1px solid var(--color-border); font-size: var(--fs-caption); color: var(--color-muted-foreground); }
+.signage-content-menu .menu-item span { overflow-wrap: anywhere; text-align: left; }
+.signage-editor { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); margin-bottom: var(--space-6); scroll-margin-top: var(--space-5); }
+.signage-editor__playlist, .signage-editor__library { min-width: 0; }
+.signage-editor__heading { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); min-height: 40px; }
+.signage-editor .signage-help { margin: var(--space-2) 0; }
+.signage-editor__search { margin: var(--space-3) 0; }
+.signage-editor__feedback { min-height: 24px; margin: var(--space-2) 0; color: var(--color-muted-foreground); font-size: var(--fs-ui); }
+.signage-editor__feedback.is-error { color: var(--color-destructive); }
+.signage-editor__list { display: flex; flex-direction: column; gap: var(--space-2); padding: 0; margin: 0; list-style: none; }
+.signage-editor__list[data-playlist-drop] { min-height: 80px; padding: var(--space-1); margin: calc(-1 * var(--space-1)); border-radius: var(--radius-lg); transition: background-color 160ms ease-out; }
+.signage-editor__list.is-drop-active { background: var(--color-surface-muted); }
+.signage-editor__empty { display: flex; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-5); margin: var(--space-2) 0; border: 1px dashed var(--color-border-strong); border-radius: var(--radius-lg); color: var(--color-muted-foreground); font-size: var(--fs-ui); }
+.signage-editor-item { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; padding: var(--space-2); transition: opacity 160ms ease-out, border-color 160ms ease-out; }
+.signage-editor-item[data-draggable="true"] { cursor: grab; }
+.is-signage-dragging, .is-signage-dragging * { cursor: grabbing !important; user-select: none; }
+.signage-editor-item.is-dragging { opacity: .45; cursor: grabbing; }
+.signage-editor-item__position { flex: 0 0 18px; color: var(--color-muted-foreground); text-align: center; font-size: var(--fs-caption); font-variant-numeric: tabular-nums; }
+.signage-editor-item__thumbnail { flex: 0 0 96px; overflow: hidden; border-radius: var(--radius-sm); }
+.signage-editor-item__thumbnail .signage-thumbnail__fallback, .signage-editor-item__thumbnail .signage-thumbnail__website { padding: var(--space-2); gap: 0; font-size: var(--fs-caption); }
+.signage-editor-item__thumbnail .signage-thumbnail__website span, .signage-editor-item__thumbnail [data-thumbnail-message], .signage-editor-item__thumbnail .signage-thumbnail__kind { display: none; }
+.signage-editor-item__thumbnail .signage-thumbnail__duration { padding: 1px var(--space-1); right: var(--space-1); bottom: var(--space-1); }
+.signage-editor-item__info { flex: 1 1 100px; min-width: 0; font-size: var(--fs-ui); }
+.signage-editor-item__actions { display: flex; flex: 0 0 auto; justify-content: flex-end; gap: var(--space-1); margin-left: auto; }
+.signage-screen-settings { margin-top: var(--space-6); border-top: 1px solid var(--color-border); padding-top: var(--space-4); }
+.signage-screen-settings > summary { cursor: pointer; font-size: var(--fs-card-title); font-weight: 600; padding: var(--space-2) 0; }
+.signage-editor-item__timing { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-2); font-size: var(--fs-caption); color: var(--color-muted-foreground); }
+.signage-editor-item__timing .input { width: 84px; }
+.signage-editor-item [hidden], .signage-editor__empty[hidden], .signage-editor [hidden] { display: none; }
+.signage-drag-slot { flex: 0 0 72px; border: 1px dashed var(--color-action); border-radius: var(--radius-lg); background: var(--color-surface-muted); }
+.signage-drag-ghost { position: fixed; top: -1000px; left: -1000px; width: 320px; transform: rotate(-2deg); border-color: var(--color-action); pointer-events: none; }
+.signage-settings-title { margin: var(--space-6) 0 var(--space-3); font-size: var(--fs-card-title); }
+@media (min-width: 1200px) { .signage-editor { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6); } }
+@media (prefers-reduced-motion: reduce) { .signage-editor-item, .signage-editor__list[data-playlist-drop] { transition: none; } }
 .signage-tabs { display: flex; gap: var(--space-5); border-bottom: 1px solid var(--color-border-strong); margin: 0 0 var(--space-5); }
 .signage-tabs__link { display: flex; align-items: center; min-height: 44px; padding: 0 0 var(--space-2); margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--color-muted-foreground); font-weight: 600; }
 .signage-tabs__link:hover { color: var(--color-action); text-decoration: none; }

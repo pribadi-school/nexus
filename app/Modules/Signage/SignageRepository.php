@@ -50,6 +50,52 @@ final class SignageRepository
         });
     }
 
+    /** Create a screen and its own empty playlist in the same transaction. */
+    public function createScreenWithPlaylist(array $data): int
+    {
+        return db()->transaction(function () use ($data): int {
+            $data['playlist_id'] = $this->createPlaylist(['name' => $data['name'], 'description' => null]);
+            return $this->createScreen($data);
+        });
+    }
+
+    /**
+     * Initialize older screens without changing what they play. Shared legacy
+     * playlists are copied before editing so one TV cannot change another TV.
+     */
+    public function screenPlaylistId(int $screenId): int
+    {
+        return db()->transaction(function () use ($screenId): int {
+            $screen = db()->one('SELECT * FROM signage_screens WHERE id = ? FOR UPDATE', [$screenId]);
+            if ($screen === null) {
+                throw HttpException::notFound('That screen no longer exists.');
+            }
+            $previous = $screen['playlist_id'] === null ? null : (int) $screen['playlist_id'];
+            if ($previous !== null) {
+                $this->lockPlaylist($previous);
+                if (!(bool) db()->value('SELECT 1 FROM signage_screens WHERE playlist_id = ? AND id <> ? LIMIT 1', [$previous, $screenId])) {
+                    return $previous;
+                }
+            }
+            $id = $this->createPlaylist(['name' => $screen['name'], 'description' => null]);
+            if ($previous !== null) {
+                db()->run('INSERT INTO signage_playlist_items (playlist_id, content_id, sort_order, duration_seconds)
+                    SELECT ?, content_id, sort_order, duration_seconds FROM signage_playlist_items
+                    WHERE playlist_id = ? ORDER BY sort_order, id', [$id, $previous]);
+            }
+            db()->update('signage_screens', ['playlist_id' => $id, 'updated_at' => Database::now()], ['id' => $screenId]);
+            return $id;
+        });
+    }
+
+    /** Keep ownership checks and the resulting playlist change under one lock. */
+    public function withScreenPlaylist(int $screenId, callable $change): void
+    {
+        db()->transaction(function () use ($screenId, $change): void {
+            $change($this->screenPlaylistId($screenId));
+        });
+    }
+
     /** @param array<string,mixed> $data */
     public function updateScreen(int $id, array $data): void
     {
@@ -69,7 +115,20 @@ final class SignageRepository
 
     public function deleteScreen(int $id): void
     {
-        db()->run('DELETE FROM signage_screens WHERE id = ?', [$id]);
+        db()->transaction(function () use ($id): void {
+            $screen = db()->one('SELECT * FROM signage_screens WHERE id = ? FOR UPDATE', [$id]);
+            if ($screen === null) {
+                throw HttpException::notFound();
+            }
+            $playlist = $screen['playlist_id'];
+            if ($playlist !== null) {
+                $this->lockPlaylist((int) $playlist);
+            }
+            db()->run('DELETE FROM signage_screens WHERE id = ?', [$id]);
+            if ($playlist !== null && !db()->value('SELECT 1 FROM signage_screens WHERE playlist_id = ? LIMIT 1', [$playlist])) {
+                db()->run('DELETE FROM signage_playlists WHERE id = ?', [$playlist]);
+            }
+        });
     }
 
     public function rotateScreenToken(int $id): void
@@ -175,6 +234,59 @@ final class SignageRepository
         return db()->all('SELECT c.*, i.id AS item_id, i.playlist_id, i.sort_order, i.duration_seconds
             FROM signage_playlist_items i JOIN signage_content c ON c.id = i.content_id
             WHERE i.playlist_id = ? ORDER BY i.sort_order, i.id', [$playlistId]);
+    }
+
+    public function playlistRevision(int $id): string
+    {
+        return hash('sha256', json_encode($this->playlistItems($id), JSON_THROW_ON_ERROR));
+    }
+
+    /** Save an editor draft atomically, preserving IDs for existing entries. */
+    public function savePlaylistItems(int $id, array $entries, string $revision): void
+    {
+        db()->transaction(function () use ($id, $entries, $revision): void {
+            $this->lockPlaylist($id);
+            if (!hash_equals($this->playlistRevision($id), $revision)) {
+                throw new HttpException(409, 'This playlist changed in another tab. Reload the page before saving.');
+            }
+            if (count($entries) > 1000) {
+                throw new InvalidArgumentException('A playlist can contain up to 1,000 items.');
+            }
+            $current = array_column($this->playlistItems($id), null, 'item_id');
+            $seen = [];
+            foreach ($entries as $entry) {
+                if (!is_array($entry) || !is_int($entry['content_id'] ?? null) || $entry['content_id'] < 1
+                    || !is_int($entry['duration_seconds'] ?? null) || $entry['duration_seconds'] < 5 || $entry['duration_seconds'] > 86400
+                    || (!is_null($entry['item_id'] ?? null) && (!is_int($entry['item_id']) || $entry['item_id'] < 1))) {
+                    throw new InvalidArgumentException('Choose valid content and a website duration from 5 to 86,400 seconds.');
+                }
+                $itemId = $entry['item_id'] ?? null;
+                if ($itemId !== null) {
+                    if (isset($seen[$itemId]) || !isset($current[$itemId]) || (int) $current[$itemId]['id'] !== $entry['content_id']) {
+                        throw new InvalidArgumentException('An item does not belong to this screen. Reload the page.');
+                    }
+                    $seen[$itemId] = true;
+                }
+            }
+            $contentIds = array_values(array_unique(array_column($entries, 'content_id')));
+            $content = $contentIds === [] ? [] : array_column(db()->all('SELECT id, type FROM signage_content WHERE id IN ('
+                . implode(',', array_fill(0, count($contentIds), '?')) . ') ORDER BY id FOR UPDATE', $contentIds), null, 'id');
+            if (count($content) !== count($contentIds)) {
+                throw new InvalidArgumentException('Some content was removed from the library. Reload the page.');
+            }
+            foreach (array_diff(array_keys($current), array_keys($seen)) as $removed) {
+                db()->run('DELETE FROM signage_playlist_items WHERE id = ? AND playlist_id = ?', [$removed, $id]);
+            }
+            foreach ($entries as $order => $entry) {
+                $data = ['sort_order' => $order, 'duration_seconds' => $content[$entry['content_id']]['type'] === 'website' ? $entry['duration_seconds'] : 30];
+                if (($entry['item_id'] ?? null) !== null) {
+                    db()->update('signage_playlist_items', $data, ['id' => $entry['item_id'], 'playlist_id' => $id]);
+                } else {
+                    db()->insert('signage_playlist_items', $data + ['playlist_id' => $id, 'content_id' => $entry['content_id']]);
+                }
+            }
+            $this->touchPlaylist($id);
+        });
     }
 
     /** @param array<string,mixed> $data */

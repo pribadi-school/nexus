@@ -59,11 +59,17 @@ completely separate from the school's WordPress site. UI language: English.
    committed.
 5. **Done: Signage** (`app/Modules/Signage`): separate navigation item below
    Chromebooks. `/signage` opens the Content library first, with large browser-
-   generated video thumbnails; Screens lives at `/signage/screens`, and
-   Playlists at `/signage/playlists`. MP4 uploads live outside
+   generated video thumbnails; Screens lives at `/signage/screens`. Each
+   screen owns its playlist, edited beside a shared content library with mouse
+   drag/drop, keyboard/touch buttons and atomic Save changes. There is no
+   separate playlist menu or assignment selector. Content cards have a native
+   three-dot popover for editing or adding directly to a selected TV. Older
+   shared playlists are copied before screen edits; no schema migration is
+   needed. `tests/signage-screen-playlists.php` covers ownership, draft saves,
+   stale revisions and isolation. MP4 uploads live outside
    the web root in `storage/signage/media/` (excluded from Git); website content
    is a validated HTTP(S) URL. Playlists have ordered content and per-website
-   durations. Screens select a playlist, orientation, video fit, mute and
+   durations. Screens select orientation, video fit, mute and
    playback enablement. Each screen has a random revocable player URL and a
    last-connected heartbeat; the standalone browser player polls every 30s,
    loops MP4s and timed website frames, and supports range streaming. It needs

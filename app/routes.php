@@ -56,16 +56,15 @@ $router->get('/signage/content/{id}/edit', [SignageController::class, 'editConte
 $router->post('/signage/content/{id}', [SignageController::class, 'updateContent']);
 $router->post('/signage/content/{id}/delete', [SignageController::class, 'deleteContent']);
 
+// Older bookmarks lead to the screen that owns the playlist.
 $router->get('/signage/playlists', [SignageController::class, 'playlists']);
-$router->get('/signage/playlists/create', [SignageController::class, 'createPlaylist']);
-$router->post('/signage/playlists', [SignageController::class, 'storePlaylist']);
+$router->get('/signage/playlists/create', [SignageController::class, 'playlists']);
 $router->get('/signage/playlists/{id}/edit', [SignageController::class, 'editPlaylist']);
-$router->post('/signage/playlists/{id}', [SignageController::class, 'updatePlaylist']);
-$router->post('/signage/playlists/{id}/delete', [SignageController::class, 'deletePlaylist']);
-$router->post('/signage/playlists/{id}/items', [SignageController::class, 'addPlaylistItem']);
-$router->post('/signage/playlists/{id}/items/{item}', [SignageController::class, 'updatePlaylistItem']);
-$router->post('/signage/playlists/{id}/items/{item}/move', [SignageController::class, 'movePlaylistItem']);
-$router->post('/signage/playlists/{id}/items/{item}/delete', [SignageController::class, 'deletePlaylistItem']);
+$router->post('/signage/screens/{id}/playlist', [SignageController::class, 'saveScreenPlaylist']);
+$router->post('/signage/screens/{id}/items', [SignageController::class, 'addPlaylistItem']);
+$router->post('/signage/screens/{id}/items/{item}', [SignageController::class, 'updatePlaylistItem']);
+$router->post('/signage/screens/{id}/items/{item}/move', [SignageController::class, 'movePlaylistItem']);
+$router->post('/signage/screens/{id}/items/{item}/delete', [SignageController::class, 'deletePlaylistItem']);
 
 // Preview stays signed in. TV links use an unguessable, revocable screen token.
 $router->get('/signage/playlists/{id}/preview', [SignagePlayerController::class, 'preview']);

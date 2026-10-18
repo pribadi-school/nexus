@@ -19,7 +19,9 @@ corridor Android TVs from the same web application.
 
 Nexus already manages StudyTouch boards, CCTV cameras and student Chromebooks.
 The signage addition manages screens, uploaded MP4s, website addresses and
-ordered playlists. TVs can use the native Nexus Signage Android TV player,
+an ordered playlist owned by each screen. The screen editor places its playlist
+beside the shared content library, with mouse dragging and keyboard/touch
+buttons. TVs can use the native Nexus Signage Android TV player,
 the browser player, or a website item in AbleSign.
 
 ## Capabilities and Constraints

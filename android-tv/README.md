@@ -47,8 +47,8 @@ adb install -r dist/nexus-signage-tv.apk
 
 Open Nexus Signage on the TV and enter your Nexus server address. Sign in to
 Nexus in your computer browser, open **Signage → Pair Android TV**, and
-approve the six-digit TV code for an existing screen. Assign a playlist in
-the screen's settings.
+approve the six-digit TV code for an existing screen. Open that screen to
+arrange its own playlist and save changes.
 
 For automatic launch at power-on, select **Startup → Choose Nexus as Home**
 once on each TV. The app also resumes playback after standby. Manufacturer

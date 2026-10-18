@@ -21,5 +21,6 @@
 <?php if (is_active('/signage')): ?>
 <link rel="stylesheet" href="<?= e(asset('css/signage.css')) ?>">
 <script type="module" src="<?= e(asset('js/signage-admin.js')) ?>"></script>
+<script type="module" src="<?= e(asset('js/signage-editor.js')) ?>"></script>
 <?php endif ?>
 <script type="module" src="<?= e(asset('js/app.js')) ?>"></script>

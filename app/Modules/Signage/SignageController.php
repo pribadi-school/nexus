@@ -45,12 +45,8 @@ final class SignageController
         if ($errors !== []) {
             return $this->screenForm(null, $data, $errors);
         }
-        try {
-            $id = $this->signage->createScreen($data);
-        } catch (InvalidArgumentException $error) {
-            return $this->screenForm(null, $data, ['playlist_id' => $error->getMessage()]);
-        }
-        Session::flash('success', 'Screen added. Open its player address on the TV.');
+        $id = $this->signage->createScreenWithPlaylist($data);
+        Session::flash('success', 'Screen added. Add videos or websites to its playlist below.');
         return Response::redirect('/signage/screens/' . $id . '/edit');
     }
 
@@ -67,11 +63,10 @@ final class SignageController
         if ($errors !== []) {
             return $this->screenForm($screen, $data, $errors);
         }
-        try {
+        $this->signage->withScreenPlaylist((int) $screen['id'], function (int $playlistId) use ($screen, $data): void {
+            $data['playlist_id'] = $playlistId;
             $this->signage->updateScreen((int) $screen['id'], $data);
-        } catch (InvalidArgumentException $error) {
-            return $this->screenForm($screen, $data, ['playlist_id' => $error->getMessage()]);
-        }
+        });
         Session::flash('success', 'Screen settings saved.');
         return Response::redirect('/signage/screens/' . $screen['id'] . '/edit');
     }
@@ -96,6 +91,7 @@ final class SignageController
     {
         return $this->render('content', [
             'content' => $this->signage->content(), 'usageBytes' => $this->signage->usageBytes(),
+            'screens' => $this->signage->screens(),
             'uploadLimitBytes' => SignageStorage::maxUploadBytes(),
         ], 'content', 'Signage content');
     }
@@ -186,111 +182,102 @@ final class SignageController
 
     public function playlists(Request $request): Response
     {
-        $playlists = $this->signage->playlists();
-        return $this->render('playlists', [
-            'playlists' => $playlists,
-            'covers' => $this->signage->playlistCovers(array_map('intval', array_column($playlists, 'id'))),
-        ], 'playlists', 'Signage playlists');
-    }
-
-    public function createPlaylist(Request $request): Response
-    {
-        return $this->playlistForm(null, ['name' => null, 'description' => null]);
-    }
-
-    public function storePlaylist(Request $request): Response
-    {
-        [$data, $errors] = SignageValidation::playlist($request->body);
-        if ($errors !== []) {
-            return $this->playlistForm(null, $data, $errors);
-        }
-        $id = $this->signage->createPlaylist($data);
-        Session::flash('success', 'Playlist created. Add content in the order you want it to play.');
-        return Response::redirect('/signage/playlists/' . $id . '/edit');
+        return Response::redirect('/signage/screens');
     }
 
     public function editPlaylist(Request $request): Response
     {
-        $playlist = $this->playlist($request);
-        return $this->playlistForm($playlist, $playlist);
-    }
-
-    public function updatePlaylist(Request $request): Response
-    {
-        $playlist = $this->playlist($request);
-        [$data, $errors] = SignageValidation::playlist($request->body);
-        if ($errors !== []) {
-            return $this->playlistForm($playlist, $data, $errors);
-        }
-        $this->signage->updatePlaylist((int) $playlist['id'], $data);
-        Session::flash('success', 'Playlist saved.');
-        return Response::redirect('/signage/playlists/' . $playlist['id'] . '/edit');
-    }
-
-    public function deletePlaylist(Request $request): Response
-    {
-        $playlist = $this->playlist($request);
-        $this->signage->deletePlaylist((int) $playlist['id']);
-        Session::flash('success', 'Playlist deleted. Assigned screens will wait for a new playlist.');
-        return Response::redirect('/signage/playlists');
+        $screen = db()->one('SELECT id FROM signage_screens WHERE playlist_id = ? ORDER BY id LIMIT 1', [(int) $request->param('id')]);
+        return Response::redirect($screen ? '/signage/screens/' . $screen['id'] . '/edit#playlist' : '/signage/screens');
     }
 
     public function addPlaylistItem(Request $request): Response
     {
-        $playlist = $this->playlist($request);
+        $screen = $this->screen($request);
         [$data, $errors] = SignageValidation::playlistItem($request->body);
         if ($errors !== []) {
             Session::flash('error', implode(' ', array_values($errors)));
         } else {
             try {
-                $this->signage->addPlaylistItem((int) $playlist['id'], (int) $data['content_id'], (int) $data['duration_seconds']);
-                Session::flash('success', 'Content added to playlist.');
+                $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->addPlaylistItem($id, (int) $data['content_id'], (int) $data['duration_seconds']));
+                Session::flash('success', 'Content added to ' . $screen['name'] . '.');
             } catch (InvalidArgumentException $error) {
                 Session::flash('error', $error->getMessage());
             }
         }
-        return Response::redirect('/signage/playlists/' . $playlist['id'] . '/edit');
+        return Response::redirect($request->input('from_library') === '1' ? '/signage' : '/signage/screens/' . $screen['id'] . '/edit#playlist');
     }
 
     public function updatePlaylistItem(Request $request): Response
     {
-        $playlist = $this->playlist($request);
+        $screen = $this->screen($request);
         [$data, $errors] = SignageValidation::playlistItem($request->body, false);
         if ($errors !== []) {
             Session::flash('error', implode(' ', array_values($errors)));
         } else {
-            $this->signage->updatePlaylistItem((int) $playlist['id'], (int) $request->param('item'), (int) $data['duration_seconds']);
+            $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->updatePlaylistItem($id, (int) $request->param('item'), (int) $data['duration_seconds']));
             Session::flash('success', 'Website duration saved.');
         }
-        return Response::redirect('/signage/playlists/' . $playlist['id'] . '/edit');
+        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#playlist');
     }
 
     public function movePlaylistItem(Request $request): Response
     {
-        $playlist = $this->playlist($request);
+        $screen = $this->screen($request);
         try {
-            $this->signage->movePlaylistItem((int) $playlist['id'], (int) $request->param('item'), (string) $request->input('direction'));
+            $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->movePlaylistItem($id, (int) $request->param('item'), (string) $request->input('direction')));
             Session::flash('success', 'Playlist order saved.');
         } catch (InvalidArgumentException $error) {
             Session::flash('error', $error->getMessage());
         }
-        return Response::redirect('/signage/playlists/' . $playlist['id'] . '/edit');
+        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#playlist');
     }
 
     public function deletePlaylistItem(Request $request): Response
     {
-        $playlist = $this->playlist($request);
-        $this->signage->deletePlaylistItem((int) $playlist['id'], (int) $request->param('item'));
-        Session::flash('success', 'Content removed from playlist.');
-        return Response::redirect('/signage/playlists/' . $playlist['id'] . '/edit');
+        $screen = $this->screen($request);
+        $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->deletePlaylistItem($id, (int) $request->param('item')));
+        Session::flash('success', 'Content removed from this screen.');
+        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#playlist');
+    }
+
+    public function saveScreenPlaylist(Request $request): Response
+    {
+        $screen = $this->screen($request);
+        try {
+            $raw = $request->input('playlist_items', '');
+            if (strlen($raw) > 200000) {
+                throw new InvalidArgumentException('This playlist is too large.');
+            }
+            $entries = json_decode($raw, true, 8, JSON_THROW_ON_ERROR);
+            if (!is_array($entries) || !array_is_list($entries)) {
+                throw new InvalidArgumentException('Choose valid playlist items.');
+            }
+            $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->savePlaylistItems($id, $entries, (string) $request->input('revision')));
+        } catch (InvalidArgumentException | JsonException | HttpException $error) {
+            if ($request->isFetch()) {
+                return Response::json(['error' => $error instanceof JsonException ? 'Choose valid playlist items.' : $error->getMessage()], $error instanceof HttpException ? $error->status : 422);
+            }
+            Session::flash('error', $error instanceof JsonException ? 'Choose valid playlist items.' : $error->getMessage());
+            return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#playlist');
+        }
+        Session::flash('success', 'Playlist saved for ' . $screen['name'] . '.');
+        $redirect = '/signage/screens/' . $screen['id'] . '/edit#playlist';
+        return $request->isFetch() ? Response::json(['redirect' => $redirect]) : Response::redirect($redirect);
     }
 
     private function screenForm(?array $screen, array $values, array $errors = []): Response
     {
+        $playlistId = $screen === null ? null : $this->signage->screenPlaylistId((int) $screen['id']);
+        if ($screen !== null) {
+            $screen = $this->signage->screen((int) $screen['id']);
+        }
         return $this->render('screen-form', [
             'screen' => $screen, 'values' => $values, 'errors' => $errors,
-            'playlists' => $this->signage->playlists(),
-        ], 'screens', $screen === null ? 'Add a screen' : 'Edit screen', $errors === [] ? 200 : 422);
+            'items' => $playlistId === null ? [] : $this->signage->playlistItems($playlistId),
+            'revision' => $playlistId === null ? '' : $this->signage->playlistRevision($playlistId),
+            'content' => $this->signage->content(),
+        ], 'screens', $screen === null ? 'Add a screen' : $screen['name'], $errors === [] ? 200 : 422);
     }
 
     private function contentForm(?array $item, array $values, array $errors = []): Response
@@ -299,15 +286,6 @@ final class SignageController
             'item' => $item, 'values' => $values, 'errors' => $errors,
             'uploadLimitBytes' => SignageStorage::maxUploadBytes(),
         ], 'content', $item === null ? 'Add content' : 'Edit content', $errors === [] ? 200 : 422);
-    }
-
-    private function playlistForm(?array $playlist, array $values, array $errors = []): Response
-    {
-        return $this->render('playlist-form', [
-            'playlist' => $playlist, 'values' => $values, 'errors' => $errors,
-            'items' => $playlist === null ? [] : $this->signage->playlistItems((int) $playlist['id']),
-            'content' => $this->signage->content(),
-        ], 'playlists', $playlist === null ? 'Create a playlist' : 'Edit playlist', $errors === [] ? 200 : 422);
     }
 
     private function render(string $view, array $data, string $tab, string $title, int $status = 200): Response
@@ -329,10 +307,4 @@ final class SignageController
             ?? throw HttpException::notFound('That content does not exist.');
     }
 
-    /** @return array<string,mixed> */
-    private function playlist(Request $request): array
-    {
-        return $this->signage->playlist((int) $request->param('id'))
-            ?? throw HttpException::notFound('That playlist does not exist.');
-    }
 }

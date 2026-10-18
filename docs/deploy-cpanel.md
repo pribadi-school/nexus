@@ -56,11 +56,13 @@ Use **MultiPHP Manager** (or the host's PHP selector) to select PHP 8.2 or newer
 for this subdomain. Required extensions: `pdo_mysql`, `mbstring`, `fileinfo`;
 enable `zip` and `SimpleXML` for XLSX imports. No Composer or Node is needed.
 
-The terminal CLI must also use PHP 8.2+. Run `php -v`, then publish:
+The terminal CLI must also use PHP 8.2+. On this account, the verified CLI is
+`/opt/alt/php82/usr/bin/php` (8.2.34). The default `php` and the `ea-php82` wrapper
+resolved to the account's PHP 8.1, so use this explicit executable:
 
 ```bash
 cd /home/pribadisch/repositories/nexus
-php bin/publish-cpanel.php
+/opt/alt/php82/usr/bin/php bin/publish-cpanel.php
 ```
 
 If `php -v` is older, use the host's PHP 8.2+ CLI path instead. The publishing
@@ -70,6 +72,19 @@ settings and `.well-known`, copies public assets, and writes the app entry
 point. It does not copy `.env`, private code, media, sessions or database files.
 It can publish before the database is configured; the site is ready only after
 the remaining steps are complete.
+
+On this hosting account MultiPHP Manager is unavailable. The working Nexus-only
+web override is the following block in `/home/pribadisch/public_html/nexus/.htaccess`:
+
+```apache
+<FilesMatch "\.php$">
+  SetHandler application/x-httpd-alt-php82___lsphp
+</FilesMatch>
+```
+
+The publisher preserves this block. The account-wide PHP setting stays 8.1.
+Confirm web PHP separately from terminal PHP. If diagnostic scripts are used,
+remove them after verifying the version and extensions; do not publish phpinfo.
 
 For 500 MB video uploads, set the following for the subdomain in the PHP INI
 editor, subject to your hosting limits:
@@ -156,7 +171,7 @@ After pushing code to GitHub, run these in cPanel Terminal:
 
 ```bash
 cd /home/pribadisch/repositories/nexus
-git pull --ff-only origin main && php bin/publish-cpanel.php
+git pull --ff-only origin main && /opt/alt/php82/usr/bin/php bin/publish-cpanel.php
 ```
 
 No **Deploy HEAD Commit** step or `.cpanel.yml` is needed. Avoid editing tracked

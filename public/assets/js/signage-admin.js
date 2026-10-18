@@ -84,6 +84,13 @@ function processThumbnails() {
 }
 
 const thumbnailCards = document.querySelectorAll('[data-signage-thumbnail]');
+document.addEventListener('signage:preview-added', event => {
+  const preview = event.detail.querySelector('[data-signage-thumbnail]');
+  if (preview && preview.querySelector('[data-thumbnail-image]').hidden) {
+    thumbnailQueue.push(preview);
+    processThumbnails();
+  }
+});
 if ('IntersectionObserver' in window) {
   const observer = new IntersectionObserver((entries) => {
     for (const entry of entries) {

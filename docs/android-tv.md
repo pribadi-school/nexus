@@ -8,7 +8,8 @@ use the TV's WebView while connected. No AbleSign account is required.
 
 1. Deploy Nexus, then import `007_signage_pairing.sql` after migration 006.
    No worker or new PHP extensions are needed. Use your public HTTPS address.
-2. Create content, a playlist and a screen in Nexus → Signage.
+2. Add content and a screen in Nexus → Signage. Open the screen to arrange
+   its own playlist, then save changes.
 3. Install `dist/nexus-signage-tv.apk` on the TV using USB or your usual Android
    installation method. The minimum version is Android 8.0 (API 26).
 4. Open **Nexus Signage**, enter the Nexus server address, and request a code.
