@@ -131,6 +131,16 @@ final class SignageRepository
         });
     }
 
+    /** Sets (or clears, with null) the TV photo; returns the previous file name to delete. */
+    public function setScreenPhoto(int $id, ?string $filename): ?string
+    {
+        return db()->transaction(function () use ($id, $filename): ?string {
+            $previous = db()->value('SELECT photo_filename FROM signage_screens WHERE id = ? FOR UPDATE', [$id]);
+            db()->update('signage_screens', ['photo_filename' => $filename, 'updated_at' => Database::now()], ['id' => $id]);
+            return is_string($previous) && $previous !== '' ? $previous : null;
+        });
+    }
+
     public function rotateScreenToken(int $id): void
     {
         db()->update('signage_screens', [

@@ -7,7 +7,7 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
 $playerUrl = !$adding ? rtrim((string) config('app.url', ''), '/') . '/signage/player/' . $screen['token'] : '';
 ?>
 <a class="back-link" href="/signage/screens"><?= icon('chevron-left', 'icon--sm') ?>Screens</a>
-<header class="page-header"><div><h1 class="page-title"><?= $adding ? 'Add a screen' : e($screen['name']) ?></h1><p class="page-subtitle"><?= $adding ? 'Add a TV with its own playlist of videos and websites.' : e($screen['location'] ?: 'Arrange content for this TV.') ?></p></div><?php if (!$adding): ?><div class="page-actions"><?= partial('Signage::_screen-status', ['screen' => $screen]) ?><a class="btn btn--secondary" href="#screen-settings"><?= icon('settings', 'icon--sm') ?>Settings</a></div><?php endif ?></header>
+<header class="page-header"><div><h1 class="page-title"><?= $adding ? 'Add a screen' : e($screen['name']) ?></h1><?php if ($adding): ?><p class="page-subtitle">Add a TV with its own playlist of videos and websites.</p><?php endif ?></div><?php if (!$adding): ?><div class="page-actions"><?= partial('Signage::_screen-status', ['screen' => $screen]) ?><a class="btn btn--secondary" href="#screen-settings"><?= icon('settings', 'icon--sm') ?>Settings</a></div><?php endif ?></header>
 <?= partial('Signage::_tabs', ['tab' => 'screens']) ?>
 
 <?php if (!$adding): ?>
@@ -34,6 +34,33 @@ $playerUrl = !$adding ? rtrim((string) config('app.url', ''), '/') . '/signage/p
   </section>
 <?php endif ?>
 
+<?php if (!$adding): $photo = (string) ($screen['photo_filename'] ?? ''); ?>
+  <section class="card signage-screen-photo" id="screen-photo" aria-labelledby="screen-photo-title">
+    <div class="signage-screen-photo__image">
+      <?php if ($photo !== ''): ?>
+        <img src="<?= e($base . '/photo?v=' . $photo) ?>" alt="Photo of <?= e($screen['name']) ?>">
+      <?php else: ?>
+        <span class="signage-screen-photo__empty"><?= icon('tv-minimal', 'icon--xl') ?>No photo yet</span>
+      <?php endif ?>
+    </div>
+    <div class="signage-screen-photo__body">
+      <h2 class="card__title" id="screen-photo-title">Screen photo</h2>
+      <p class="signage-help">A photo of this TV where it hangs, so everyone can tell the screens apart. JPG, PNG or WebP, up to 8 MB.</p>
+      <form class="signage-screen-photo__upload" method="post" action="<?= e($base) ?>/photo" enctype="multipart/form-data" data-busy-on-submit>
+        <?= csrf_field() ?>
+        <label class="visually-hidden" for="screen-photo-file">Choose a photo</label>
+        <input class="signage-file" id="screen-photo-file" type="file" name="photo" accept="image/jpeg,image/png,image/webp" required>
+        <button class="btn btn--primary btn--sm" type="submit"><?= icon('upload', 'icon--sm') ?><?= $photo !== '' ? 'Replace photo' : 'Upload photo' ?></button>
+      </form>
+      <?php if ($photo !== ''): ?>
+        <form method="post" action="<?= e($base) ?>/photo/delete" data-confirm="Remove this screen's photo?" data-confirm-button="Remove photo" data-confirm-tone="danger">
+          <?= csrf_field() ?><button class="btn btn--danger-quiet btn--sm" type="submit"><?= icon('trash-2', 'icon--sm') ?>Remove photo</button>
+        </form>
+      <?php endif ?>
+    </div>
+  </section>
+<?php endif ?>
+
 <h2 class="signage-settings-title">Screen settings</h2>
 <form class="card form-card" method="post" action="<?= e($base) ?>" data-busy-on-submit novalidate>
   <?= csrf_field() ?>
@@ -42,10 +69,6 @@ $playerUrl = !$adding ? rtrim((string) config('app.url', ''), '/') . '/signage/p
     <div class="field field--full<?= $field('name') ? ' has-error' : '' ?>">
       <label class="field__label" for="name">Screen name <span class="field__required">required</span></label>
       <input class="input" id="name" name="name" value="<?= e($values['name'] ?? '') ?>" maxlength="160" required autocomplete="off" placeholder="e.g. Main corridor TV"<?= $invalid('name') ?>><?= $error('name') ?>
-    </div>
-    <div class="field field--full<?= $field('location') ? ' has-error' : '' ?>">
-      <label class="field__label" for="location">Location</label>
-      <input class="input" id="location" name="location" value="<?= e($values['location'] ?? '') ?>" maxlength="160" autocomplete="off" placeholder="e.g. 2nd floor"<?= $invalid('location') ?>><?= $error('location') ?>
     </div>
     <div class="field<?= $field('orientation') ? ' has-error' : '' ?>">
       <label class="field__label" for="orientation">Orientation</label>

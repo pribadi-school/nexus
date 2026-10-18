@@ -24,17 +24,13 @@ final class SignageController
 
     public function index(Request $request): Response
     {
-        $screens = $this->signage->screens();
-        return $this->render('screens', [
-            'screens' => $screens,
-            'covers' => $this->signage->playlistCovers(array_map('intval', array_column($screens, 'playlist_id'))),
-        ], 'screens', 'Signage');
+        return $this->render('screens', ['screens' => $this->signage->screens()], 'screens', 'Signage');
     }
 
     public function createScreen(Request $request): Response
     {
         return $this->screenForm(null, [
-            'name' => null, 'location' => null, 'playlist_id' => null,
+            'name' => null, 'playlist_id' => null,
             'orientation' => 'landscape', 'fit' => 'contain', 'muted' => 1, 'enabled' => 1,
         ]);
     }
@@ -71,10 +67,51 @@ final class SignageController
         return Response::redirect('/signage/screens/' . $screen['id'] . '/edit');
     }
 
+    /** GET /signage/screens/{id}/photo : the TV photo (signed-in users only). */
+    public function screenPhoto(Request $request): Response
+    {
+        $screen = $this->screen($request);
+        $filename = (string) ($screen['photo_filename'] ?? '');
+        $path = $filename !== '' ? SignageScreenPhoto::path($filename) : '';
+        if ($path === '' || !is_file($path)) {
+            throw HttpException::notFound('This screen has no photo.');
+        }
+        // The URL carries the file name as its version, so it can be cached.
+        return new Response((string) file_get_contents($path), 200, [
+            'Content-Type' => SignageScreenPhoto::mime($filename),
+            'Cache-Control' => 'private, max-age=31536000, immutable',
+        ]);
+    }
+
+    /** POST /signage/screens/{id}/photo : upload or replace the TV photo. */
+    public function uploadScreenPhoto(Request $request): Response
+    {
+        $screen = $this->screen($request);
+        try {
+            $filename = SignageScreenPhoto::store($request->files['photo'] ?? []);
+        } catch (RuntimeException $error) {
+            Session::flash('error', $error->getMessage());
+            return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#screen-photo');
+        }
+        SignageScreenPhoto::delete($this->signage->setScreenPhoto((int) $screen['id'], $filename));
+        Session::flash('success', 'Screen photo saved.');
+        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#screen-photo');
+    }
+
+    /** POST /signage/screens/{id}/photo/delete */
+    public function deleteScreenPhoto(Request $request): Response
+    {
+        $screen = $this->screen($request);
+        SignageScreenPhoto::delete($this->signage->setScreenPhoto((int) $screen['id'], null));
+        Session::flash('success', 'Screen photo removed.');
+        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#screen-photo');
+    }
+
     public function deleteScreen(Request $request): Response
     {
         $screen = $this->screen($request);
         $this->signage->deleteScreen((int) $screen['id']);
+        SignageScreenPhoto::delete($screen['photo_filename'] ?? null);
         Session::flash('success', 'Screen deleted. Its player address has been disabled.');
         return Response::redirect('/signage/screens');
     }

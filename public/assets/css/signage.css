@@ -30,6 +30,8 @@
 .signage-editor__list { display: flex; flex-direction: column; gap: var(--space-2); padding: 0; margin: 0; list-style: none; }
 .signage-editor__list[data-playlist-drop] { min-height: 80px; padding: var(--space-1); margin: calc(-1 * var(--space-1)); border-radius: var(--radius-lg); transition: background-color 160ms ease-out; }
 .signage-editor__list.is-drop-active { background: var(--color-surface-muted); }
+/* Already in the playlist: hidden from the library so it cannot be added twice. */
+[data-screen-library] [data-in-playlist] { display: none; }
 /* A playlist item held over the library: dropping it removes it from the playlist. */
 .signage-editor__library.is-drop-remove { border-radius: var(--radius-lg); background: var(--color-problem-tint); outline: 2px dashed var(--color-problem); outline-offset: 6px; }
 .signage-editor__empty { display: flex; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-5); margin: var(--space-2) 0; border: 1px dashed var(--color-border-strong); border-radius: var(--radius-lg); color: var(--color-muted-foreground); font-size: var(--fs-ui); }
@@ -119,3 +121,14 @@
   .signage-row__label { display: none; }
   .signage-row__actions .btn { min-width: 76px; }
 }
+
+/* Screen photo: a picture of the TV itself (Settings > Screen photo). */
+.signage-screen-card__photo { display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--color-surface-muted); color: var(--color-muted-foreground); }
+.signage-screen-card__photo:hover { text-decoration: none; }
+.signage-screen-card__photo img, .signage-screen-photo__image img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.signage-screen-photo__empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); width: 100%; height: 100%; font-size: var(--fs-ui); color: var(--color-muted-foreground); }
+.signage-screen-photo { display: grid; gap: var(--space-4); padding: var(--space-4); margin-bottom: var(--space-5); scroll-margin-top: 80px; }
+@media (min-width: 640px) { .signage-screen-photo { grid-template-columns: 240px minmax(0, 1fr); align-items: start; padding: var(--space-5); } }
+.signage-screen-photo__image { aspect-ratio: 16 / 9; overflow: hidden; border-radius: var(--radius-md); background: var(--color-surface-muted); }
+.signage-screen-photo__body { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
+.signage-screen-photo__upload { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }

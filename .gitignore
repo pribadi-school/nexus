@@ -16,6 +16,7 @@ storage/sessions/*
 storage/logs/*
 storage/cache/*
 storage/signage/media/*
+storage/signage/screens/*
 !storage/**/.gitkeep
 
 # OS / editor

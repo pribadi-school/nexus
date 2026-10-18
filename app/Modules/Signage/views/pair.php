@@ -30,7 +30,7 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
         <label class="field__label" for="screen_id">Screen <span class="field__required">required</span></label>
         <select class="select" id="screen_id" name="screen_id" required<?= $invalid('screen_id') ?>>
           <option value="">Choose a screen</option>
-          <?php foreach ($screens as $screen): ?><option value="<?= (int) $screen['id'] ?>"<?= (string) ($values['screen_id'] ?? '') === (string) $screen['id'] ? ' selected' : '' ?>><?= e($screen['name']) ?><?= $screen['location'] ? ' · ' . e($screen['location']) : '' ?></option><?php endforeach ?>
+          <?php foreach ($screens as $screen): ?><option value="<?= (int) $screen['id'] ?>"<?= (string) ($values['screen_id'] ?? '') === (string) $screen['id'] ? ' selected' : '' ?>><?= e($screen['name']) ?></option><?php endforeach ?>
         </select><?= $error('screen_id') ?>
         <p class="field__hint">Pairing gives this TV access to the selected screen's playlist. Approve only a code you can see on your TV.</p>
       </div>

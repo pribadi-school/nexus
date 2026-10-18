@@ -70,7 +70,14 @@ completely separate from the school's WordPress site. UI language: English.
    the web root in `storage/signage/media/` (excluded from Git); website content
    is a validated HTTP(S) URL. Playlists have ordered content and per-website
    durations. Screens select orientation, video fit, mute and
-   playback enablement. Each screen has a random revocable player URL and a
+   playback enablement. Screens are only a name (no location in the UI; the
+   column stays) plus an optional **photo of the TV** (migration 008,
+   `signage_screens.photo_filename`; `SignageScreenPhoto`, JPG/PNG/WebP up to
+   8 MB in `storage/signage/screens/`, served to signed-in users at
+   `/signage/screens/{id}/photo`). The Screens page card shows that photo,
+   the name, status and last seen only. In the editor, content already in
+   the playlist is hidden from the library (no duplicates); dragging a
+   playlist item onto the library removes it. Each screen has a random revocable player URL and a
    last-connected heartbeat; the standalone browser player polls every 30s,
    loops MP4s and timed website frames, and supports range streaming. It needs
    connectivity. The companion `android-tv/` app pairs by a six-digit code,

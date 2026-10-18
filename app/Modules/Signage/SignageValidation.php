@@ -12,12 +12,11 @@ final class SignageValidation
     public static function screen(array $input): array
     {
         $validator = new Validator($input, [
-            'name' => 'Screen name', 'location' => 'Location',
+            'name' => 'Screen name',
             'orientation' => 'Orientation', 'fit' => 'Video fit',
         ]);
         $data = $validator->validate([
             'name' => ['required', 'max:160'],
-            'location' => ['max:160'],
             'orientation' => ['required', 'in:landscape,portrait'],
             'fit' => ['required', 'in:contain,cover'],
         ]);

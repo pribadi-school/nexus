@@ -3,6 +3,10 @@ const editor = document.querySelector('[data-screen-editor]');
 document.querySelector('[href="#screen-settings"]')?.addEventListener('click', () => {
   document.getElementById('screen-settings').open = true;
 });
+// Coming back from a photo upload (#screen-photo) opens the settings it sits in.
+if (location.hash.length > 1) {
+  document.getElementById(location.hash.slice(1))?.closest('details')?.setAttribute('open', '');
+}
 if (editor) {
   const list = editor.querySelector('[data-playlist-drop]');
   const library = editor.querySelector('[data-screen-library]');
@@ -25,8 +29,18 @@ if (editor) {
   slot.className = 'signage-drag-slot';
   slot.setAttribute('aria-hidden', 'true');
 
+  // Content already in the playlist is hidden from the library (no duplicates)
+  // and shows again when it is removed from the playlist.
+  const syncLibrary = () => {
+    const used = new Set(rows().map(row => row.dataset.contentId));
+    const all = [...library.querySelectorAll('[data-editor-item]')];
+    all.forEach(row => row.toggleAttribute('data-in-playlist', used.has(row.dataset.contentId)));
+    const allUsed = editor.querySelector('[data-library-all-used]');
+    if (allUsed) allUsed.hidden = !all.length || all.some(row => !row.hasAttribute('data-in-playlist'));
+  };
   const update = (message = '') => {
     const items = rows();
+    syncLibrary();
     dirty = JSON.stringify(serialize()) !== initial;
     items.forEach((row, index) => {
       row.querySelector('[data-item-position]').textContent = index + 1;
@@ -54,6 +68,10 @@ if (editor) {
     row.querySelectorAll('a, img').forEach(node => { node.draggable = false; });
   };
   const add = (source, before = null) => {
+    if (rows().some(row => row.dataset.contentId === source.dataset.contentId)) {
+      update(`${source.dataset.contentName} is already in this playlist.`);
+      return;
+    }
     if (rows().length >= 1000) {
       feedback.textContent = 'A playlist can contain up to 1,000 items.';
       feedback.classList.add('is-error');
@@ -102,7 +120,7 @@ if (editor) {
   });
   editor.querySelector('[data-library-search]').addEventListener('input', event => {
     const query = event.target.value.trim().toLocaleLowerCase();
-    const available = [...library.querySelectorAll('[data-editor-item]')];
+    const available = [...library.querySelectorAll('[data-editor-item]:not([data-in-playlist])')];
     available.forEach(row => { row.hidden = !row.dataset.contentName.toLocaleLowerCase().includes(query); });
     editor.querySelector('[data-library-no-results]').hidden = !available.length || available.some(row => !row.hidden);
   });

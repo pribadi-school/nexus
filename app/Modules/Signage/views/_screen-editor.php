@@ -26,5 +26,6 @@
     </ul>
     <?php if ($content === []): ?><p class="signage-help">Upload an MP4 video or add a website to start.</p><?php endif ?>
     <p class="signage-help" data-library-no-results hidden>No matching content.</p>
+    <p class="signage-help" data-library-all-used hidden>Everything in the library is already in this playlist.</p>
   </div>
 </section>

@@ -54,7 +54,7 @@ enough for the Nexus playlist or it will leave the page at that duration.
   `database/migrations/006_signage.sql` once, after migration 005.
 - Set `APP_URL` in `.env` to the public HTTPS Nexus address so copied player
   links work on TVs.
-- Keep `storage/signage/media/` writable by PHP and outside the public document
+- Keep `storage/signage/media/` (videos) and `storage/signage/screens/` (TV photos) writable by PHP and outside the public document
   root. Uploads are served through Nexus with byte-range support for video.
 - PHP needs `fileinfo`, alongside the app's existing extensions. No Composer,
   Node.js, FFmpeg, worker, or background daemon is required on the server.
@@ -69,7 +69,7 @@ enough for the Nexus playlist or it will leave the page at that duration.
   caching may reduce transfers, but repeated playback across many TVs can
   consume substantial bandwidth. Check the hosting provider's media-serving
   policy and allowance before a large rollout.
-- Back up both the database and `storage/signage/media/`. Runtime uploads are
+- Back up the database, `storage/signage/media/` and `storage/signage/screens/`. Runtime uploads are
   excluded from Git and will not be copied by a Git deployment.
 
 ## Player links and access

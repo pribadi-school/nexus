@@ -48,6 +48,9 @@ $router->get('/signage/screens/{id}/edit', [SignageController::class, 'editScree
 $router->post('/signage/screens/{id}', [SignageController::class, 'updateScreen']);
 $router->post('/signage/screens/{id}/delete', [SignageController::class, 'deleteScreen']);
 $router->post('/signage/screens/{id}/rotate-token', [SignageController::class, 'rotateScreenToken']);
+$router->get('/signage/screens/{id}/photo', [SignageController::class, 'screenPhoto']);
+$router->post('/signage/screens/{id}/photo', [SignageController::class, 'uploadScreenPhoto']);
+$router->post('/signage/screens/{id}/photo/delete', [SignageController::class, 'deleteScreenPhoto']);
 
 $router->get('/signage/content', [SignageController::class, 'content']);
 $router->get('/signage/content/create', [SignageController::class, 'createContent']);
