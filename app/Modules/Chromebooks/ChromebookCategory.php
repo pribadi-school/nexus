@@ -58,6 +58,19 @@ final class ChromebookCategory extends Category
         return 'e.g. Screen cracked in the bottom corner. Student reported it after class.';
     }
 
+    public function searchIds(string $query, int $limit): array
+    {
+        $like = self::likePattern($query);
+        return array_map('intval', array_column(db()->all(
+            "SELECT d.id FROM devices d
+             JOIN chromebooks c ON c.device_id = d.id
+             WHERE d.category = 'chromebook' AND d.deleted_at IS NULL
+               AND (c.asset_id LIKE ? OR d.serial_number LIKE ? OR c.student_name LIKE ? OR c.student_email LIKE ?)
+             ORDER BY c.academic_year DESC, c.asset_id LIMIT " . max(1, $limit),
+            [$like, $like, $like, $like],
+        ), 'id'));
+    }
+
     public function registerRoutes(Router $router): void
     {
         $router->get('/chromebooks', [ChromebookController::class, 'index']);

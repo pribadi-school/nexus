@@ -94,8 +94,8 @@
   white-space: nowrap;
 }
 
-/* Sidebar (desktop) */
-.sidebar { display: none; }
+/* Sidebar + page bar (desktop) */
+.sidebar, .pagebar { display: none; }
 
 @media (min-width: 1024px) {
   .topbar, .bottom-nav { display: none; }
@@ -107,19 +107,61 @@
     display: flex;
     flex-direction: column;
     width: var(--sidebar-width);
-    padding: var(--space-5) var(--space-3) var(--space-3);
+    padding: var(--space-6) var(--space-4) var(--space-4);
     background: var(--color-surface);
     border-right: 1px solid var(--color-border-strong);
     overflow-y: auto;
   }
   .main {
     margin-left: var(--sidebar-width);
-    padding: var(--space-6);
+    padding: 0;
+  }
+  .main__inner { padding: var(--space-6) var(--space-6) var(--space-7); }
+
+  /* Breadcrumb + refresh, across the top of the content. */
+  .pagebar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    height: var(--topbar-height);
+    padding: 0 var(--space-5) 0 var(--space-6);
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border-strong);
   }
 }
 
+.breadcrumb ol {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-ui);
+}
+.breadcrumb li { display: flex; align-items: center; gap: var(--space-2); }
+.breadcrumb a { color: var(--color-muted-foreground); }
+.breadcrumb a:hover { color: var(--color-action); }
+.breadcrumb [aria-current='page'] { font-weight: 600; color: var(--color-foreground); }
+.breadcrumb__sep { color: var(--color-muted-foreground); }
+
 .sidebar__brand {
   padding: 0 var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+/* The app's name under the logo, as in the other Pribadi apps. */
+.sidebar__system {
+  margin: var(--space-5) var(--space-3) var(--space-5);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--color-foreground);
 }
 .nav {
   display: flex;
@@ -144,24 +186,30 @@
   font-weight: 600;
 }
 
-.sidebar__user {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
+.nav__link--button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+}
+
+/* Bottom of the sidebar: who is signed in, and Sign out. */
+.sidebar__footer {
   margin-top: auto;
-  padding: var(--space-3) var(--space-2) 0 var(--space-3);
+  padding-top: var(--space-3);
   border-top: 1px solid var(--color-border);
 }
-.sidebar__user-text { flex: 1; min-width: 0; }
-.sidebar__user-name {
+.sidebar__user-meta {
+  padding: 0 var(--space-3) var(--space-2);
+  font-size: var(--fs-caption);
+  color: var(--color-muted-foreground);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--fs-ui);
-  font-weight: 600;
-  color: var(--color-foreground);
 }
-.sidebar__user-meta { font-size: var(--fs-caption); color: var(--color-muted-foreground); }
+.sidebar__user-meta strong { font-weight: 600; color: var(--color-foreground); }
 
 /* Account menu (phones and tablets): a native popover, no JS needed. */
 .account-menu {

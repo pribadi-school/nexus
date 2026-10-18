@@ -41,6 +41,19 @@ final class CctvCategory extends Category
         return 'e.g. Picture is blurry at night. Lens needs cleaning.';
     }
 
+    public function searchIds(string $query, int $limit): array
+    {
+        $like = self::likePattern($query);
+        return array_map('intval', array_column(db()->all(
+            "SELECT d.id FROM devices d
+             JOIN cctv_cameras c ON c.device_id = d.id
+             WHERE d.category = 'cctv' AND d.deleted_at IS NULL
+               AND (c.label LIKE ? OR d.model LIKE ?)
+             ORDER BY d.id LIMIT " . max(1, $limit),
+            [$like, $like],
+        ), 'id'));
+    }
+
     public function registerRoutes(Router $router): void
     {
         $router->get('/cctv', [CctvController::class, 'index']);

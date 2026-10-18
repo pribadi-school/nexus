@@ -48,6 +48,20 @@ final class StudyTouchCategory extends Category
         return 'e.g. Touch does not respond on the left side. Teacher reported it this morning.';
     }
 
+    public function searchIds(string $query, int $limit): array
+    {
+        $like = self::likePattern($query);
+        return array_map('intval', array_column(db()->all(
+            "SELECT d.id FROM devices d
+             JOIN studytouch_boards b ON b.device_id = d.id
+             JOIN rooms r ON r.id = b.room_id
+             WHERE d.category = 'studytouch' AND d.deleted_at IS NULL
+               AND (r.name LIKE ? OR d.model LIKE ? OR b.firmware_version LIKE ?)
+             ORDER BY r.sort_order, r.name LIMIT " . max(1, $limit),
+            [$like, $like, $like],
+        ), 'id'));
+    }
+
     public function lists(): array
     {
         return [new LookupList(

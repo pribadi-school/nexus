@@ -80,6 +80,23 @@ abstract class Category
         return [];
     }
 
+    /**
+     * Ids of this category's devices matching the dashboard search (not
+     * deleted), best matches first. Override with the category's own fields.
+     *
+     * @return list<int>
+     */
+    public function searchIds(string $query, int $limit): array
+    {
+        return [];
+    }
+
+    /** LIKE pattern for $query with % and _ escaped. */
+    protected static function likePattern(string $query): string
+    {
+        return '%' . addcslashes($query, '%_\\') . '%';
+    }
+
     /** "Classroom 7B", for headings, toasts and confirmations about one device. */
     public function title(int $deviceId): string
     {

@@ -10,6 +10,21 @@ use App\Core\Navigation;
 $user = auth_user();
 $mainNav = Navigation::main();
 $name = (string) ($user['name'] ?? '');
+
+// Breadcrumb for the desktop top bar: the section (sidebar item), then the
+// page when it is not the section itself. "Classroom 7B · StudyTouch" -> "Classroom 7B".
+$section = null;
+foreach ($mainNav as $item) {
+    if (is_active($item['href'])) {
+        $section = $item;
+    }
+}
+$pageName = trim(explode(' · ', $title)[0]);
+$crumbs = [];
+if ($section !== null && $pageName !== $section['label']) {
+    $crumbs[] = ['label' => $section['label'], 'href' => $section['href']];
+}
+$crumbs[] = ['label' => $pageName !== '' ? $pageName : 'Nexus', 'href' => null];
 ?>
 <!doctype html>
 <html lang="en">
@@ -21,6 +36,7 @@ $name = (string) ($user['name'] ?? '');
 
 <aside class="sidebar" aria-label="Main">
   <div class="sidebar__brand"><?= partial('partials/lockup', ['href' => '/']) ?></div>
+  <p class="sidebar__system"><?= e(config('app.system_name')) ?></p>
 
   <nav class="nav" aria-label="Sections">
     <?php foreach ($mainNav as $item): ?>
@@ -30,15 +46,11 @@ $name = (string) ($user['name'] ?? '');
     <?php endforeach ?>
   </nav>
 
-  <div class="sidebar__user">
-    <?= partial('partials/avatar', ['user' => $user, 'size' => 'sm']) ?>
-    <div class="sidebar__user-text">
-      <p class="sidebar__user-name"><?= e($name) ?></p>
-      <p class="sidebar__user-meta">Signed in</p>
-    </div>
+  <div class="sidebar__footer">
+    <p class="sidebar__user-meta">Signed in as <strong><?= e($name) ?></strong></p>
     <form method="post" action="/logout">
       <?= csrf_field() ?>
-      <button type="submit" class="icon-btn" title="Sign out"><?= icon('log-out', '', 'Sign out') ?></button>
+      <button type="submit" class="nav__link nav__link--button"><?= icon('log-out') ?><span>Sign out</span></button>
     </form>
   </div>
 </aside>
@@ -64,6 +76,23 @@ $name = (string) ($user['name'] ?? '');
 </header>
 
 <main id="main" class="main" tabindex="-1">
+  <div class="pagebar">
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <ol>
+        <?php foreach ($crumbs as $i => $crumb): ?>
+          <li>
+            <?php if ($i > 0): ?><?= icon('chevron-right', 'icon--sm breadcrumb__sep') ?><?php endif ?>
+            <?php if ($crumb['href'] !== null): ?>
+              <a href="<?= e($crumb['href']) ?>"><?= e($crumb['label']) ?></a>
+            <?php else: ?>
+              <span aria-current="page"><?= e($crumb['label']) ?></span>
+            <?php endif ?>
+          </li>
+        <?php endforeach ?>
+      </ol>
+    </nav>
+    <a class="icon-btn" href="<?= e(request_uri()) ?>" title="Refresh"><?= icon('refresh-cw', '', 'Refresh this page') ?></a>
+  </div>
   <div class="main__inner">
     <?= partial('partials/flashes') ?>
     <?= $content ?>

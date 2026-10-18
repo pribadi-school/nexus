@@ -8,8 +8,13 @@ completely separate from the school's WordPress site. UI language: English.
 
 ## Status and build order
 
-1. **Done:** logo assets, layout (sidebar / bottom nav), sign-in, Dashboard
-   (category tiles, "Needs attention", recent-activity feed), sample data.
+1. **Done:** logo assets, layout (sidebar with "IT Infrastructure Management
+   System" under the logo + Sign out at the bottom; desktop page bar with
+   breadcrumb + refresh; bottom nav on phones), sign-in, Dashboard laid out
+   like the other Pribadi apps (search across all devices at `/search`
+   via `Category::searchIds`, stat strip per category + "Needs attention",
+   problem alert, problem table, compact recent activity)
+   and sample data.
 2. **Done: StudyTouch** (`app/Modules/StudyTouch`): list (table ≥900px,
    cards below) with live search + status filter (no room filter: one
    board per room, so search covers it),

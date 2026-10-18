@@ -20,6 +20,7 @@ $router->post('/logout', [AuthController::class, 'logout'], public: true);
 // Dashboard
 $router->get('/', [DashboardController::class, 'index']);
 $router->get('/activity', [DashboardController::class, 'activity']);
+$router->get('/search', [DashboardController::class, 'search']);
 
 // Any device, whatever its category: forwards to the category's own page,
 // and the shared status switch and notes log post here.

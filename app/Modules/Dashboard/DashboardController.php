@@ -14,6 +14,7 @@ use App\Devices\NoteRepository;
 final class DashboardController
 {
     private const FEED_PAGE = 15;
+    private const RECENT_ON_DASHBOARD = 5;
 
     /** GET / */
     public function index(Request $request): Response
@@ -26,16 +27,26 @@ final class DashboardController
             $summaries[] = ['category' => $category] + $counts[$key];
         }
 
-        [$feed, $nextCursor] = $this->feedPage(null);
-
         return Response::html(View::render('Dashboard::index', [
             'summaries' => $summaries,
-            'attention' => $devices->withProblems(8),
+            'attention' => $devices->withProblems(10),
             'problemTotal' => array_sum(array_column($counts, 'problem')),
-            'feed' => $feed,
-            'nextCursor' => $nextCursor,
+            'deviceTotal' => array_sum(array_column($counts, 'total')),
+            'feed' => (new NoteRepository())->recent(self::RECENT_ON_DASHBOARD),
             'pendingMigrations' => Migrations::pending(),
         ], 'layouts/app', 'Dashboard'));
+    }
+
+    /** GET /search?q= : devices of every category matching the dashboard search. */
+    public function search(Request $request): Response
+    {
+        $query = mb_substr((string) $request->query('q', ''), 0, 100);
+        $results = $query === '' ? [] : (new DeviceRepository())->search($query);
+
+        return Response::html(View::render('Dashboard::search', [
+            'query' => $query,
+            'results' => $results,
+        ], 'layouts/app', $query === '' ? 'Search' : "Search: $query"));
     }
 
     /**
