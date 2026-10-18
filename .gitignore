@@ -4,11 +4,18 @@
 # Local dev database and tooling
 .dev/
 node_modules/
+android-tv/.gradle/
+android-tv/local.properties
+android-tv/**/build/
+dist/
+*.jks
+*.keystore
 
 # Runtime files (folders are kept via .gitkeep)
 storage/sessions/*
 storage/logs/*
 storage/cache/*
+storage/signage/media/*
 !storage/**/.gitkeep
 
 # OS / editor

@@ -6,6 +6,9 @@ namespace App\Core;
 
 final class Response
 {
+    private ?\Closure $stream = null;
+    private bool $playerDocument = false;
+
     /** @param array<string, string> $headers */
     public function __construct(
         public string $body = '',
@@ -35,11 +38,34 @@ final class Response
         return new self('', $status, ['Location' => $to]);
     }
 
+    /** Only the standalone signage player may embed websites or be embedded. */
+    public static function playerHtml(string $body): self
+    {
+        $response = self::html($body);
+        $response->playerDocument = true;
+        return $response;
+    }
+
+    /** @param array<string, string> $headers */
+    public static function stream(callable $send, int $status = 200, array $headers = []): self
+    {
+        $response = new self('', $status, $headers);
+        $response->stream = \Closure::fromCallable($send);
+        return $response;
+    }
+
     public function send(): void
     {
         http_response_code($this->status);
         foreach ($this->securityHeaders() + $this->headers as $name => $value) {
             header("$name: $value");
+        }
+        if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'HEAD') {
+            return;
+        }
+        if ($this->stream !== null) {
+            ($this->stream)();
+            return;
         }
         echo $this->body;
     }
@@ -47,7 +73,7 @@ final class Response
     /** @return array<string, string> */
     private function securityHeaders(): array
     {
-        return [
+        $headers = [
             // Only our own files.
             'Content-Security-Policy' => implode('; ', [
                 "default-src 'self'",
@@ -65,5 +91,26 @@ final class Response
             'X-Frame-Options' => 'DENY',
             'Cache-Control' => 'no-store',
         ];
+        if ($this->playerDocument) {
+            $headers['Content-Security-Policy'] = implode('; ', [
+                "default-src 'self'",
+                "img-src 'self' data:",
+                "style-src 'self'",
+                "script-src 'self'",
+                "font-src 'self'",
+                "connect-src 'self'",
+                "media-src 'self'",
+                'frame-src https: http:',
+                "form-action 'none'",
+                'frame-ancestors https: http:',
+                "base-uri 'none'",
+            ]);
+            unset($headers['X-Frame-Options']);
+            $headers['Referrer-Policy'] = 'no-referrer';
+        }
+        if ($this->stream !== null) {
+            $headers['Cache-Control'] = 'private, max-age=0, must-revalidate';
+        }
+        return $headers;
     }
 }

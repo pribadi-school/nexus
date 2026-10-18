@@ -39,6 +39,7 @@ final class StudyTouchController
     {
         $filters = [
             'status' => in_array($request->query('status'), Status::ALL, true) ? $request->query('status') : null,
+            'model' => in_array($request->query('model'), StudyTouchCategory::MODELS, true) ? $request->query('model') : null,
             'q' => $request->query('q') !== null ? mb_substr((string) $request->query('q'), 0, 100) : null,
         ];
         $data = [

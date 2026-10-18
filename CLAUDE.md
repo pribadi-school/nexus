@@ -29,8 +29,10 @@ completely separate from the school's WordPress site. UI language: English.
    `CctvCategory::TYPES`: "C200" / "Old version") and **SD card size**
    (`CctvCategory::SD_SIZES`: 32/64/128/256 GB). The list shows only those
    in the order cameras were added (the school's
-   sheet order), with search by spot and type/status filters. No areas,
-   location, IP or serial (dropped in migration 004). "Mark as checked"
+   sheet order), with search by spot/location and location/type/status filters.
+   Migration 005 adds optional locations from the editable list at
+   `/cctv/locations`, initially 1st–4th floor. SD is on 2nd floor, SMP/SMA on
+   3rd, AVR on 4th; other cameras start unassigned. No IP or serial. "Mark as checked"
    (`POST /cctv/{id}/checked` → `DeviceService::markChecked`) is on the
    detail page only. The 55 real cameras come from migration 004.
 4. **Done: Chromebooks** (`app/Modules/Chromebooks`), organised by
@@ -55,8 +57,31 @@ completely separate from the school's WordPress site. UI language: English.
    asset IDs from another year, never clears with empty cells, applies in
    one transaction. Real student data is uploaded on the server, never
    committed.
-5. **Next:** `docs/deploy-cpanel.md`: subdomain, MySQL database + user,
-   importing the migrations, `.env`, cPanel Git "Update from Remote".
+5. **Done: Signage** (`app/Modules/Signage`): separate navigation item below
+   Chromebooks. `/signage` opens the Content library first, with large browser-
+   generated video thumbnails; Screens lives at `/signage/screens`, and
+   Playlists at `/signage/playlists`. MP4 uploads live outside
+   the web root in `storage/signage/media/` (excluded from Git); website content
+   is a validated HTTP(S) URL. Playlists have ordered content and per-website
+   durations. Screens select a playlist, orientation, video fit, mute and
+   playback enablement. Each screen has a random revocable player URL and a
+   last-connected heartbeat; the standalone browser player polls every 30s,
+   loops MP4s and timed website frames, and supports range streaming. It needs
+   connectivity. The companion `android-tv/` app pairs by a six-digit code,
+   downloads complete MP4 playlists for offline playback, and supports
+   one-time default Home configuration for TV startup (see `docs/android-tv.md`).
+   It does not use the AbleSign API. Migration 007 adds expiring device-secret
+   pairing requests and hashed-IP start throttling; only its two public POST
+   APIs omit CSRF. The signed-in pairing approval form still requires CSRF.
+   Migration 006 adds four signage tables without seeds. `config/signage.php`
+   and `SIGNAGE_MAX_UPLOAD_MB` control the upload ceiling, further limited by
+   PHP settings. Only player documents allow website frames / embedding;
+   normal admin CSP stays strict. See `docs/signage.md` for cPanel setup and
+   `tests/signage.php` for local rollback regression checks.
+6. **Documented:** `docs/deploy-cpanel.md`: repository at
+   `/home/pribadisch/repositories/nexus`, subdomain, database and media transfer,
+   production `.env`, and cPanel Git "Update from Remote". Deployment itself
+   must be verified on the hosting account.
 
 ### Shared device building blocks (reuse them, don't copy them)
 
@@ -265,13 +290,13 @@ deployed yet.
 - Icons: Lucide, via `icon('name')` from `public/assets/icons/sprite.svg`.
   To add one, put its name in `ICONS` in `tools/build-assets.mjs` and rebuild.
 
-## Deployment (summary; full guide comes in docs/deploy-cpanel.md)
+## Deployment (summary; full guide in docs/deploy-cpanel.md)
 
-- cPanel Git Version Control clones the repo (e.g. `~/nexus`); the subdomain's
+- cPanel Git Version Control clones the repo to `~/repositories/nexus`; the subdomain's
   document root points at its `public/` folder. If a host cannot do that, the
   root `.htaccess` forwards everything into `public/`.
 - Deploy = `git push`, then cPanel → Git → "Update from Remote". Nothing to build.
 - On the server: create `.env` from `.env.example` (APP_ENV=production,
   APP_DEBUG=false, a long APP_PASSWORD, DB credentials); `storage/` must be
-  writable; PHP 8.1+ with pdo_mysql, mbstring, and zip + SimpleXML for .xlsx imports (CSV works without).
+  writable; PHP 8.2+ with pdo_mysql, mbstring, fileinfo, and zip + SimpleXML for .xlsx imports (CSV works without).
 - New migrations are imported by hand in phpMyAdmin, in order.

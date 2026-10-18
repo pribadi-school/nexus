@@ -32,7 +32,12 @@ date_default_timezone_set('UTC');
 
 ErrorHandler::register((bool) config('app.debug'), BASE_PATH . '/storage/logs/app.log');
 
-if (PHP_SAPI !== 'cli') {
+// These endpoints use a screen token or device secret, never a login cookie.
+// TV polling must not create a new session file on every request.
+$publicPlayer = preg_match('#^/signage/player/[a-f0-9]{64}(?:/(?:manifest|media/\d+))?/?$#', (string) parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH));
+$publicPairing = ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+    && in_array(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), ['/signage/api/pairing/start', '/signage/api/pairing/poll'], true);
+if (PHP_SAPI !== 'cli' && !$publicPlayer && !$publicPairing) {
     Session::start();
 }
 

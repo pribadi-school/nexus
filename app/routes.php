@@ -6,6 +6,9 @@ use App\Auth\AuthController;
 use App\Core\Router;
 use App\Devices\DeviceController;
 use App\Modules\Dashboard\DashboardController;
+use App\Modules\Signage\SignageController;
+use App\Modules\Signage\SignagePlayerController;
+use App\Modules\Signage\SignagePairingController;
 
 // Every route needs a signed-in person unless marked public: true.
 // Device categories add their own routes from their Category class.
@@ -30,5 +33,46 @@ $router->post('/devices/{id}/notes', [DeviceController::class, 'addNote']);
 
 // Device categories (config/modules.php)
 categories()->registerRoutes($router);
+
+// Signage manages displays and content separately from the device inventory.
+$router->get('/signage', [SignageController::class, 'content']);
+$router->get('/signage/screens', [SignageController::class, 'index']);
+$router->get('/signage/pair', [SignagePairingController::class, 'show']);
+$router->post('/signage/pair', [SignagePairingController::class, 'claim']);
+// Native TVs authenticate polling with a generated device secret, not an admin session.
+$router->post('/signage/api/pairing/start', [SignagePairingController::class, 'start'], public: true, csrf: false);
+$router->post('/signage/api/pairing/poll', [SignagePairingController::class, 'poll'], public: true, csrf: false);
+$router->get('/signage/screens/create', [SignageController::class, 'createScreen']);
+$router->post('/signage/screens', [SignageController::class, 'storeScreen']);
+$router->get('/signage/screens/{id}/edit', [SignageController::class, 'editScreen']);
+$router->post('/signage/screens/{id}', [SignageController::class, 'updateScreen']);
+$router->post('/signage/screens/{id}/delete', [SignageController::class, 'deleteScreen']);
+$router->post('/signage/screens/{id}/rotate-token', [SignageController::class, 'rotateScreenToken']);
+
+$router->get('/signage/content', [SignageController::class, 'content']);
+$router->get('/signage/content/create', [SignageController::class, 'createContent']);
+$router->post('/signage/content', [SignageController::class, 'storeContent']);
+$router->get('/signage/content/{id}/edit', [SignageController::class, 'editContent']);
+$router->post('/signage/content/{id}', [SignageController::class, 'updateContent']);
+$router->post('/signage/content/{id}/delete', [SignageController::class, 'deleteContent']);
+
+$router->get('/signage/playlists', [SignageController::class, 'playlists']);
+$router->get('/signage/playlists/create', [SignageController::class, 'createPlaylist']);
+$router->post('/signage/playlists', [SignageController::class, 'storePlaylist']);
+$router->get('/signage/playlists/{id}/edit', [SignageController::class, 'editPlaylist']);
+$router->post('/signage/playlists/{id}', [SignageController::class, 'updatePlaylist']);
+$router->post('/signage/playlists/{id}/delete', [SignageController::class, 'deletePlaylist']);
+$router->post('/signage/playlists/{id}/items', [SignageController::class, 'addPlaylistItem']);
+$router->post('/signage/playlists/{id}/items/{item}', [SignageController::class, 'updatePlaylistItem']);
+$router->post('/signage/playlists/{id}/items/{item}/move', [SignageController::class, 'movePlaylistItem']);
+$router->post('/signage/playlists/{id}/items/{item}/delete', [SignageController::class, 'deletePlaylistItem']);
+
+// Preview stays signed in. TV links use an unguessable, revocable screen token.
+$router->get('/signage/playlists/{id}/preview', [SignagePlayerController::class, 'preview']);
+$router->get('/signage/playlists/{id}/preview/manifest', [SignagePlayerController::class, 'previewManifest']);
+$router->get('/signage/preview/media/{id}', [SignagePlayerController::class, 'previewMedia']);
+$router->get('/signage/player/{token}', [SignagePlayerController::class, 'player'], public: true);
+$router->get('/signage/player/{token}/manifest', [SignagePlayerController::class, 'manifest'], public: true);
+$router->get('/signage/player/{token}/media/{id}', [SignagePlayerController::class, 'media'], public: true);
 
 return $router;

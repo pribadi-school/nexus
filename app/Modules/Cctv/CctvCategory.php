@@ -6,6 +6,7 @@ namespace App\Modules\Cctv;
 
 use App\Core\Router;
 use App\Devices\Category;
+use App\Devices\LookupList;
 
 /** Cameras, each known by its spot. Detail table: cctv_cameras. */
 final class CctvCategory extends Category
@@ -47,11 +48,28 @@ final class CctvCategory extends Category
         return array_map('intval', array_column(db()->all(
             "SELECT d.id FROM devices d
              JOIN cctv_cameras c ON c.device_id = d.id
+             LEFT JOIN cctv_locations l ON l.id = c.location_id
              WHERE d.category = 'cctv' AND d.deleted_at IS NULL
-               AND (c.label LIKE ? OR d.model LIKE ?)
+               AND (c.label LIKE ? OR d.model LIKE ? OR l.name LIKE ?)
              ORDER BY d.id LIMIT " . max(1, $limit),
-            [$like, $like],
+            [$like, $like, $like],
         ), 'id'));
+    }
+
+    public function lists(): array
+    {
+        return [new LookupList(
+            table: 'cctv_locations',
+            path: '/cctv/locations',
+            title: 'Locations',
+            singular: 'location',
+            intro: 'The floors and other locations cameras are in.',
+            category: $this,
+            usageSql: "SELECT c.location_id AS id, COUNT(*) AS n
+                       FROM cctv_cameras c JOIN devices d ON d.id = c.device_id AND d.deleted_at IS NULL
+                       WHERE c.location_id IS NOT NULL GROUP BY c.location_id",
+            usageNoun: ['camera', 'cameras'],
+        )];
     }
 
     public function registerRoutes(Router $router): void

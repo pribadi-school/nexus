@@ -102,7 +102,7 @@ $crumbs[] = ['label' => $pageName !== '' ? $pageName : 'Nexus', 'href' => null];
 <nav class="bottom-nav" aria-label="Sections">
   <?php foreach ($mainNav as $item): ?>
     <a class="bottom-nav__link" href="<?= e($item['href']) ?>"<?= is_active($item['href']) ? ' aria-current="page"' : '' ?>>
-      <?= icon($item['icon']) ?><span class="bottom-nav__label"><?= e($item['label']) ?></span>
+      <?= icon($item['icon']) ?><span class="bottom-nav__label"><?= e($item['label'] === 'Chromebooks' ? 'Chromebook' : $item['label']) ?></span>
     </a>
   <?php endforeach ?>
 </nav>

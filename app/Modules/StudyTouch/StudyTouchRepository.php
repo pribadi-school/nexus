@@ -30,7 +30,7 @@ final class StudyTouchRepository
                             WHERE d.category = 'studytouch' AND d.deleted_at IS NULL";
 
     /**
-     * @param array{status:?string, q:?string} $filters
+     * @param array{status:?string, model?:?string, q:?string} $filters
      * @return list<array<string, mixed>>
      */
     public function search(array $filters): array
@@ -41,6 +41,10 @@ final class StudyTouchRepository
         if ($filters['status'] !== null && Status::isValid($filters['status'])) {
             $sql .= ' AND d.status = ?';
             $params[] = $filters['status'];
+        }
+        if (in_array($filters['model'] ?? null, StudyTouchCategory::MODELS, true)) {
+            $sql .= ' AND d.model = ?';
+            $params[] = $filters['model'];
         }
         if ($filters['q'] !== null) {
             $like = '%' . addcslashes($filters['q'], '%_\\') . '%';

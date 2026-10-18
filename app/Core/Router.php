@@ -10,11 +10,12 @@ use App\Auth\Auth;
  * Maps "METHOD /path/{param}" to [Controller::class, 'method'].
  *
  * Every route needs a signed-in person unless it is marked public: true.
- * Every POST checks the CSRF token.
+ * Every POST checks the CSRF token unless an explicitly exempt public API
+ * authenticates through its own device secret.
  */
 final class Router
 {
-    /** @var list<array{method:string, pattern:string, regex:string, handler:array{0:class-string,1:string}, public:bool}> */
+    /** @var list<array{method:string, pattern:string, regex:string, handler:array{0:class-string,1:string}, public:bool, csrf:bool}> */
     private array $routes = [];
 
     /** @param array{0:class-string,1:string} $handler */
@@ -24,14 +25,17 @@ final class Router
     }
 
     /** @param array{0:class-string,1:string} $handler */
-    public function post(string $pattern, array $handler, bool $public = false): void
+    public function post(string $pattern, array $handler, bool $public = false, bool $csrf = true): void
     {
-        $this->add('POST', $pattern, $handler, $public);
+        $this->add('POST', $pattern, $handler, $public, $csrf);
     }
 
     /** @param array{0:class-string,1:string} $handler */
-    private function add(string $method, string $pattern, array $handler, bool $public): void
+    private function add(string $method, string $pattern, array $handler, bool $public, bool $csrf = true): void
     {
+        if (!$public && !$csrf) {
+            throw new \InvalidArgumentException('Only public device API routes may omit the session CSRF token.');
+        }
         // {id} matches digits; any other {name} matches one path segment.
         $regex = preg_replace_callback(
             '/\{(\w+)\}/',
@@ -44,6 +48,7 @@ final class Router
             'regex' => '#^' . $regex . '$#',
             'handler' => $handler,
             'public' => $public,
+            'csrf' => $csrf,
         ];
     }
 
@@ -69,10 +74,10 @@ final class Router
         throw HttpException::notFound();
     }
 
-    /** @param array{method:string, pattern:string, regex:string, handler:array{0:class-string,1:string}, public:bool} $route */
+    /** @param array{method:string, pattern:string, regex:string, handler:array{0:class-string,1:string}, public:bool, csrf:bool} $route */
     private function run(array $route, Request $request): Response
     {
-        if ($request->method === 'POST' && !Csrf::verify($request)) {
+        if ($request->method === 'POST' && $route['csrf'] && !Csrf::verify($request)) {
             throw new HttpException(419, 'This form expired. Go back, reload the page and try again.');
         }
 

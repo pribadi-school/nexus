@@ -3,7 +3,8 @@
  * @var \App\Modules\Cctv\CctvCategory $category
  * @var list<array<string, mixed>> $cameras
  * @var array{total:int, ok:int, problem:int} $counts
- * @var array{status:?string, type:?string, q:?string} $filters
+ * @var array{status:?string, type:?string, location:?string, q:?string} $filters
+ * @var list<array{id:int, name:string}> $locations
  * @var bool $filtered
  */
 use App\Modules\Cctv\CctvCategory;
@@ -19,16 +20,27 @@ use App\Modules\Cctv\CctvCategory;
     </p>
   </div>
   <div class="page-actions">
+    <a class="btn btn--secondary" href="/cctv/locations"><?= icon('map-pin', 'icon--sm') ?>Locations</a>
     <a class="btn btn--primary" href="/cctv/new"><?= icon('plus', 'icon--sm') ?>Add camera</a>
   </div>
 </header>
 
-<form class="filters card" method="get" action="/cctv" role="search" aria-label="Filter cameras" data-live-filter>
+<form class="filters filters--cctv card" method="get" action="/cctv" role="search" aria-label="Filter cameras" data-live-filter>
   <div class="filters__search">
     <?= icon('search', 'icon--sm') ?>
     <label class="visually-hidden" for="filter-q">Search spots</label>
     <input class="input" id="filter-q" type="search" name="q" value="<?= e($filters['q'] ?? '') ?>"
-           placeholder="Search spot" autocomplete="off" enterkeyhint="search">
+           placeholder="Search spot or location" autocomplete="off" enterkeyhint="search">
+  </div>
+  <div class="filters__field filters__field--location">
+    <label class="visually-hidden" for="filter-location">Location</label>
+    <select class="select" id="filter-location" name="location">
+      <option value="">All locations</option>
+      <?php foreach ($locations as $location): ?>
+        <option value="<?= (int) $location['id'] ?>"<?= $filters['location'] === (string) $location['id'] ? ' selected' : '' ?>><?= e($location['name']) ?></option>
+      <?php endforeach ?>
+      <option value="unassigned"<?= $filters['location'] === 'unassigned' ? ' selected' : '' ?>>Not assigned</option>
+    </select>
   </div>
   <div class="filters__field">
     <label class="visually-hidden" for="filter-type">Type</label>

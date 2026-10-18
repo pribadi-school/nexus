@@ -52,6 +52,7 @@ $problem = $camera['status'] === Status::PROBLEM;
       <div class="card__header"><h2 class="card__title" id="details-title">Details</h2></div>
       <dl class="details">
         <div><dt>Spot</dt><dd><?= e($camera['label']) ?></dd></div>
+        <div><dt>Location</dt><dd><?= e($camera['location_name'] ?? 'Not assigned') ?></dd></div>
         <div><dt>Type</dt><dd><?= e($camera['model'] ?? '–') ?></dd></div>
         <div><dt>SD card</dt><dd class="num"><?= $camera['sd_card_gb'] !== null ? (int) $camera['sd_card_gb'] . ' GB' : '–' ?></dd></div>
         <div>

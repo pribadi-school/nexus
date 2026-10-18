@@ -35,12 +35,15 @@
 .filters__search .input { padding-left: 36px; }
 .filters__apply { grid-column: 1 / -1; }
 .filters.is-live .filters__apply { display: none; }
+.filters--cctv .filters__field--location { grid-column: 1 / -1; }
 @media (min-width: 768px) {
   .filters {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) auto;
     padding: var(--space-4);
   }
   .filters__search, .filters__apply { grid-column: auto; }
+  .filters--cctv { grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto; }
+  .filters--cctv .filters__field--location { grid-column: auto; }
 }
 
 .results { transition: opacity var(--motion-ui) var(--ease-standard); }

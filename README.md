@@ -24,3 +24,4 @@ sample data and a local `.env`; the sign-in password is `APP_PASSWORD` in that f
 - Project guide and conventions: [CLAUDE.md](CLAUDE.md)
 - Design rules: [DESIGN.md](DESIGN.md)
 - Database: [database/migrations](database/migrations)
+- Hosting setup: [cPanel deployment guide](docs/deploy-cpanel.md)

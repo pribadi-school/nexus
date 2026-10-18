@@ -27,7 +27,7 @@ use App\Devices\Status;
     <div class="empty-state">
       <?= icon('search', 'icon--xl') ?>
       <p class="empty-state__title">No boards match</p>
-      <p class="empty-state__text">Try another status, or check the spelling in the search.</p>
+      <p class="empty-state__text">Try another model or status, or check the spelling in the search.</p>
       <div class="empty-state__actions"><a class="btn btn--secondary" href="/studytouch" data-clear-filters>Clear filters</a></div>
     </div>
   </section>

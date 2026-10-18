@@ -18,4 +18,8 @@
 <link rel="stylesheet" href="<?= e(asset('css/layout.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/components.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/devices.css')) ?>">
+<?php if (is_active('/signage')): ?>
+<link rel="stylesheet" href="<?= e(asset('css/signage.css')) ?>">
+<script type="module" src="<?= e(asset('js/signage-admin.js')) ?>"></script>
+<?php endif ?>
 <script type="module" src="<?= e(asset('js/app.js')) ?>"></script>

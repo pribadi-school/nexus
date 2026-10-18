@@ -1,0 +1,7 @@
+<resources>
+    <color name="nexus_navy">#0F2A5C</color>
+    <color name="nexus_blue">#1F4E9F</color>
+    <color name="nexus_red">#B91C1C</color>
+    <color name="on_navy">#FFFFFF</color>
+    <color name="on_navy_muted">#CBD5E5</color>
+</resources>

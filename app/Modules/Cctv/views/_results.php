@@ -27,7 +27,7 @@ $sd = static fn (array $camera): string => $camera['sd_card_gb'] !== null ? (int
     <div class="empty-state">
       <?= icon('search', 'icon--xl') ?>
       <p class="empty-state__title">No cameras match</p>
-      <p class="empty-state__text">Try another type or status, or check the spelling in the search.</p>
+      <p class="empty-state__text">Try another location, type or status, or check the spelling in the search.</p>
       <div class="empty-state__actions"><a class="btn btn--secondary" href="/cctv" data-clear-filters>Clear filters</a></div>
     </div>
   </section>
@@ -46,6 +46,7 @@ $sd = static fn (array $camera): string => $camera['sd_card_gb'] !== null ? (int
       <thead>
         <tr>
           <th scope="col">Spot</th>
+          <th scope="col">Location</th>
           <th scope="col">Type</th>
           <th scope="col">SD card</th>
         </tr>
@@ -57,6 +58,7 @@ $sd = static fn (array $camera): string => $camera['sd_card_gb'] !== null ? (int
               <a class="data-table__link" href="/cctv/<?= (int) $camera['id'] ?>"><?= e($camera['label']) ?></a>
               <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
             </th>
+            <td><?= e($camera['location_name'] ?? 'Not assigned') ?></td>
             <td><?= e($camera['model'] ?? '–') ?></td>
             <td class="num nowrap"><?= $sd($camera) ?></td>
           </tr>
@@ -71,6 +73,7 @@ $sd = static fn (array $camera): string => $camera['sd_card_gb'] !== null ? (int
       <li class="device-card<?= $problem ? ' is-problem' : '' ?>" data-device-row="<?= (int) $camera['id'] ?>">
         <a class="device-card__main" href="/cctv/<?= (int) $camera['id'] ?>">
           <span class="device-card__title"><?= e($camera['label']) ?></span>
+          <span class="device-card__meta"><?= e($camera['location_name'] ?? 'Not assigned') ?></span>
           <span class="device-card__meta"><?= e(implode(' · ', array_filter([$camera['model'], $camera['sd_card_gb'] !== null ? $sd($camera) . ' SD card' : null]))) ?></span>
           <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
         </a>

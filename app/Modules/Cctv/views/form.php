@@ -1,11 +1,12 @@
 <?php
 /**
- * Add / edit a camera: its spot, type and SD card size.
+ * Add / edit a camera: its spot, location, type and SD card size.
  *
  * @var \App\Modules\Cctv\CctvCategory $category
  * @var array<string, mixed>|null $camera  null when adding
  * @var array<string, mixed> $values
  * @var array<string, string> $errors
+ * @var list<array{id:int, name:string}> $locations
  */
 use App\Devices\Status;
 use App\Modules\Cctv\CctvCategory;
@@ -42,6 +43,18 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
       <input class="input" id="label" name="label" type="text" maxlength="100" required autocomplete="off"
              value="<?= e($values['label'] ?? '') ?>" placeholder="e.g. Gedung B - Tangga"<?= $invalid('label') ?>>
       <?= $error('label') ?>
+    </div>
+
+    <div class="field field--full<?= $field('location_id') ? ' has-error' : '' ?>">
+      <label class="field__label" for="location_id">Location</label>
+      <select class="select" id="location_id" name="location_id"<?= $invalid('location_id') ?>>
+        <option value="">Not assigned</option>
+        <?php foreach ($locations as $location): ?>
+          <option value="<?= (int) $location['id'] ?>"<?= (int) ($values['location_id'] ?? 0) === (int) $location['id'] ? ' selected' : '' ?>><?= e($location['name']) ?></option>
+        <?php endforeach ?>
+      </select>
+      <?= $error('location_id') ?>
+      <p class="field__hint">Missing a location? <a href="/cctv/locations">Edit the locations list</a>.</p>
     </div>
 
     <div class="field<?= $field('model') ? ' has-error' : '' ?>">

@@ -1,0 +1,83 @@
+/* Signage uses the same flat tables, forms and controls as device pages. */
+.signage-library-heading { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0 0 var(--space-4); }
+.signage-library-heading p { margin: 0; }
+.signage-content-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: var(--space-4); padding: 0; margin: 0; list-style: none; }
+.signage-content-card { overflow: hidden; min-width: 0; }
+.signage-thumbnail { position: relative; display: block; aspect-ratio: 16 / 9; background: var(--color-surface-muted); color: var(--color-muted-foreground); text-decoration: none; overflow: hidden; }
+.signage-thumbnail:hover { text-decoration: none; }
+.signage-thumbnail:focus-visible { outline-offset: -4px; }
+.signage-thumbnail__image { display: block; width: 100%; height: 100%; object-fit: contain; background: var(--color-navy); }
+.signage-thumbnail__image[hidden], .signage-thumbnail__fallback[hidden], .signage-thumbnail__duration[hidden] { display: none; }
+.signage-thumbnail__fallback, .signage-thumbnail__website { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-5); width: 100%; height: 100%; font-size: var(--fs-ui); }
+.signage-thumbnail__website span { overflow-wrap: anywhere; text-align: center; max-width: 100%; }
+.signage-thumbnail__duration, .signage-thumbnail__kind { position: absolute; right: var(--space-2); bottom: var(--space-2); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); background: var(--color-navy); color: var(--color-on-primary); font-size: var(--fs-caption); font-weight: 600; font-variant-numeric: tabular-nums; }
+.signage-content-card__body { padding: var(--space-3) var(--space-4) var(--space-4); border-top: 1px solid var(--color-border); }
+.signage-content-card__heading { display: flex; gap: var(--space-2); align-items: flex-start; }
+.signage-content-card__name { display: block; padding-top: var(--space-2); min-width: 0; flex: 1; font-weight: 600; color: var(--color-foreground); overflow-wrap: anywhere; }
+.signage-content-card__heading .icon-btn { flex: none; }
+.signage-content-card__meta, .signage-content-card__details { margin: var(--space-1) 0 0; font-size: var(--fs-ui); color: var(--color-muted-foreground); overflow-wrap: anywhere; }
+.signage-card-status { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.signage-tabs { display: flex; gap: var(--space-5); border-bottom: 1px solid var(--color-border-strong); margin: 0 0 var(--space-5); }
+.signage-tabs__link { display: flex; align-items: center; min-height: 44px; padding: 0 0 var(--space-2); margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--color-muted-foreground); font-weight: 600; }
+.signage-tabs__link:hover { color: var(--color-action); text-decoration: none; }
+.signage-tabs__link.is-active { color: var(--color-action); border-bottom-color: var(--color-action); }
+.signage-muted { color: var(--color-muted-foreground); font-size: var(--fs-ui); }
+.signage-break { overflow-wrap: anywhere; }
+.signage-num { font-variant-numeric: tabular-nums; }
+.signage-list > ul { list-style: none; margin: 0; padding: 0; }
+.signage-list-head { display: none; }
+.signage-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); padding: var(--space-4); }
+.signage-row + .signage-row { border-top: 1px solid var(--color-border); }
+.signage-row__main { min-width: 0; grid-column: 1 / -1; }
+.signage-row__title { display: block; color: var(--color-foreground); font-weight: 600; overflow-wrap: anywhere; }
+.signage-row__title:hover { color: var(--color-action); }
+.signage-row__sub { display: block; margin-top: 2px; color: var(--color-muted-foreground); font-size: var(--fs-ui); font-weight: 400; }
+.signage-row__field { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); min-width: 0; }
+.signage-row__label { display: block; color: var(--color-muted-foreground); font-size: var(--fs-caption); }
+.signage-row__actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; }
+.signage-row__error { display: block; margin-top: var(--space-1); color: var(--color-destructive); font-size: var(--fs-ui); overflow-wrap: anywhere; }
+.signage-player-address { max-width: 760px; padding: var(--space-4); margin-bottom: var(--space-4); }
+.signage-section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+.signage-help { color: var(--color-muted-foreground); font-size: var(--fs-body); max-width: 72ch; }
+.signage-copy { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0 var(--space-2); }
+.signage-copy .input { flex: 1 1 100%; min-width: 0; }
+.signage-checkboxes { gap: var(--space-2); }
+.signage-check { display: flex; align-items: flex-start; gap: var(--space-2); min-height: 44px; padding: var(--space-2) 0; color: var(--color-foreground); cursor: pointer; }
+.signage-check input { width: 18px; height: 18px; margin-top: 1px; flex: none; accent-color: var(--color-action); }
+.signage-danger-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-5); max-width: 760px; }
+.signage-file { padding: var(--space-2); }
+.signage-file::file-selector-button { margin-right: var(--space-3); border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); padding: var(--space-2); background: var(--color-surface-page); color: var(--color-foreground); cursor: pointer; }
+.signage-playlist-content { margin-top: var(--space-5); }
+.signage-playlist-items { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-border); }
+.signage-playlist-item { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-3) var(--space-4); }
+.signage-playlist-item + .signage-playlist-item { border-top: 1px solid var(--color-border); }
+.signage-playlist-item__position { align-self: start; padding-top: 2px; color: var(--color-muted-foreground); font-size: var(--fs-ui); font-variant-numeric: tabular-nums; }
+.signage-playlist-item__main { min-width: 0; }
+.signage-playlist-item__duration, .signage-duration { grid-column: 2; }
+.signage-duration { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.signage-duration__input { width: 78px; font-variant-numeric: tabular-nums; }
+.signage-playlist-item__actions { display: flex; justify-content: flex-end; gap: var(--space-1); grid-column: 2; }
+.signage-add-content { padding: var(--space-4); border-top: 1px solid var(--color-border); }
+.signage-add-content > .btn { margin-top: var(--space-3); }
+.signage-add-item { display: grid; gap: var(--space-3); }
+.signage-add-item > .btn { justify-self: start; }
+[data-content-fields][hidden], [data-website-duration][hidden], [data-copy-player][hidden] { display: none; }
+@media (min-width: 640px) {
+  .signage-copy .input { flex: 1 1 260px; }
+  .signage-add-item { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start; }
+  .signage-add-item > .btn { grid-column: 1 / -1; }
+}
+@media (min-width: 768px) {
+  .signage-player-address, .signage-add-content { padding: var(--space-5); }
+  .signage-playlist-item { padding-left: var(--space-5); padding-right: var(--space-5); grid-template-columns: 24px minmax(0, 1fr) auto; }
+  .signage-playlist-item__actions { grid-column: 3; grid-row: 1 / 3; }
+}
+@media (min-width: 1100px) {
+  .signage-list-head, .signage-row { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .signage-list-head { display: grid; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-border); color: var(--color-muted-foreground); font-size: var(--fs-caption); font-weight: 600; }
+  .signage-list-head > :last-child { width: 76px; }
+  .signage-row { align-items: center; }
+  .signage-row__main, .signage-row__actions { grid-column: auto; }
+  .signage-row__label { display: none; }
+  .signage-row__actions .btn { min-width: 76px; }
+}

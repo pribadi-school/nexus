@@ -12,6 +12,7 @@ use App\Core\Session;
 use App\Core\Validator;
 use App\Core\View;
 use App\Devices\DeviceService;
+use App\Devices\LookupRepository;
 use App\Devices\NoteRepository;
 use App\Devices\Status;
 
@@ -21,6 +22,7 @@ final class CctvController
         'label' => 'Spot',
         'model' => 'Type',
         'sd_card_gb' => 'SD card size',
+        'location_id' => 'Location',
         'status' => 'Status',
     ];
 
@@ -33,18 +35,23 @@ final class CctvController
         $this->cameras = new CctvRepository();
     }
 
-    /** GET /cctv?status=&type=&q= (fetch(): just the results, as JSON) */
+    /** GET /cctv?status=&type=&location=&q= (fetch(): just the results, as JSON) */
     public function index(Request $request): Response
     {
+        $locations = (new LookupRepository($this->category->lists()[0]))->options();
+        $location = $request->query('location');
+        $locationValues = array_map('strval', array_column($locations, 'id'));
         $filters = [
             'status' => in_array($request->query('status'), Status::ALL, true) ? $request->query('status') : null,
             'type' => in_array($request->query('type'), CctvCategory::TYPES, true) ? $request->query('type') : null,
+            'location' => $location === 'unassigned' || in_array($location, $locationValues, true) ? $location : null,
             'q' => $request->query('q') !== null ? mb_substr((string) $request->query('q'), 0, 100) : null,
         ];
         $data = [
             'category' => $this->category,
             'cameras' => $this->cameras->search($filters),
             'counts' => $this->cameras->counts(),
+            'locations' => $locations,
             'filters' => $filters,
             'filtered' => array_filter($filters, static fn ($v) => $v !== null) !== [],
         ];
@@ -76,6 +83,7 @@ final class CctvController
             'label' => null,
             'model' => null,
             'sd_card_gb' => null,
+            'location_id' => null,
             'status' => Status::OK,
         ], []);
     }
@@ -141,6 +149,7 @@ final class CctvController
             'label' => ['required', 'max:100'],
             'model' => ['required', 'in:' . implode(',', CctvCategory::TYPES)],
             'sd_card_gb' => ['int', 'in:' . implode(',', CctvCategory::SD_SIZES)],
+            'location_id' => ['int', 'exists:cctv_locations'],
         ];
     }
 
@@ -151,6 +160,7 @@ final class CctvController
     private function typed(array $data): array
     {
         $data['sd_card_gb'] = $data['sd_card_gb'] === null ? null : (int) $data['sd_card_gb'];
+        $data['location_id'] = $data['location_id'] === null ? null : (int) $data['location_id'];
         return $data;
     }
 
@@ -167,6 +177,7 @@ final class CctvController
             'camera' => $camera,
             'values' => $values,
             'errors' => $errors,
+            'locations' => (new LookupRepository($this->category->lists()[0]))->options(),
         ], 'layouts/app', $title), $errors === [] ? 200 : 422);
     }
 
