@@ -97,6 +97,7 @@ $crumbs[] = ['label' => $pageName !== '' ? $pageName : 'Nexus', 'href' => null];
     <?= partial('partials/flashes') ?>
     <?= $content ?>
   </div>
+  <footer class="app-footer"><?= trim(partial('partials/copyright')) ?></footer>
 </main>
 
 <nav class="bottom-nav" aria-label="Sections">

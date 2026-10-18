@@ -16,6 +16,6 @@
 <main class="auth-card">
   <?= $content ?>
 </main>
-<p class="auth-footer">Pribadi School · IT infrastructure</p>
+<p class="auth-footer"><?= trim(partial('partials/copyright')) ?></p>
 </body>
 </html>
