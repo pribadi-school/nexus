@@ -167,7 +167,21 @@ addresses do not work on the TVs. Pair Android TVs to the production URL.
 
 ## Later updates
 
-After pushing code to GitHub, run these in cPanel Terminal:
+After pushing code to GitHub, run this one command in cPanel Terminal:
+
+```bash
+bash ~/repositories/nexus/update.sh
+```
+
+It pulls the code, publishes the CSS, JS and icons into `public_html/nexus`
+with a PHP 8.2+ CLI it finds itself (`/opt/alt/php82/usr/bin/php` on this
+account; set `NEXUS_PHP` to override), and lists migrations, where `[ ]`
+means not yet imported. Both steps matter: the PHP code is read straight from
+the repository, but the browser loads CSS and JS from `public_html/nexus`. A
+pull without publishing shows new pages with old styles. That happened with the
+signage screen editor in October 2026.
+
+The manual equivalent is:
 
 ```bash
 cd /home/pribadisch/repositories/nexus

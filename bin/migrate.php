@@ -28,6 +28,14 @@ $runFile = static function (string $file) use ($pdo): void {
 };
 
 if (in_array('--status', $args, true)) {
+    // Connect first: Migrations::applied() treats a failed connection as
+    // "nothing applied", which would wrongly list every migration as pending.
+    try {
+        db()->value('SELECT 1');
+    } catch (Throwable $e) {
+        fwrite(STDERR, 'Cannot connect to the database: ' . $e->getMessage() . "\n");
+        exit(1);
+    }
     $applied = Migrations::applied();
     foreach (Migrations::available() as $version) {
         printf("  [%s] %s\n", in_array($version, $applied, true) ? 'x' : ' ', $version);

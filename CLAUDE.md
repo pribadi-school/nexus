@@ -302,7 +302,10 @@ deployed yet.
   requires the subdomain root at `~/public_html/nexus`; `php bin/publish-cpanel.php`
   publishes public assets and an entry point loading the repository's front controller.
   Application settings and media stay outside the website root.
-- Deploy = `git push`, then Terminal `git pull --ff-only origin main && php bin/publish-cpanel.php`.
+- Deploy = `git push`, then cPanel Terminal `bash ~/repositories/nexus/update.sh`
+  (it pulls, publishes with a PHP 8.2+ CLI it finds, `/opt/alt/php82/usr/bin/php`
+  here since the default `php` is 8.1, then shows migration status). Always publish after a pull:
+  PHP is read from the repo, but CSS/JS are served from `public_html/nexus`.
   Nothing to build on the server.
 - On the server: create `.env` from `.env.example` (APP_ENV=production,
   APP_DEBUG=false, a long APP_PASSWORD, DB credentials); `storage/` must be
