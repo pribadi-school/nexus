@@ -28,7 +28,6 @@
   --color-foreground: #12233c;
   --color-foreground-alt: #1c2733;
   --color-muted-foreground: #5a6472;
-  --color-tagline: #4B5568;
   --color-on-primary: #ffffff;
   --color-surface: #ffffff;
   --color-surface-page: #f2f5f9;
@@ -45,7 +44,6 @@
   /* Type */
   --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-wordmark: 'Space Grotesk', 'Inter', ui-sans-serif, system-ui, sans-serif;
-  --font-tagline: 'IBM Plex Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
   --fs-caption: 0.75rem;   /* 12px: captions, table headers, chips */
   --fs-ui: 0.8125rem;      /* 13px: controls, secondary text */
   --fs-body: 0.875rem;     /* 14px: body, table cells */

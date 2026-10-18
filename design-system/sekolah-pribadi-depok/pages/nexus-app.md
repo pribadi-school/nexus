@@ -30,7 +30,6 @@ MASTER's blue/teal. MASTER's neutrals stay.
 | Navy | `#0F2A5C` | `--color-navy` | Dark surfaces only: the login backdrop |
 | Success | `#15803d` | `--color-success` | "Running well" / "OK" status, "Fix" notes. App extension (same green as the uniform app's "Masuk") |
 | Warning | color-mix(accent 70%, foreground) ≈ `#af512a` | `--color-warning` | Warning notices (e.g. "the database is behind the app") |
-| Tagline grey | `#4B5568` | `--color-tagline` | The tagline under the wordmark only |
 
 Neutrals are MASTER's: foreground `#12233c`, body `#1c2733`, muted `#5a6472`,
 surface `#ffffff`, page `#f2f5f9`, surface-muted `#e9eef5`, border
@@ -62,8 +61,7 @@ It only feeds the warning mix above.
 - **UI font:** Inter (variable, self-hosted in `public/assets/fonts`).
 - **Wordmark:** "nexus", always lowercase, Space Grotesk 700, letter-spacing
   −0.04em, `--color-brand-blue`. Space Grotesk is used for nothing else.
-- **Tagline:** "Connecting to Pribadi School", IBM Plex Sans 500, letter-spacing 0.02em,
-  `--color-tagline`. IBM Plex Sans is used for nothing else.
+- **No tagline in the UI** (owner decision, Oct 2026): the login page shows the lockup only.
 
 Data-dense scale (nothing below 12px):
 
@@ -130,20 +128,20 @@ tile.
 "Rise" mark (owner decision, Oct 2026; replaced the earlier Pentagon Hub): the
 emblem's raised-arms figure redrawn as connection lines that all meet at one
 point, with the red point above. Source mockup: `B · Rise-html/Converge.dc.html`.
-Each size has its own drawing; never scale one down past its range.
+Each size has its own drawing, and every one keeps all five arms (owner request).
 
 | File | Use | Drawing |
 |---|---|---|
 | `logo-mark.svg` | 56px and up (login lockup) | both Vs + centre line, stroke 5.5, nodes, red point r=10.5 |
-| `logo-mark-48.svg` | ~33–55px (sidebar, top bar) | outer V + centre line, stroke 9, red point r=13 |
-| `favicon.svg` | 32px and below | outer V only, stroke 12, red point r=15 |
+| `logo-mark-48.svg` | ~33–55px (sidebar, top bar) | all five arms, stroke 7, nodes r=6, red point r=11.5 |
+| `favicon.svg` | 32px and below | all five arms, stroke 9, no nodes, red point r=13 |
 | `logo-mark-white.svg` | dark backgrounds (navy) | white lines, no nodes, stroke 6.5, red point r=11 |
 | `app-icon.svg` | inside the app icon | no nodes, stroke 7, red point r=11.5 |
 
 - App icons: `app-icon-512.png`, `app-icon-192.png`, `apple-touch-icon.png`
   (`app-icon.svg` at 74% on white), built by `npm run build:assets`.
 - Lockup: mark + wordmark, mark height ≈ 1.4× the wordmark's font size. The
-  login page adds the tagline underneath.
+  owner wants all five arms at every size.
 - The only hex values outside the token file are the brand SVG files and
   the chevron inside the select arrow (a data URI cannot read tokens).
 

@@ -243,7 +243,7 @@ deployed yet.
   Meter "running well" uses `--color-success-track` (light green); solid green
   next to red fails red–green colour blindness (checked with the dataviz validator).
 - Fonts (self-hosted): Inter (UI), Space Grotesk 700 (wordmark only),
-  IBM Plex Sans 500 (tagline only).
+  no tagline in the UI.
 - Logo "Rise" (replaced the first "Pentagon Hub" mark, Oct 2026): raised
   arms drawn as lines meeting at one point, red point above. One drawing per
   size in `public/assets/brand/`: `logo-mark.svg` (≥56px, full),
@@ -255,7 +255,7 @@ deployed yet.
 - Wordmark: "nexus", always lowercase, Space Grotesk 700, letter-spacing
   −0.04em, `#1F4E9F`. Lockup (`partials/lockup.php`) = mark at 1.4× the
   wordmark size; `large => true` uses the full mark (login), otherwise the
-  48 variant. The login page adds the tagline (IBM Plex Sans 500, `#4B5568`).
+  48 variant. Every size keeps all five arms. No tagline on the login page.
 - Icons: Lucide, via `icon('name')` from `public/assets/icons/sprite.svg`.
   To add one, put its name in `ICONS` in `tools/build-assets.mjs` and rebuild.
 

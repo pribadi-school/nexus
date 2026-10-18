@@ -7,7 +7,7 @@ Nexus uses the shared Pribadi design system. This file only points to it.
 3. **Tokens:** [public/assets/css/tokens.css](public/assets/css/tokens.css) (`:root`). Every colour, radius and type size comes from a token there.
 
 In short, Nexus uses:
-- Inter for the UI, Space Grotesk for the "nexus" wordmark, IBM Plex Sans for the tagline
+- Inter for the UI, Space Grotesk for the "nexus" wordmark (no tagline in the UI)
 - brand blue `#1F4E9F` for actions, red `#B91C1C` for problems, navy `#0F2A5C` for dark surfaces
 - a `#f2f5f9` page with white cards and 1px navy-tinted borders
 - 8px buttons, and no shadows, gradients or icon tiles

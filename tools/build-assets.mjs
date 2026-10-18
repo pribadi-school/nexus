@@ -4,7 +4,7 @@
 //
 //   public/assets/brand/*.png     app icons rendered from the SVG logo files
 //   public/favicon.ico            32px small mark (for browsers that ask for /favicon.ico)
-//   public/assets/fonts/*.woff2   self-hosted Inter, Space Grotesk, IBM Plex Sans
+//   public/assets/fonts/*.woff2   self-hosted Inter, Space Grotesk
 //   public/assets/icons/sprite.svg  Lucide line icons as <symbol id="i-NAME">
 
 import { readFileSync, writeFileSync, copyFileSync, mkdirSync } from 'node:fs';
@@ -53,7 +53,6 @@ const FONTS = [
   ['@fontsource-variable/inter', 'inter-latin-wght-normal.woff2'],
   ['@fontsource-variable/inter', 'inter-latin-ext-wght-normal.woff2'],
   ['@fontsource/space-grotesk', 'space-grotesk-latin-700-normal.woff2'],
-  ['@fontsource/ibm-plex-sans', 'ibm-plex-sans-latin-500-normal.woff2'],
 ];
 
 function copyFonts() {
