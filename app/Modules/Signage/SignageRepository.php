@@ -268,7 +268,7 @@ final class SignageRepository
                 if (!is_array($entry) || !is_int($entry['content_id'] ?? null) || $entry['content_id'] < 1
                     || !is_int($entry['duration_seconds'] ?? null) || $entry['duration_seconds'] < 5 || $entry['duration_seconds'] > 86400
                     || (!is_null($entry['item_id'] ?? null) && (!is_int($entry['item_id']) || $entry['item_id'] < 1))) {
-                    throw new InvalidArgumentException('Choose valid content and a website duration from 5 to 86,400 seconds.');
+                    throw new InvalidArgumentException('Choose valid content and a display duration from 5 seconds to 1,440 minutes.');
                 }
                 $itemId = $entry['item_id'] ?? null;
                 if ($itemId !== null) {
@@ -288,7 +288,7 @@ final class SignageRepository
                 db()->run('DELETE FROM signage_playlist_items WHERE id = ? AND playlist_id = ?', [$removed, $id]);
             }
             foreach ($entries as $order => $entry) {
-                $data = ['sort_order' => $order, 'duration_seconds' => $content[$entry['content_id']]['type'] === 'website' ? $entry['duration_seconds'] : 30];
+                $data = ['sort_order' => $order, 'duration_seconds' => $entry['duration_seconds']];
                 if (($entry['item_id'] ?? null) !== null) {
                     db()->update('signage_playlist_items', $data, ['id' => $entry['item_id'], 'playlist_id' => $id]);
                 } else {
@@ -337,7 +337,7 @@ final class SignageRepository
             }
             db()->insert('signage_playlist_items', [
                 'playlist_id' => $id, 'content_id' => $contentId, 'sort_order' => count($items),
-                'duration_seconds' => $content['type'] === 'website' ? $duration : 30,
+                'duration_seconds' => $duration,
             ]);
             $this->touchPlaylist($id);
         });

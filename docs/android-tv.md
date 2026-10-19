@@ -1,8 +1,15 @@
 # Nexus Signage for Android TV
 
 The native player uses the existing Nexus web management and cPanel media
-storage. Downloaded MP4s play from the TV's private app storage; website items
+storage. Downloaded MP4/MOV videos and PNG/JPG images play from the TV's private app storage; website items
 use the TV's WebView while connected. No AbleSign account is required.
+
+TV app version 1.1.0 adds image playback. Update installed TVs before adding
+images to their playlists. Set each item's display duration in minutes in the
+left playlist (0.5 minutes = 30 seconds). Videos loop until the selected duration
+ends, then advance; shorter durations cut to the next item. Playlist totals use
+these selected durations, while the original video length is shown separately. MOV uploads retain
+their original encoding, so playback depends on the TV or browser's codec support.
 
 ## Installation and pairing
 
@@ -61,11 +68,11 @@ different input. Test a full power-off/on and standby cycle on each TV model.
 
 ## Offline playback and updates
 
-- A new playlist becomes active only after all its MP4 files have downloaded
+- A new playlist becomes active only after all its video and image files have downloaded
   with the expected file lengths. Interrupted downloads retain the previous
   complete playlist. Videos are not downloaded again on each loop.
 - The saved playlist and files survive app restarts. The player uses up to
-  2 GB of video storage and reserves at least 100 MB of free disk when an update
+  2 GB of media storage and reserves at least 100 MB of free disk when an update
   needs downloads. Old video versions are removed after the new playlist is
   activated and the old player is released.
 - Website items require connectivity; the player skips them while offline and

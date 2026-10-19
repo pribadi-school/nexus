@@ -7,7 +7,7 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
 $playerUrl = !$adding ? rtrim((string) config('app.url', ''), '/') . '/signage/player/' . $screen['token'] : '';
 ?>
 <a class="back-link" href="/signage/screens"><?= icon('chevron-left', 'icon--sm') ?>Screens</a>
-<header class="page-header"><div><h1 class="page-title"><?= $adding ? 'Add a screen' : e($screen['name']) ?></h1><?php if ($adding): ?><p class="page-subtitle">Add a TV with its own playlist of videos and websites.</p><?php endif ?></div><?php if (!$adding): ?><div class="page-actions"><?= partial('Signage::_screen-status', ['screen' => $screen]) ?><a class="btn btn--secondary" href="#screen-settings"><?= icon('settings', 'icon--sm') ?>Settings</a></div><?php endif ?></header>
+<header class="page-header"><div><h1 class="page-title"><?= $adding ? 'Add a screen' : e($screen['name']) ?></h1><?php if ($adding): ?><p class="page-subtitle">Add a TV with its own playlist of videos, images and websites.</p><?php endif ?></div><?php if (!$adding): ?><div class="page-actions"><?= partial('Signage::_screen-status', ['screen' => $screen]) ?><a class="btn btn--secondary" href="#screen-settings"><?= icon('settings', 'icon--sm') ?>Settings</a></div><?php endif ?></header>
 <?= partial('Signage::_tabs', ['tab' => 'screens']) ?>
 
 <?php if (!$adding): ?>
@@ -16,7 +16,7 @@ $playerUrl = !$adding ? rtrim((string) config('app.url', ''), '/') . '/signage/p
 
 <?php if (!$adding): ?>
 <details class="signage-screen-settings" id="screen-settings"><summary>Settings and player address</summary>
-<p class="signage-help"><a href="/signage/pair?screen=<?= (int) $screen['id'] ?>">Pair the Nexus Android TV app with this screen</a> to download videos for offline playback.</p>
+<p class="signage-help"><a href="/signage/pair?screen=<?= (int) $screen['id'] ?>">Pair the Nexus Android TV app with this screen</a> to download videos and images for offline playback.</p>
 <?php endif ?>
 
 <?php if (!$adding): ?>
@@ -29,7 +29,7 @@ $playerUrl = !$adding ? rtrim((string) config('app.url', ''), '/') . '/signage/p
       <button class="btn btn--secondary" type="button" data-copy-player hidden>Copy address</button>
       <a class="btn btn--secondary" href="<?= e($playerUrl) ?>" target="_blank" rel="noopener">Open player</a>
     </div>
-    <p class="field__hint">The player checks for playlist changes automatically. Videos and websites require a network connection.</p>
+    <p class="field__hint">The player checks for playlist changes automatically. This browser player requires a network connection.</p>
     <?php if (!empty($screen['last_error'])): ?><p class="signage-row__error">Player reported: <?= e($screen['last_error']) ?></p><?php endif ?>
   </section>
 <?php endif ?>
@@ -78,9 +78,9 @@ $playerUrl = !$adding ? rtrim((string) config('app.url', ''), '/') . '/signage/p
       </select><?= $error('orientation') ?>
     </div>
     <div class="field<?= $field('fit') ? ' has-error' : '' ?>">
-      <label class="field__label" for="fit">Video fit</label>
+      <label class="field__label" for="fit">Media fit</label>
       <select class="select" id="fit" name="fit"<?= $invalid('fit') ?>>
-        <option value="contain"<?= ($values['fit'] ?? 'contain') === 'contain' ? ' selected' : '' ?>>Fit entire video</option>
+        <option value="contain"<?= ($values['fit'] ?? 'contain') === 'contain' ? ' selected' : '' ?>>Fit entire video or image</option>
         <option value="cover"<?= ($values['fit'] ?? '') === 'cover' ? ' selected' : '' ?>>Fill screen (crop edges)</option>
       </select><?= $error('fit') ?>
     </div>
@@ -94,7 +94,7 @@ $playerUrl = !$adding ? rtrim((string) config('app.url', ''), '/') . '/signage/p
 <?php if (!$adding): ?>
   <div class="signage-danger-actions">
     <form method="post" action="<?= e($base) ?>/rotate-token" data-confirm="Replace this screen's player address?" data-confirm-text="The current address will stop working. Open the new address on the TV after replacing it." data-confirm-button="Replace address"><?= csrf_field() ?><button class="btn btn--secondary" type="submit"><?= icon('rotate-ccw', 'icon--sm') ?>Replace player address</button></form>
-    <form method="post" action="<?= e($base) ?>/delete" data-confirm="Delete this screen?" data-confirm-text="Its player address and playlist will be removed. Videos and websites remain in the content library." data-confirm-button="Delete screen" data-confirm-tone="danger"><?= csrf_field() ?><button class="btn btn--danger-quiet" type="submit"><?= icon('trash-2', 'icon--sm') ?>Delete screen</button></form>
+    <form method="post" action="<?= e($base) ?>/delete" data-confirm="Delete this screen?" data-confirm-text="Its player address and playlist will be removed. Content remains in the content library." data-confirm-button="Delete screen" data-confirm-tone="danger"><?= csrf_field() ?><button class="btn btn--danger-quiet" type="submit"><?= icon('trash-2', 'icon--sm') ?>Delete screen</button></form>
   </div>
 </details>
 <?php endif ?>

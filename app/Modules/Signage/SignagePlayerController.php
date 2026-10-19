@@ -53,7 +53,7 @@ final class SignagePlayerController
         }
         $contentId = (int) $request->param('id');
         foreach ($this->repository->playlistItems((int) $screen['playlist_id']) as $item) {
-            if ((int) $item['id'] === $contentId && $item['type'] === 'video') {
+            if ((int) $item['id'] === $contentId && in_array($item['type'], ['video', 'image'], true)) {
                 return $this->videoResponse($request, $item);
             }
         }
@@ -94,7 +94,7 @@ final class SignagePlayerController
     public function previewMedia(Request $request): Response
     {
         $this->releaseSession();
-        $item = db()->one('SELECT * FROM signage_content WHERE id = ? AND type = ?', [(int) $request->param('id'), 'video']);
+        $item = db()->one("SELECT * FROM signage_content WHERE id = ? AND type IN ('video', 'image')", [(int) $request->param('id')]);
         if ($item === null) {
             throw HttpException::notFound();
         }
@@ -156,7 +156,7 @@ final class SignagePlayerController
             'poll_seconds' => max(10, min(120, (int) config('signage.poll_seconds', 30))),
         ];
         foreach ($items as $item) {
-            if (!in_array($item['type'], ['video', 'website'], true)) {
+            if (!in_array($item['type'], ['video', 'image', 'website'], true)) {
                 continue;
             }
             if ($item['type'] === 'website' && !preg_match('#\Ahttps?://#i', (string) $item['source_url'])) {
@@ -167,8 +167,9 @@ final class SignagePlayerController
                 'content_id' => (int) $item['id'],
                 'name' => $item['name'],
                 'type' => $item['type'],
-                'size_bytes' => $item['type'] === 'video' ? (int) $item['size_bytes'] : 0,
-                'url' => $item['type'] === 'video' ? url($mediaPrefix . $item['id'], [
+                'size_bytes' => $item['type'] !== 'website' ? (int) $item['size_bytes'] : 0,
+                'mime_type' => $item['mime_type'],
+                'url' => $item['type'] !== 'website' ? url($mediaPrefix . $item['id'], [
                     'v' => substr(hash('sha256', (string) $item['stored_filename']), 0, 16),
                 ]) : $item['source_url'],
                 'duration_seconds' => max(5, min(86400, (int) ($item['duration_seconds'] ?? 30))),
@@ -192,9 +193,11 @@ final class SignagePlayerController
         $end = $size - 1;
         $status = 200;
         $headers = [
-            'Content-Type' => 'video/mp4',
+            'Content-Type' => match (pathinfo((string) $item['stored_filename'], PATHINFO_EXTENSION)) {
+                'mov' => 'video/quicktime', 'png' => 'image/png', 'jpg' => 'image/jpeg', default => 'video/mp4',
+            },
             'Accept-Ranges' => 'bytes',
-            'Content-Disposition' => 'inline; filename="video.mp4"',
+            'Content-Disposition' => 'inline; filename="media.' . pathinfo((string) $item['stored_filename'], PATHINFO_EXTENSION) . '"',
         ];
         $range = $request->header('Range');
         if ($range !== null) {

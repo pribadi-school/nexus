@@ -10,76 +10,99 @@ use RuntimeException;
 final class SignageStorage
 {
     /** @return array{stored_filename:string,original_filename:string,mime_type:string,size_bytes:int} */
-    public static function storeUpload(array $file): array
+    public static function storeUpload(array $file, string $type = 'video'): array
     {
         $error = $file['error'] ?? UPLOAD_ERR_NO_FILE;
         if (!is_int($error) || $error !== UPLOAD_ERR_OK) {
             throw new RuntimeException(match ($error) {
-                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'The video exceeds the server upload limit.',
-                UPLOAD_ERR_PARTIAL => 'The upload was interrupted. Please choose the video again.',
-                UPLOAD_ERR_NO_FILE => 'Choose an MP4 video to upload.',
+                UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'The file exceeds the server upload limit.',
+                UPLOAD_ERR_PARTIAL => 'The upload was interrupted. Please choose the file again.',
+                UPLOAD_ERR_NO_FILE => 'Choose a file to upload.',
                 default => 'The server could not receive this upload. Check its storage and upload settings.',
             });
         }
         $temporary = $file['tmp_name'] ?? null;
         $original = $file['name'] ?? null;
         if (!is_string($temporary) || !is_uploaded_file($temporary) || !is_string($original)) {
-            throw new RuntimeException('Choose a video using the upload form.');
+            throw new RuntimeException('Choose a file using the upload form.');
         }
         $original = basename(str_replace('\\', '/', $original));
         $original = preg_replace('/[\x00-\x1f\x7f]/', '', $original) ?? '';
-        if (strtolower(pathinfo($original, PATHINFO_EXTENSION)) !== 'mp4') {
-            throw new RuntimeException('Only MP4 video files are supported.');
-        }
         $size = filesize($temporary);
-        if ($size === false || $size < 24) {
-            throw new RuntimeException('This file is empty or is not a valid MP4 video.');
+        if ($size === false || $size < 1) {
+            throw new RuntimeException('This file is empty.');
         }
         if ($size > self::maxUploadBytes()) {
-            throw new RuntimeException('The video exceeds the upload limit shown on this page.');
+            throw new RuntimeException('The file exceeds the upload limit shown on this page.');
         }
+        $media = self::inspect($temporary, $original, $type);
+        $directory = self::directory();
+        if (!is_dir($directory) && !mkdir($directory, 0770, true) && !is_dir($directory)) {
+            throw new RuntimeException('The media folder is not writable. Check the server storage permissions.');
+        }
+        do {
+            $filename = bin2hex(random_bytes(24)) . '.' . $media['extension'];
+        } while (file_exists($directory . '/' . $filename));
+        if (!move_uploaded_file($temporary, self::path($filename))) {
+            throw new RuntimeException('The server could not save this file. Check available storage and permissions.');
+        }
+        @chmod(self::path($filename), 0640);
+        return [
+            'stored_filename' => $filename,
+            'original_filename' => mb_substr($original, 0, 200),
+            'mime_type' => $media['mime_type'],
+            'size_bytes' => $size,
+        ];
+    }
+
+    /** Inspect actual bytes as well as the extension before accepting uploaded media. */
+    public static function inspect(string $path, string $original, string $type): array
+    {
         if (!class_exists(\finfo::class)) {
-            throw new RuntimeException('Enable PHP fileinfo on the server before uploading videos.');
+            throw new RuntimeException('Enable PHP fileinfo on the server before uploading media.');
         }
-        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($temporary);
-        $handle = fopen($temporary, 'rb');
+        $extension = strtolower(pathinfo($original, PATHINFO_EXTENSION));
+        $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($path);
+        if ($type === 'image') {
+            $image = @getimagesize($path);
+            if (!in_array($extension, ['png', 'jpg', 'jpeg'], true) || !is_array($image)
+                || !in_array($mime, ['image/png', 'image/jpeg'], true) || $image['mime'] !== $mime
+                || ($extension === 'png') !== ($mime === 'image/png')
+                || $image[0] < 1 || $image[1] < 1 || $image[0] > 16384 || $image[1] > 16384
+                || $image[0] * $image[1] > 40000000) {
+                throw new RuntimeException('Choose a valid PNG or JPG image, up to 40 megapixels and 16,384 pixels per side.');
+            }
+            return ['extension' => $mime === 'image/png' ? 'png' : 'jpg', 'mime_type' => $mime];
+        }
+        if ($type !== 'video' || !in_array($extension, ['mp4', 'mov'], true)) {
+            throw new RuntimeException('Choose an MP4 or MOV video.');
+        }
+        $size = (int) filesize($path);
+        $handle = fopen($path, 'rb');
         $header = $handle === false ? false : fread($handle, 64);
         if ($handle !== false) {
             fclose($handle);
         }
         $boxSize = is_string($header) && strlen($header) >= 12 ? unpack('Nsize', substr($header, 0, 4))['size'] : 0;
         $brand = is_string($header) ? substr($header, 8, 4) : '';
-        if (!in_array($mime, ['video/mp4', 'application/mp4'], true)
-            || !is_string($header) || substr($header, 4, 4) !== 'ftyp'
-            || $boxSize < 16 || $boxSize > $size
-            || !in_array($brand, ['isom', 'iso2', 'iso3', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'M4V ', 'MSNV', 'dash'], true)
-            || !self::hasVideoBoxes($temporary, $size)) {
-            throw new RuntimeException('This file is not a supported MP4 video. Export it as an MP4 and try again.');
+        // Older QuickTime files can omit ftyp, but must still contain a complete
+        // movie and media container. Modern MOV files use the qt brand.
+        $quickTime = $extension === 'mov' && $mime === 'video/quicktime';
+        $validBrand = is_string($header) && substr($header, 4, 4) === 'ftyp'
+            && $boxSize >= 16 && $boxSize <= $size
+            && in_array($brand, ['isom', 'iso2', 'iso3', 'iso4', 'iso5', 'iso6', 'mp41', 'mp42', 'avc1', 'M4V ', 'MSNV', 'dash', 'qt  '], true);
+        if (!in_array($mime, ['video/mp4', 'application/mp4', 'video/quicktime'], true)
+            || (!$validBrand && !$quickTime) || !self::hasVideoBoxes($path, $size)) {
+            throw new RuntimeException('This file is not a valid MP4 or MOV video.');
         }
-        $directory = self::directory();
-        if (!is_dir($directory) && !mkdir($directory, 0770, true) && !is_dir($directory)) {
-            throw new RuntimeException('The video folder is not writable. Check the server storage permissions.');
-        }
-        do {
-            $filename = bin2hex(random_bytes(24)) . '.mp4';
-        } while (file_exists($directory . '/' . $filename));
-        if (!move_uploaded_file($temporary, self::path($filename))) {
-            throw new RuntimeException('The server could not save this video. Check available storage and permissions.');
-        }
-        @chmod(self::path($filename), 0640);
-        return [
-            'stored_filename' => $filename,
-            'original_filename' => mb_substr($original, 0, 200),
-            'mime_type' => 'video/mp4',
-            'size_bytes' => $size,
-        ];
+        return ['extension' => $extension, 'mime_type' => $extension === 'mov' ? 'video/quicktime' : 'video/mp4'];
     }
 
     public static function delete(string $filename): void
     {
         $path = self::path($filename);
         if (is_file($path) && !unlink($path)) {
-            throw new RuntimeException('The server could not remove the video file.');
+            throw new RuntimeException('The server could not remove the media file.');
         }
     }
 
@@ -97,12 +120,12 @@ final class SignageStorage
 
     public static function path(string $filename): string
     {
-        if (!preg_match('/\A[a-f0-9]{48}\.mp4\z/', $filename)) {
-            throw new RuntimeException('Invalid stored video filename.');
+        if (!preg_match('/\A[a-f0-9]{48}\.(mp4|mov|png|jpg)\z/', $filename)) {
+            throw new RuntimeException('Invalid stored media filename.');
         }
         $path = self::directory() . '/' . $filename;
         if (is_link($path)) {
-            throw new RuntimeException('Invalid stored video file.');
+            throw new RuntimeException('Invalid stored media file.');
         }
         return $path;
     }

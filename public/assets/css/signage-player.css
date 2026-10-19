@@ -16,6 +16,7 @@
 }
 
 .player-content video,
+.player-content img,
 .player-content iframe {
   display: block;
   width: 100%;
@@ -24,8 +25,9 @@
   background: var(--color-navy);
 }
 
-.player-content video { object-fit: contain; }
-.signage-player.player-fit-cover .player-content video { object-fit: cover; }
+.player-content video, .player-content img { object-fit: contain; }
+.signage-player.player-fit-cover .player-content video,
+.signage-player.player-fit-cover .player-content img { object-fit: cover; }
 
 /* A portrait screen setting rotates output on a TV left in landscape mode. */
 .signage-player.player-portrait .player-content {

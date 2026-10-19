@@ -7,6 +7,9 @@ import { initLiveFilters } from './filters.js';
 import { initNoteForms } from './note-form.js';
 import { initStatusToggles } from './status-toggle.js';
 import { setBusy } from './util.js';
+import { initNavigation } from './navigation.js';
+import { initSignageAdmin } from './signage-admin.js';
+import { initSignageEditor } from './signage-editor.js';
 
 function initDismiss() {
   document.addEventListener('click', (event) => {
@@ -35,6 +38,14 @@ initDismiss();
 initBusyForms();
 initConfirm();
 initFeed();
-initLiveFilters();
 initStatusToggles();
-initNoteForms();
+let cleanupPage = () => {};
+function initPage() {
+  const cleanupFilters = initLiveFilters();
+  initNoteForms();
+  const cleanupEditor = initSignageEditor();
+  const cleanupSignage = initSignageAdmin();
+  cleanupPage = () => { cleanupFilters(); cleanupEditor(); cleanupSignage(); };
+}
+initPage();
+initNavigation({beforeSwap: () => cleanupPage(), afterSwap: initPage});

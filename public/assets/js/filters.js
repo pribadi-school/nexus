@@ -67,8 +67,10 @@ function initForm(form) {
     form.querySelectorAll('input:not([type="hidden"]), select').forEach((control) => { control.value = ''; });
     run();
   });
+  return () => { clearTimeout(timer); controller?.abort(); latest += 1; };
 }
 
 export function initLiveFilters() {
-  document.querySelectorAll('form[data-live-filter]').forEach(initForm);
+  const cleanups = [...document.querySelectorAll('form[data-live-filter]')].map(initForm);
+  return () => cleanups.forEach(cleanup => cleanup?.());
 }

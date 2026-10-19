@@ -103,7 +103,7 @@ try {
     $items = $repository->playlistItems($playlist);
     $itemIds = array_map('intval', array_column($items, 'item_id'));
     $check(array_map('intval', array_column($items, 'id')) === [$first, $second, $video], 'playlist append order');
-    $check((int) $items[2]['duration_seconds'] === 30, 'MP4 duration is independent of website timer');
+    $check((int) $items[2]['duration_seconds'] === 40, 'video duration is retained on add');
     $repository->movePlaylistItem($playlist, $itemIds[2], 'up');
     $check(array_map('intval', array_column($repository->playlistItems($playlist), 'id')) === [$first, $video, $second], 'playlist moves preserve content order');
     $repository->updatePlaylistItem($playlist, $itemIds[0], 45);

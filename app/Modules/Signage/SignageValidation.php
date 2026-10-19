@@ -39,7 +39,7 @@ final class SignageValidation
         $validator = new Validator($input, ['name' => 'Content name', 'type' => 'Content type', 'source_url' => 'Website address']);
         $data = $validator->validate([
             'name' => ['required', 'max:160'],
-            'type' => ['required', 'in:video,website'],
+            'type' => ['required', 'in:video,image,website'],
             'source_url' => ['max:2048'],
         ]);
         if ($data['type'] === 'website') {
@@ -80,10 +80,16 @@ final class SignageValidation
     /** @return array{0:array<string,mixed>,1:array<string,string>} */
     public static function playlistItem(array $input, bool $requireContent = true): array
     {
+        if (array_key_exists('duration_minutes', $input)) {
+            $minutes = is_string($input['duration_minutes']) ? trim($input['duration_minutes']) : '';
+            $input['duration_seconds'] = preg_match('/\A[0-9]+(?:\.[0-9]+)?\z/', $minutes)
+                && (float) $minutes >= 5 / 60 - 0.000001 && (float) $minutes <= 1440
+                ? (string) (int) round((float) $minutes * 60) : 'invalid';
+        }
         if (!isset($input['duration_seconds']) || $input['duration_seconds'] === '') {
             $input['duration_seconds'] = '30';
         }
-        $validator = new Validator($input, ['content_id' => 'Content', 'duration_seconds' => 'Website duration']);
+        $validator = new Validator($input, ['content_id' => 'Content', 'duration_seconds' => 'Display duration']);
         $rules = ['duration_seconds' => ['required', 'int', 'min_value:5', 'max_value:86400']];
         if ($requireContent) {
             $rules['content_id'] = ['required', 'int', 'min_value:1', 'max_value:4294967295', 'exists:signage_content'];

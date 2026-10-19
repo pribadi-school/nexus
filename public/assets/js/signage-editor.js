@@ -1,4 +1,8 @@
 // Draft changes stay in the browser until Save changes succeeds.
+export function initSignageEditor() {
+const lifetime = new AbortController();
+const {signal} = lifetime;
+let cleanupDrag = () => {};
 const editor = document.querySelector('[data-screen-editor]');
 document.querySelector('[href="#screen-settings"]')?.addEventListener('click', () => {
   document.getElementById('screen-settings').open = true;
@@ -19,7 +23,7 @@ if (editor) {
   const serialize = () => rows().map(row => ({
     item_id: row.dataset.itemId ? Number(row.dataset.itemId) : null,
     content_id: Number(row.dataset.contentId),
-    duration_seconds: row.dataset.contentType === 'website' ? Number(row.querySelector('[data-item-duration]').value) : 30,
+    duration_seconds: Math.round(Number(row.querySelector('[data-item-duration]').value) * 60),
   }));
   const initial = JSON.stringify(serialize());
   let dirty = false;
@@ -42,6 +46,7 @@ if (editor) {
     const items = rows();
     syncLibrary();
     dirty = JSON.stringify(serialize()) !== initial;
+    editor.dataset.unsaved = String(dirty || saving);
     items.forEach((row, index) => {
       row.querySelector('[data-item-position]').textContent = index + 1;
       row.querySelector('[data-item-move="up"] button').disabled = index === 0;
@@ -50,8 +55,25 @@ if (editor) {
     empty.hidden = items.length > 0;
     saveButton.disabled = !dirty || saving;
     feedback.classList.remove('is-error');
+    let seconds = 0;
+    items.forEach(row => {
+      seconds += Math.round(Number(row.querySelector('[data-item-duration]').value) * 60) || 0;
+    });
+    const minutes = new Intl.NumberFormat(undefined, {maximumFractionDigits: 2}).format(seconds / 60);
+    const total = `${minutes} min`;
+    editor.querySelector('[data-playlist-duration]').textContent = total;
     feedback.textContent = message && dirty ? message : `${items.length} ${items.length === 1 ? 'item' : 'items'}${dirty ? ' · Unsaved changes' : ''}`;
   };
+  document.addEventListener('signage:duration', event => {
+    editor.querySelectorAll('[data-video-src]').forEach(preview => {
+      if (preview.dataset.videoSrc !== event.detail.url) return;
+      preview.dataset.videoDuration = String(event.detail.seconds);
+      preview.dataset.durationUnavailable = String(!event.detail.seconds);
+      preview.closest('[data-editor-item]').querySelector('[data-video-minutes]').textContent = event.detail.seconds
+        ? `Video length: ${new Intl.NumberFormat(undefined, {maximumFractionDigits: 2}).format(event.detail.seconds / 60)} min` : 'Video length unavailable';
+    });
+    update();
+  }, {signal});
   const animateChange = change => {
     const before = new Map(rows().map(row => [row, row.getBoundingClientRect().top]));
     change();
@@ -92,13 +114,28 @@ if (editor) {
     update(`Added ${row.dataset.contentName}. Save changes to update this TV.`);
   };
   editor.querySelectorAll('[data-editor-item]').forEach(prepare);
+  document.addEventListener('signage:content-added', event => {
+    if (!event.detail.editor_html) return;
+    const template = document.createElement('template');
+    template.innerHTML = event.detail.editor_html;
+    const row = template.content.firstElementChild;
+    prepare(row);
+    library.prepend(row);
+    editor.querySelector('[data-library-empty]')?.remove();
+    document.dispatchEvent(new CustomEvent('signage:preview-added', {detail: row}));
+    editor.querySelector('[data-library-search]').dispatchEvent(new Event('input'));
+    update();
+  }, {signal});
   saveButton.hidden = false;
   update();
 
   editor.addEventListener('submit', event => {
     const form = event.target;
     const row = form.closest('[data-editor-item]');
-    if (form.matches('[data-library-add]')) {
+    if (form.matches('[data-duration-form]')) {
+      event.preventDefault();
+      save.requestSubmit();
+    } else if (form.matches('[data-library-add]')) {
       event.preventDefault();
       add(row);
     } else if (form.matches('[data-item-remove]')) {
@@ -153,6 +190,7 @@ if (editor) {
     removeArea.classList.remove('is-drop-remove');
     document.body.classList.remove('is-signage-dragging');
   };
+  cleanupDrag = stopDrag;
   // The whole card drags, the thumbnail link included: a press that moves
   // 6px drags, a plain click still opens the link. Only real controls
   // (buttons, fields) keep their own behaviour.
@@ -198,7 +236,7 @@ if (editor) {
     removeArea.classList.toggle('is-drop-remove', !dragging.fromLibrary && inRemoveArea(event.clientX, event.clientY));
     if (event.clientY > innerHeight - 40) window.scrollBy(0, 16);
     else if (event.clientY < 60) window.scrollBy(0, -16);
-  });
+  }, {signal});
   window.addEventListener('pointerup', event => {
     if (!dragging || event.pointerId !== dragging.pointerId) return;
     if (dragging.active) {
@@ -219,9 +257,9 @@ if (editor) {
       return;
     }
     stopDrag();
-  });
-  window.addEventListener('pointercancel', stopDrag);
-  window.addEventListener('keydown', event => { if (event.key === 'Escape') stopDrag(); });
+  }, {signal});
+  window.addEventListener('pointercancel', stopDrag, {signal});
+  window.addEventListener('keydown', event => { if (event.key === 'Escape') stopDrag(); }, {signal});
 
   save.addEventListener('submit', async event => {
     event.preventDefault();
@@ -232,6 +270,7 @@ if (editor) {
     }
     save.querySelector('[name="playlist_items"]').value = JSON.stringify(serialize());
     saving = true;
+    editor.dataset.unsaved = 'true';
     saveButton.disabled = true;
     saveButton.textContent = 'Saving…';
     editor.inert = true;
@@ -256,17 +295,19 @@ if (editor) {
   });
   window.addEventListener('beforeunload', event => {
     if (dirty) { event.preventDefault(); event.returnValue = ''; }
-  });
+  }, {signal});
 }
 
 // Native popovers provide light dismissal, Escape and focus handling.
-document.querySelectorAll('.signage-content-menu').forEach(menu => {
-  menu.addEventListener('beforetoggle', event => {
+document.addEventListener('beforetoggle', event => {
+    const menu = event.target;
+    if (!menu.matches('.signage-content-menu')) return;
     if (event.newState !== 'open') return;
     const trigger = document.querySelector(`[popovertarget="${menu.id}"]`);
     const rect = trigger.getBoundingClientRect();
     const width = Math.min(280, innerWidth - 32);
     menu.style.left = `${Math.max(16, Math.min(rect.right - width, innerWidth - width - 16))}px`;
     menu.style.top = `${Math.max(16, Math.min(rect.bottom + 4, innerHeight - Math.min(menu.scrollHeight || 300, innerHeight * .6) - 16))}px`;
-  });
-});
+}, {capture: true, signal});
+return () => { cleanupDrag(); lifetime.abort(); };
+}

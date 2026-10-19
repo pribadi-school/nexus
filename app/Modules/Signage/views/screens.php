@@ -11,7 +11,7 @@
   <section class="card">
     <?= partial('partials/empty-state', [
         'icon' => 'presentation', 'title' => 'Set up your first screen',
-        'text' => 'Add a screen, then arrange its own playlist of videos and websites.',
+        'text' => 'Add a screen, then arrange its own playlist of videos, images and websites.',
         'actionHref' => '/signage/screens/create', 'actionLabel' => 'Add screen',
     ]) ?>
   </section>

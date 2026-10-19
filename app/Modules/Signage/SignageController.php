@@ -42,7 +42,7 @@ final class SignageController
             return $this->screenForm(null, $data, $errors);
         }
         $id = $this->signage->createScreenWithPlaylist($data);
-        Session::flash('success', 'Screen added. Add videos or websites to its playlist below.');
+        Session::flash('success', 'Screen added. Add videos, images or websites to its playlist below.');
         return Response::redirect('/signage/screens/' . $id . '/edit');
     }
 
@@ -140,16 +140,20 @@ final class SignageController
 
     public function storeContent(Request $request): Response
     {
-        [$data, $errors] = SignageValidation::content($request->body);
+        [$data, $errors] = SignageValidation::content($this->contentInput($request));
         if ($errors !== []) {
-            return $this->contentForm(null, $data, $errors);
+            return $request->isFetch()
+                ? Response::json(['error' => 'Check the highlighted fields.', 'errors' => $errors], 422)
+                : $this->contentForm(null, $data, $errors);
         }
         $uploaded = null;
-        if ($data['type'] === 'video') {
+        if (in_array($data['type'], ['video', 'image'], true)) {
             try {
-                $uploaded = SignageStorage::storeUpload(is_array($request->files['file'] ?? null) ? $request->files['file'] : []);
+                $uploaded = SignageStorage::storeUpload(is_array($request->files['file'] ?? null) ? $request->files['file'] : [], $data['type']);
             } catch (RuntimeException $error) {
-                return $this->contentForm(null, $data, ['file' => $error->getMessage()]);
+                return $request->isFetch()
+                    ? Response::json(['error' => $error->getMessage(), 'errors' => ['file' => $error->getMessage()]], 422)
+                    : $this->contentForm(null, $data, ['file' => $error->getMessage()]);
             }
         }
         try {
@@ -159,6 +163,17 @@ final class SignageController
                 SignageStorage::delete($uploaded['stored_filename']);
             }
             throw $error;
+        }
+        if ($request->isFetch()) {
+            $entry = $this->signage->contentItem($id);
+            $screenId = filter_var($request->input('screen_id', '0'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: 0;
+            return Response::json([
+                'id' => $id, 'name' => $entry['name'], 'size_bytes' => (int) $entry['size_bytes'],
+                'card_html' => partial('Signage::_content-card', ['entry' => $entry, 'screens' => $this->signage->screens()]),
+                'editor_html' => $screenId > 0 ? partial('Signage::_editor-item', [
+                    'entry' => $entry, 'base' => '/signage/screens/' . $screenId, 'saved' => false, 'position' => 0,
+                ]) : null,
+            ], 201);
         }
         Session::flash('success', 'Content added. Add it to a playlist to display it.');
         return Response::redirect('/signage/content/' . $id . '/edit');
@@ -173,15 +188,15 @@ final class SignageController
     public function updateContent(Request $request): Response
     {
         $item = $this->contentItem($request);
-        [$data, $errors] = SignageValidation::content($request->body, $item['type']);
+        [$data, $errors] = SignageValidation::content($this->contentInput($request, $item), $item['type']);
         if ($errors !== []) {
             return $this->contentForm($item, $data, $errors);
         }
         $uploaded = null;
         $file = $request->files['file'] ?? null;
-        if ($item['type'] === 'video' && $file !== null && (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE)) {
+        if (in_array($item['type'], ['video', 'image'], true) && $file !== null && (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE)) {
             try {
-                $uploaded = SignageStorage::storeUpload(is_array($file) ? $file : []);
+                $uploaded = SignageStorage::storeUpload(is_array($file) ? $file : [], $item['type']);
             } catch (RuntimeException $error) {
                 return $this->contentForm($item, $data, ['file' => $error->getMessage()]);
             }
@@ -253,7 +268,7 @@ final class SignageController
             Session::flash('error', implode(' ', array_values($errors)));
         } else {
             $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->updatePlaylistItem($id, (int) $request->param('item'), (int) $data['duration_seconds']));
-            Session::flash('success', 'Website duration saved.');
+            Session::flash('success', 'Display duration saved.');
         }
         return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#playlist');
     }
@@ -315,6 +330,25 @@ final class SignageController
             'revision' => $playlistId === null ? '' : $this->signage->playlistRevision($playlistId),
             'content' => $this->signage->content(),
         ], 'screens', $screen === null ? 'Add a screen' : $screen['name'], $errors === [] ? 200 : 422);
+    }
+
+    /** Names come from uploaded filenames or website addresses, never a separate field. */
+    private function contentInput(Request $request, ?array $item = null): array
+    {
+        $input = $request->body;
+        $type = $item['type'] ?? ($input['type'] ?? '');
+        if ($type === 'website') {
+            $name = $request->input('source_url', '') ?: 'Website';
+        } else {
+            $file = $request->files['file'] ?? [];
+            $filename = is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE
+                && is_string($file['name'] ?? null) ? $file['name'] : ($item['original_filename'] ?? '');
+            $name = basename(str_replace('\\', '/', (string) $filename));
+            $name = preg_replace('/[\x00-\x1f\x7f]/', '', $name) ?? '';
+            if ($name === '') $name = $type === 'image' ? 'Image' : 'Video';
+        }
+        $input['name'] = mb_substr($name, 0, 160);
+        return $input;
     }
 
     private function contentForm(?array $item, array $values, array $errors = []): Response

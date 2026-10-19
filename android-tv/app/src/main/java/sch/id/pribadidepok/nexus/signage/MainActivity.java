@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
@@ -35,6 +37,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.ImageView;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
@@ -65,6 +68,8 @@ public final class MainActivity extends Activity {
     private TextView headline, explanation, status;
     private ExoPlayer player;
     private WebView website;
+    private Bitmap imageBitmap;
+    private boolean imageLoading;
     private volatile JSONObject active;
     private ScheduledFuture<?> pollTask;
     private volatile boolean foreground, downloading, remoteEnabled = true;
@@ -206,7 +211,7 @@ public final class MainActivity extends Activity {
     private void accept(JSONObject data, long attempt) {
         if (active != null && data.optString("revision").equals(active.optString("revision"))) {
             note(data.optJSONObject("screen").optString("name", "Nexus Signage") + " · Connected");
-            if (player == null && website == null) play(current < 0 ? 0 : current); return;
+            if (player == null && website == null && imageBitmap == null && !imageLoading) play(current < 0 ? 0 : current); return;
         }
         wantedRevision = data.optString("revision");
         if (downloading) return;
@@ -239,10 +244,13 @@ public final class MainActivity extends Activity {
     }
     private void releaseMedia() {
         playbackGeneration++;
+        imageLoading = false;
         if (advance != null) ui.removeCallbacks(advance);
+        advance = null;
         if (player != null) { player.release(); player = null; }
         if (website != null) { website.stopLoading(); website.loadUrl("about:blank"); website.destroy(); website = null; }
         media.removeAllViews();
+        if (imageBitmap != null) { imageBitmap.recycle(); imageBitmap = null; }
     }
     private boolean connected() {
         ConnectivityManager manager = getSystemService(ConnectivityManager.class);
@@ -271,16 +279,55 @@ public final class MainActivity extends Activity {
         });
         message.setVisibility(View.GONE);
         if ("video".equals(item.optString("type"))) {
-            java.io.File local = cache.video(base(), item);
+            java.io.File local = cache.media(base(), item);
             if (!local.isFile()) { failedItem("A downloaded video is missing.", generation); return; }
             PlayerView view = new PlayerView(this); view.setUseController(false); view.setFocusable(false); view.setResizeMode("cover".equals(screen.optString("fit")) ? AspectRatioFrameLayout.RESIZE_MODE_ZOOM : AspectRatioFrameLayout.RESIZE_MODE_FIT);
             media.addView(view, new FrameLayout.LayoutParams(-1, -1)); player = new ExoPlayer.Builder(this).build(); view.setPlayer(player);
             player.setVolume(screen.optBoolean("muted", true) ? 0f : 1f);
+            player.setRepeatMode(Player.REPEAT_MODE_ONE);
+            long videoDuration = Math.max(5, Math.min(86400, item.optInt("duration_seconds", 30))) * 1000L;
             player.addListener(new Player.Listener() {
-                @Override public void onPlaybackStateChanged(int state) { if (generation != playbackGeneration) return; if (state == Player.STATE_ENDED) play(current + 1); if (state == Player.STATE_READY) { failures = 0; lastError = ""; } }
+                @Override public void onPlaybackStateChanged(int state) { if (generation != playbackGeneration) return; if (state == Player.STATE_READY) { failures = 0; lastError = ""; } }
+                @Override public void onIsPlayingChanged(boolean isPlaying) {
+                    if (generation != playbackGeneration || !isPlaying || advance != null) return;
+                    advance = () -> { if (generation == playbackGeneration) play(current + 1); };
+                    ui.postDelayed(advance, videoDuration);
+                }
                 @Override public void onPlayerError(PlaybackException error) { failedItem("This TV could not decode a video. Use H.264 MP4 with AAC audio.", generation); }
             });
             player.setMediaItem(MediaItem.fromUri(Uri.fromFile(local))); player.prepare(); player.play();
+        } else if ("image".equals(item.optString("type"))) {
+            imageLoading = true;
+            java.io.File local = cache.media(base(), item);
+            String imageName = item.optString("name");
+            long imageDuration = Math.max(5, Math.min(86400, item.optInt("duration_seconds", 30))) * 1000L;
+            int targetWidth = Math.max(1, getResources().getDisplayMetrics().widthPixels);
+            int targetHeight = Math.max(1, getResources().getDisplayMetrics().heightPixels);
+            downloader.execute(() -> {
+                Bitmap bitmap = null;
+                try {
+                    BitmapFactory.Options options = new BitmapFactory.Options(); options.inJustDecodeBounds = true;
+                    BitmapFactory.decodeFile(local.getPath(), options);
+                    // Bound image allocations to approximately the TV resolution.
+                    options.inSampleSize = 1;
+                    while (options.outWidth / options.inSampleSize > targetWidth * 2 || options.outHeight / options.inSampleSize > targetHeight * 2) options.inSampleSize *= 2;
+                    options.inJustDecodeBounds = false;
+                    bitmap = BitmapFactory.decodeFile(local.getPath(), options);
+                } catch (RuntimeException | OutOfMemoryError ignored) { /* Report through the normal item failure path. */ }
+                Bitmap decoded = bitmap;
+                ui.post(() -> {
+                    if (generation != playbackGeneration || !foreground) { if (decoded != null) decoded.recycle(); return; }
+                    imageLoading = false;
+                    if (decoded == null) { failedItem("This image could not load.", generation); return; }
+                    imageBitmap = decoded;
+                    ImageView view = new ImageView(this); view.setImageBitmap(decoded);
+                    view.setContentDescription(imageName);
+                    view.setScaleType("cover".equals(screen.optString("fit")) ? ImageView.ScaleType.CENTER_CROP : ImageView.ScaleType.FIT_CENTER);
+                    media.addView(view, new FrameLayout.LayoutParams(-1, -1)); failures = 0; lastError = "";
+                    advance = () -> { if (generation == playbackGeneration) play(current + 1); };
+                    ui.postDelayed(advance, imageDuration);
+                });
+            });
         } else if ("website".equals(item.optString("type")) && UrlPolicy.website(item.optString("url"))) {
             website = new WebView(this); WebSettings web = website.getSettings(); web.setJavaScriptEnabled(true); web.setDomStorageEnabled(true); web.setAllowFileAccess(false); web.setAllowContentAccess(false); web.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW); web.setMediaPlaybackRequiresUserGesture(false); web.setSupportMultipleWindows(false);
             CookieManager.getInstance().setAcceptCookie(false); CookieManager.getInstance().setAcceptThirdPartyCookies(website, false);
@@ -342,7 +389,7 @@ public final class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume(); foreground = true;
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
-        if (!token().isEmpty() && active != null && player == null && website == null && remoteEnabled) play(current < 0 ? 0 : current);
+        if (!token().isEmpty() && active != null && player == null && website == null && imageBitmap == null && !imageLoading && remoteEnabled) play(current < 0 ? 0 : current);
         schedule(0);
     }
     @Override protected void onPause() { foreground = false; synchronized (this) { if (pollTask != null) pollTask.cancel(false); } releaseMedia(); super.onPause(); }

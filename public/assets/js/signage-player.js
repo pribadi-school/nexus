@@ -50,6 +50,7 @@ if (root) {
   function clearItem() {
     generation += 1;
     clearTimeout(itemTimer);
+    itemTimer = null;
     clearInterval(watchdogTimer);
     awaitingGesture = false;
     if (currentMedia instanceof HTMLVideoElement) {
@@ -103,7 +104,7 @@ if (root) {
         lastError = 'Playback needs a remote or mouse interaction.';
         showMessage('Ready to play', 'Press OK, Enter, or Start playback to continue.', true);
       } else if (error.name !== 'AbortError') {
-        failItem('The browser could not play this video. Check its MP4 encoding and connection.', activeGeneration);
+        failItem('The browser could not play this video. Check its encoding and connection.', activeGeneration);
       }
     }
   }
@@ -115,6 +116,23 @@ if (root) {
     const item = manifest.items[currentIndex];
     const activeGeneration = generation;
     message.hidden = true;
+    if (item.type === 'image') {
+      const image = document.createElement('img');
+      image.alt = item.name;
+      itemTimer = setTimeout(() => failItem('This image took too long to load.', activeGeneration), 30000);
+      image.addEventListener('load', () => {
+        if (activeGeneration !== generation) return;
+        clearTimeout(itemTimer);
+        failures = 0;
+        lastError = '';
+        itemTimer = setTimeout(() => playItem(currentIndex + 1), Math.max(5, item.duration_seconds) * 1000);
+      });
+      image.addEventListener('error', () => failItem('This image could not load.', activeGeneration));
+      image.src = item.url;
+      currentMedia = image;
+      content.append(image);
+      return;
+    }
     if (item.type === 'website') {
       const frame = document.createElement('iframe');
       frame.title = item.name;
@@ -139,13 +157,11 @@ if (root) {
 
     const video = document.createElement('video');
     video.autoplay = true;
+    video.loop = true;
     video.playsInline = true;
     video.muted = manifest.screen.muted;
     video.preload = 'auto';
     video.setAttribute('aria-label', item.name);
-    video.addEventListener('ended', () => {
-      if (activeGeneration === generation) playItem(currentIndex + 1);
-    });
     video.addEventListener('error', () => failItem('This video is unavailable or uses an unsupported codec.', activeGeneration));
     video.addEventListener('timeupdate', () => { lastProgress = Date.now(); });
     video.addEventListener('playing', () => {
@@ -154,6 +170,11 @@ if (root) {
       failures = 0;
       lastError = '';
       lastProgress = Date.now();
+      if (itemTimer === null) {
+        itemTimer = setTimeout(() => {
+          if (activeGeneration === generation) playItem(currentIndex + 1);
+        }, Math.max(5, item.duration_seconds ?? 30) * 1000);
+      }
     });
     video.src = item.url;
     currentMedia = video;

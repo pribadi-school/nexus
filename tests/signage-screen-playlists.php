@@ -50,7 +50,7 @@ try {
 
     $revision = $repo->playlistRevision($private);
     $draft = [
-        ['item_id' => (int) $copy[1]['item_id'], 'content_id' => $video, 'duration_seconds' => 30],
+        ['item_id' => (int) $copy[1]['item_id'], 'content_id' => $video, 'duration_seconds' => 120],
         ['item_id' => (int) $copy[0]['item_id'], 'content_id' => $website, 'duration_seconds' => 42],
         ['item_id' => null, 'content_id' => $website, 'duration_seconds' => 55],
     ];
@@ -58,7 +58,7 @@ try {
     $saved = $repo->playlistItems($private);
     $check(array_map('intval', array_column($saved, 'id')) === [$video, $website, $website], 'draft reorder and repeated content saved');
     $check((int) $saved[0]['item_id'] === (int) $copy[1]['item_id'] && (int) $saved[1]['item_id'] === (int) $copy[0]['item_id'], 'existing playlist item IDs retained');
-    $check(array_map('intval', array_column($saved, 'duration_seconds')) === [30, 42, 55], 'website timing saved per occurrence');
+    $check(array_map('intval', array_column($saved, 'duration_seconds')) === [120, 42, 55], 'video and website timing saved per occurrence');
     $check(array_column($repo->playlistItems($old), 'duration_seconds') === array_column($oldItems, 'duration_seconds'), 'other TV content unchanged');
     $reject = static function (array $entries, string $expectedRevision) use ($repo, $private, $check): void {
         $beforeRevision = $repo->playlistRevision($private);
