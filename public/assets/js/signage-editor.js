@@ -24,7 +24,8 @@ if (editor) {
   const serialize = () => rows().map(row => ({
     item_id: row.dataset.itemId ? Number(row.dataset.itemId) : null,
     content_id: Number(row.dataset.contentId),
-    duration_seconds: Math.round(Number(row.querySelector('[data-item-duration]').value) * 60),
+    // The stored default is only for the legacy DB column; videos end naturally.
+    duration_seconds: row.dataset.contentType === 'video' ? 30 : Math.round(Number(row.querySelector('[data-item-duration]').value) * 60),
   }));
   const initial = JSON.stringify(serialize());
   let dirty = false;
@@ -48,11 +49,20 @@ if (editor) {
     saveButton.disabled = !dirty || saving;
     feedback.classList.remove('is-error');
     let seconds = 0;
+    let unknownVideo = false;
+    let unavailableVideo = false;
     items.forEach(row => {
-      seconds += Math.round(Number(row.querySelector('[data-item-duration]').value) * 60) || 0;
+      if (row.dataset.contentType === 'video') {
+        const preview = row.querySelector('[data-video-src]');
+        seconds += Number(preview?.dataset.videoDuration) || 0;
+        if (!Number(preview?.dataset.videoDuration)) {
+          unknownVideo = true;
+          unavailableVideo ||= preview?.dataset.durationUnavailable === 'true';
+        }
+      } else seconds += Math.round(Number(row.querySelector('[data-item-duration]').value) * 60) || 0;
     });
     const minutes = new Intl.NumberFormat(undefined, {maximumFractionDigits: 2}).format(seconds / 60);
-    const total = `${minutes} min`;
+    const total = `${minutes} min${unknownVideo ? (unavailableVideo ? ' + video duration unavailable' : ' + video duration pending') : ''}`;
     editor.querySelector('[data-playlist-duration]').textContent = total;
     editor.querySelector('[data-playlist-count]').textContent = `${items.length} ${items.length === 1 ? 'item' : 'items'}${dirty ? ' · Unsaved changes' : ''}`;
     feedback.textContent = message && dirty ? message : '';

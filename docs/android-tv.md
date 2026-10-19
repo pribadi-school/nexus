@@ -4,11 +4,11 @@ The native player uses the existing Nexus web management and cPanel media
 storage. Downloaded MP4/MOV videos and PNG/JPG images play from the TV's private app storage; website items
 use the TV's WebView while connected. No AbleSign account is required.
 
-TV app version 1.1.0 adds image playback. Update installed TVs before adding
-images to their playlists. Set each item's display duration in minutes in the
-left playlist (0.5 minutes = 30 seconds). Videos loop until the selected duration
-ends, then advance; shorter durations cut to the next item. Playlist totals use
-these selected durations, while the original video length is shown separately. MOV uploads retain
+TV app version 1.2.0 plays each video for its full file duration, then advances.
+Update installed TVs to apply this behavior; old video time overrides are ignored.
+Set image and website display durations in minutes in the left playlist
+(0.5 minutes = 30 seconds). Playlist totals combine those durations with each
+video's detected file length. MOV uploads retain
 their original encoding, so playback depends on the TV or browser's codec support.
 
 ## Installation and pairing

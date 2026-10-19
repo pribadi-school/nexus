@@ -157,24 +157,22 @@ if (root) {
 
     const video = document.createElement('video');
     video.autoplay = true;
-    video.loop = true;
+    video.loop = false;
     video.playsInline = true;
     video.muted = manifest.screen.muted;
     video.preload = 'auto';
     video.setAttribute('aria-label', item.name);
     video.addEventListener('error', () => failItem('This video is unavailable or uses an unsupported codec.', activeGeneration));
     video.addEventListener('timeupdate', () => { lastProgress = Date.now(); });
+    video.addEventListener('ended', () => {
+      if (activeGeneration === generation) playItem(currentIndex + 1);
+    });
     video.addEventListener('playing', () => {
       if (activeGeneration !== generation) return;
       message.hidden = true;
       failures = 0;
       lastError = '';
       lastProgress = Date.now();
-      if (itemTimer === null) {
-        itemTimer = setTimeout(() => {
-          if (activeGeneration === generation) playItem(currentIndex + 1);
-        }, Math.max(5, item.duration_seconds ?? 30) * 1000);
-      }
     });
     video.src = item.url;
     currentMedia = video;

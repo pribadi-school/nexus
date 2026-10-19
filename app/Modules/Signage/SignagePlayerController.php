@@ -172,7 +172,8 @@ final class SignagePlayerController
                 'url' => $item['type'] !== 'website' ? url($mediaPrefix . $item['id'], [
                     'v' => substr(hash('sha256', (string) $item['stored_filename']), 0, 16),
                 ]) : $item['source_url'],
-                'duration_seconds' => max(5, min(86400, (int) ($item['duration_seconds'] ?? 30))),
+                // Ignore historical video overrides, including already-saved playlists.
+                'duration_seconds' => $item['type'] === 'video' ? null : max(5, min(86400, (int) ($item['duration_seconds'] ?? 30))),
             ];
         }
         $data['revision'] = hash('sha256', json_encode($data, JSON_THROW_ON_ERROR));

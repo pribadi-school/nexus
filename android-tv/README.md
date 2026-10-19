@@ -4,9 +4,9 @@ The TV app pairs with Nexus, downloads assigned MP4/MOV videos and PNG/JPG image
 storage, and displays website playlist items while online. Nexus and its
 original media files stay on your own hosting account.
 
-Each item uses the duration set in minutes in the Nexus screen playlist. Videos
-loop until that duration ends; codec support depends on the TV. Update installed TVs to
-version 1.1.0 or newer before adding images to their playlists.
+Videos play once for their full file duration, then advance. Set image and
+website display times in minutes in the Nexus screen playlist. Codec support
+depends on the TV. Update installed TVs to version 1.2.0 for this behavior.
 
 ## Build on Windows
 

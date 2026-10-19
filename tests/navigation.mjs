@@ -29,21 +29,31 @@ const csrf = {content: 'old'};
 let draft = false; let hasDialog = false; let before = 0; let after = 0; let fetchCount = 0;
 let now = 0;
 let tabs = [];
+const timers = new Map(); let timerId = 0;
+const notices = [];
 const requests = [];
 const nextDocument = {
   title: 'Signage · Nexus',
   querySelector(selector) { return selector === '#main .main__inner' ? new Element() : selector === '#main .pagebar' ? new Element() : selector === 'meta[name="csrf-token"]' ? {content: 'new'} : null; },
   querySelectorAll() { return [new Element('/signage')]; },
 };
-const source = readFileSync(new URL('../public/assets/js/navigation.js', import.meta.url), 'utf8').replace('export function', 'function');
+const source = readFileSync(new URL('../public/assets/js/navigation.js', import.meta.url), 'utf8').replace(/^import .*;\r?\n/gm, '').replace('export function', 'function');
 // Capture initialization without depending on private navigation functions.
 const context = {
-  URL, AbortController, Event, Date: {now: () => now}, history, location, DOMParser: class { parseFromString() { return nextDocument; } },
+  URL, AbortController, DOMException, Event, Date: {now: () => now}, history, location, DOMParser: class { parseFromString() { return nextDocument; } },
+  setTimeout(action) { timers.set(++timerId, action); return timerId; }, clearTimeout(id) { timers.delete(id); },
+  toast(message, options) { notices.push({message, options}); },
   window: {fetch() {}, DOMParser: true, scrollX: 0, scrollY: 80, scrollTo() {}, addEventListener(name, action) { handlers[name] = action; }},
   document: {body: new Element(), getElementById: () => main,
     querySelector(selector) { if (selector.startsWith('[data-unsaved')) return draft ? {} : null; if (selector === '[data-content-dialog]') return hasDialog ? {} : null; return selector === '#main .main__inner' ? inner : selector === '#main .pagebar' ? bar : selector === 'meta[name="csrf-token"]' ? csrf : null; },
     querySelectorAll: selector => selector === '.signage-tabs__link[href]' ? tabs : nav, addEventListener(name, action) { handlers[name] = action; }, dispatchEvent() {}},
-  fetch(url, options) { fetchCount++; return new Promise(resolve => requests.push({url, options, resolve})); },
+  fetch(url, options) {
+    fetchCount++;
+    return new Promise((resolve, reject) => {
+      requests.push({url, options, resolve, reject, timerId});
+      options.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+    });
+  },
   initOptions: {beforeSwap() { before++; }, afterSwap() { after++; }},
 };
 vm.runInNewContext(source + '\ninitNavigation(initOptions);', context);
@@ -104,4 +114,44 @@ const beforeTabClick = requests.length;
 click('http://localhost/signage/screens');
 assert.equal(requests.length, beforeTabClick, 'opening Screens reuses its prepared page');
 complete(screensRequest); await settle();
-console.log('Passed menu navigation, history, stale-request, popup and draft-protection checks.');
+tabs = [];
+for (const request of requests) complete(request);
+await settle();
+const afterBeforeTimeout = after;
+const assignedBeforeTimeout = location.assigned;
+click('http://localhost/chromebooks/123');
+const stalled = requests.at(-1);
+assert.equal(main.attrs['aria-busy'], 'true');
+timers.get(stalled.timerId)(); await settle();
+assert.equal(stalled.options.signal.aborted, true, 'a stalled request is cancelled');
+assert.equal(after, afterBeforeTimeout, 'timeout keeps the existing page');
+assert.equal(location.assigned, assignedBeforeTimeout, 'timeout does not start another potentially unbounded page load');
+assert.equal(main.attrs['aria-busy'], undefined, 'timeout clears the loading state');
+assert.equal(notices.length, 1, 'superseded requests do not show timeout messages');
+assert.equal(notices[0].options.action.href, stalled.url, 'the message offers a retry of the destination');
+click(stalled.url);
+assert.notEqual(requests.at(-1), stalled, 'retry starts a fresh request');
+complete(requests.at(-1)); await settle();
+assert.equal(after, afterBeforeTimeout + 1);
+
+// The deadline also covers a server that sends headers then stops sending HTML.
+click('http://localhost/chromebooks/456');
+const stalledBody = requests.at(-1);
+stalledBody.resolve({ok: true, headers: {get: () => 'text/html'}, text: () => new Promise((resolve, reject) => {
+  stalledBody.options.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+})});
+await settle();
+timers.get(stalledBody.timerId)(); await settle();
+assert.equal(main.attrs['aria-busy'], undefined);
+assert.equal(notices.length, 2, 'a stalled response body also offers retry');
+
+handlers.submit({target: {method: 'post'}});
+handlers.pointerover({target: new Element('http://localhost/cctv')});
+const stalledPrefetch = requests.at(-1);
+timers.get(stalledPrefetch.timerId)(); await settle();
+assert.equal(notices.length, 2, 'background prefetch timeouts stay silent');
+click(stalledPrefetch.url);
+assert.notEqual(requests.at(-1), stalledPrefetch);
+complete(requests.at(-1)); await settle();
+assert.equal(timers.size, 0, 'finished requests release their deadline timers');
+console.log('Passed navigation, history, prefetch, cancellation, stalled-response and retry checks.');

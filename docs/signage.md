@@ -1,7 +1,7 @@
 # Nexus Signage
 
 Signage is the section below Chromebooks. It runs in the existing PHP app,
-with MP4 files on the same hosting account as Nexus. It does not use AbleSign's
+with MP4/MOV videos and PNG/JPG images on the same hosting account as Nexus. It does not use AbleSign's
 API or media storage.
 
 The native Android TV player adds downloaded video playback and code pairing.
@@ -9,12 +9,12 @@ See [Android TV installation and automatic startup](android-tv.md).
 
 ## Set up a display
 
-1. Open **Signage → Content**. Upload an MP4 or add a website URL.
+1. Open **Signage → Content**. Upload a video or image, or add a website URL.
 2. Open **Screens** and add a screen. Each screen gets its own playlist.
 3. Open the screen: its playlist is on the left and the content library on the
    right. Drag library content into the playlist, drag entries to reorder them,
-   then click **Save changes**. Videos play to the end; each website entry has
-   its own display time. Add, move and remove buttons also work with keyboard
+   then click **Save changes**. Videos play to the end; each image or website
+   entry has its own display time in minutes. Add, move and remove buttons also work with keyboard
    and touch. On narrow screens the library appears below the playlist.
    **Settings** opens orientation, video fit, mute and pairing/player controls.
 4. Copy the screen's player link from its edit page. Open it in the TV's browser

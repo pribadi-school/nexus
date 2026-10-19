@@ -126,6 +126,8 @@ try {
     $token = $repository->screen($screenId)['token'];
     $check(strlen($token) === 64 && $repository->screenByToken($token) !== null, 'screen token creation');
     $initial = $manifest($request($token, 'HEAD'));
+    $videoManifest = array_values(array_filter($initial['items'], fn (array $entry): bool => $entry['type'] === 'video'))[0];
+    $check($videoManifest['duration_seconds'] === null, 'manifest ignores historical video duration overrides');
     $check(count($initial['items']) === 3 && $initial['screen']['enabled'], 'public manifest has assigned playlist');
     $check($repository->screen($screenId)['last_seen_at'] === null, 'HEAD request does not report screen heartbeat');
     $manifest($request($token, 'GET', ['item' => (string) $itemIds[0], 'error' => 'Test error']));

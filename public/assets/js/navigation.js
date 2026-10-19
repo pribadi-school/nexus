@@ -1,3 +1,5 @@
+import { toast } from './toast.js';
+
 /** Switch signed-in pages without rebuilding the sidebar, fonts or app shell. */
 export function initNavigation({beforeSwap, afterSwap}) {
   if (!document.getElementById('main') || !window.fetch || !window.DOMParser) return;
@@ -14,7 +16,12 @@ export function initNavigation({beforeSwap, afterSwap}) {
     const cached = pages.get(key.href);
     if (cached && !cached.controller.signal.aborted && Date.now() - cached.created < cacheLifetime) return cached;
     cached?.controller.abort();
-    const record = {controller: new AbortController(), created: Date.now()};
+    const record = {controller: new AbortController(), created: Date.now(), timedOut: false};
+    // Bound the entire response, including a stalled body after headers arrive.
+    const timeout = setTimeout(() => {
+      record.timedOut = true;
+      record.controller.abort();
+    }, 12000);
     record.promise = fetch(key.href, {
       credentials: 'same-origin', cache: 'no-store', headers: {Accept: 'text/html'},
       priority: prefetch ? 'low' : 'high', signal: record.controller.signal,
@@ -25,8 +32,9 @@ export function initNavigation({beforeSwap, afterSwap}) {
       return {html, url: response.url || key.href};
     }).catch(error => {
       if (pages.get(key.href) === record) pages.delete(key.href);
+      if (record.timedOut) throw new DOMException('The page request timed out.', 'TimeoutError');
       throw error;
-    });
+    }).finally(() => clearTimeout(timeout));
     pages.delete(key.href);
     pages.set(key.href, record);
     if (pages.size > 6) pages.delete(pages.keys().next().value);
@@ -69,7 +77,11 @@ export function initNavigation({beforeSwap, afterSwap}) {
       else window.scrollTo(0, 0);
       document.getElementById('main').focus({preventScroll: true});
     } catch (error) {
-      if (activeTicket === ticket && error.name !== 'AbortError') location.assign(address);
+      if (activeTicket === ticket && error.name === 'TimeoutError') {
+        toast('Nexus is taking too long to respond. Please try again.', {
+          tone: 'error', action: {href: address, label: 'Retry'},
+        });
+      } else if (activeTicket === ticket && error.name !== 'AbortError') location.assign(address);
     } finally {
       if (activeTicket === ticket) {
         document.getElementById('main').removeAttribute('aria-busy');

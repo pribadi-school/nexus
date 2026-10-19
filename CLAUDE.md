@@ -78,9 +78,11 @@ completely separate from the school's WordPress site. UI language: English.
    8 MB in `storage/signage/screens/`, served to signed-in users at
    `/signage/screens/{id}/photo`). The Screens page card shows that photo,
    the name, status and last seen only. The editor uses matching compact
-   rows in two equal columns, duration fields on the right, and row action
+   rows in two equal columns, image/website duration fields on the right, and row action
    popovers. The full library remains visible; repeated content is supported
-   with independent durations. Dragging a playlist item onto the library
+   with independent image/website durations. Videos play to their natural end;
+   the manifest ignores stored video overrides and totals use detected file lengths.
+   Android TV 1.2.0 implements the same behavior. Dragging a playlist item onto the library
    removes that occurrence. Popovers are measured after opening and kept
    within the viewport above mobile navigation. Each screen has a random revocable player URL and a
    last-connected heartbeat; the standalone browser player polls every 30s,

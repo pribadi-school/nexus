@@ -284,14 +284,15 @@ public final class MainActivity extends Activity {
             PlayerView view = new PlayerView(this); view.setUseController(false); view.setFocusable(false); view.setResizeMode("cover".equals(screen.optString("fit")) ? AspectRatioFrameLayout.RESIZE_MODE_ZOOM : AspectRatioFrameLayout.RESIZE_MODE_FIT);
             media.addView(view, new FrameLayout.LayoutParams(-1, -1)); player = new ExoPlayer.Builder(this).build(); view.setPlayer(player);
             player.setVolume(screen.optBoolean("muted", true) ? 0f : 1f);
-            player.setRepeatMode(Player.REPEAT_MODE_ONE);
-            long videoDuration = Math.max(5, Math.min(86400, item.optInt("duration_seconds", 30))) * 1000L;
+            player.setRepeatMode(Player.REPEAT_MODE_OFF);
             player.addListener(new Player.Listener() {
-                @Override public void onPlaybackStateChanged(int state) { if (generation != playbackGeneration) return; if (state == Player.STATE_READY) { failures = 0; lastError = ""; } }
-                @Override public void onIsPlayingChanged(boolean isPlaying) {
-                    if (generation != playbackGeneration || !isPlaying || advance != null) return;
-                    advance = () -> { if (generation == playbackGeneration) play(current + 1); };
-                    ui.postDelayed(advance, videoDuration);
+                @Override public void onPlaybackStateChanged(int state) {
+                    if (generation != playbackGeneration) return;
+                    if (state == Player.STATE_READY) { failures = 0; lastError = ""; }
+                    if (state == Player.STATE_ENDED && advance == null) {
+                        advance = () -> { if (generation == playbackGeneration) play(current + 1); };
+                        ui.post(advance);
+                    }
                 }
                 @Override public void onPlayerError(PlaybackException error) { failedItem("This TV could not decode a video. Use H.264 MP4 with AAC audio.", generation); }
             });

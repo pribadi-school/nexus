@@ -2,6 +2,11 @@ import { initContentForms } from './signage-content.js';
 import { initContentActions } from './signage-content-actions.js?v=20261019-playlists';
 import { toast } from './toast.js';
 
+// Keep previews across in-place page switches; logout/full reload clears them.
+// Media URLs include a file revision, so replacing a file cannot reuse its frame.
+const thumbnailCache = new Map();
+const thumbnailCacheLimit = 40;
+
 export function initSignageAdmin() {
 const lifetime = new AbortController();
 const {signal} = lifetime;
@@ -23,10 +28,36 @@ function thumbnailDuration(seconds) {
 }
 
 function loadThumbnail(card) {
+  const source = card.dataset.videoSrc;
+  const showMetadata = (duration, width, height) => {
+    if (Number.isFinite(duration) && duration > 0) {
+      const badge = card.querySelector('[data-thumbnail-duration]');
+      badge.textContent = thumbnailDuration(duration);
+      badge.hidden = false;
+      card.dataset.videoDuration = String(duration);
+      document.dispatchEvent(new CustomEvent('signage:duration', {detail: {url: source, seconds: duration}}));
+    }
+    if (width && height) {
+      card.querySelector('[data-thumbnail-orientation]').textContent = height > width ? ' · Portrait' : ' · Landscape';
+    }
+  };
+  const showImage = frame => {
+    const image = card.querySelector('[data-thumbnail-image]');
+    image.src = frame;
+    image.hidden = false;
+    card.querySelector('[data-thumbnail-fallback]').hidden = true;
+    card.dataset.thumbnailState = 'ready';
+  };
+  const cached = thumbnailCache.get(source);
+  if (cached) {
+    thumbnailCache.delete(source);
+    thumbnailCache.set(source, cached);
+    showMetadata(cached.duration, cached.width, cached.height);
+    showImage(cached.frame);
+    return Promise.resolve();
+  }
   return new Promise((resolve) => {
     const video = document.createElement('video');
-    const image = card.querySelector('[data-thumbnail-image]');
-    const fallback = card.querySelector('[data-thumbnail-fallback]');
     const message = card.querySelector('[data-thumbnail-message]');
     let completed = false;
     let target = 0;
@@ -55,9 +86,10 @@ function loadThumbnail(card) {
         canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
         canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
         canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        image.src = canvas.toDataURL('image/jpeg', 0.82);
-        image.hidden = false;
-        fallback.hidden = true;
+        const frame = canvas.toDataURL('image/jpeg', 0.82);
+        thumbnailCache.set(source, {frame, duration: video.duration, width: video.videoWidth, height: video.videoHeight});
+        if (thumbnailCache.size > thumbnailCacheLimit) thumbnailCache.delete(thumbnailCache.keys().next().value);
+        showImage(frame);
         finish(true);
       } catch {
         finish(false);
@@ -67,16 +99,9 @@ function loadThumbnail(card) {
     video.playsInline = true;
     video.preload = 'metadata';
     video.onloadedmetadata = () => {
+      showMetadata(video.duration, video.videoWidth, video.videoHeight);
       if (Number.isFinite(video.duration) && video.duration > 0) {
-        const badge = card.querySelector('[data-thumbnail-duration]');
-        badge.textContent = thumbnailDuration(video.duration);
-        badge.hidden = false;
-        card.dataset.videoDuration = String(video.duration);
-        document.dispatchEvent(new CustomEvent('signage:duration', {detail: {url: card.dataset.videoSrc, seconds: video.duration}}));
         target = Math.min(1, video.duration / 10);
-      }
-      if (video.videoWidth && video.videoHeight) {
-        card.querySelector('[data-thumbnail-orientation]').textContent = video.videoHeight > video.videoWidth ? ' · Portrait' : ' · Landscape';
       }
       if (target > 0) video.currentTime = target;
       else capture();
