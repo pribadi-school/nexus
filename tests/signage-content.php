@@ -4,6 +4,7 @@ if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
 require dirname(__DIR__) . '/app/bootstrap.php';
 
 use App\Core\Request;
+use App\Core\Response;
 use App\Modules\Signage\SignageController;
 
 $checks = 0;
@@ -39,4 +40,8 @@ $input = $inputMethod->invoke($controller, new Request('POST', '/', [], ['type' 
 $check($input['name'] === 'https://example.com/display', 'website names follow their address');
 $response = $controller->storeContent(new Request('POST', '/signage/content', [], ['name' => '', 'type' => 'video'], []));
 $check($response->status === 422 && str_contains($response->body, '<!doctype html>'), 'ordinary form submissions still render a usable page');
+$headersMethod = new ReflectionMethod(Response::class, 'securityHeaders');
+$headers = $headersMethod->invoke(new Response('photo', 200, ['Cache-Control' => 'private, max-age=31536000, immutable']));
+$check($headers['Cache-Control'] === 'private, max-age=31536000, immutable', 'versioned private photos retain their caching header');
+$check($headersMethod->invoke(Response::html(''))['Cache-Control'] === 'no-store', 'ordinary pages retain no-store');
 echo "Passed $checks content popup checks. No database access required.\n";

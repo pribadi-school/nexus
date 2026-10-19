@@ -28,6 +28,7 @@ const nav = [new Element('/studytouch'), new Element('/signage')];
 const csrf = {content: 'old'};
 let draft = false; let hasDialog = false; let before = 0; let after = 0; let fetchCount = 0;
 let now = 0;
+let tabs = [];
 const requests = [];
 const nextDocument = {
   title: 'Signage · Nexus',
@@ -41,7 +42,7 @@ const context = {
   window: {fetch() {}, DOMParser: true, scrollX: 0, scrollY: 80, scrollTo() {}, addEventListener(name, action) { handlers[name] = action; }},
   document: {body: new Element(), getElementById: () => main,
     querySelector(selector) { if (selector.startsWith('[data-unsaved')) return draft ? {} : null; if (selector === '[data-content-dialog]') return hasDialog ? {} : null; return selector === '#main .main__inner' ? inner : selector === '#main .pagebar' ? bar : selector === 'meta[name="csrf-token"]' ? csrf : null; },
-    querySelectorAll: () => nav, addEventListener(name, action) { handlers[name] = action; }, dispatchEvent() {}},
+    querySelectorAll: selector => selector === '.signage-tabs__link[href]' ? tabs : nav, addEventListener(name, action) { handlers[name] = action; }, dispatchEvent() {}},
   fetch(url, options) { fetchCount++; return new Promise(resolve => requests.push({url, options, resolve})); },
   initOptions: {beforeSwap() { before++; }, afterSwap() { after++; }},
 };
@@ -95,4 +96,12 @@ now += 11000;
 click('http://localhost/signage');
 assert.equal(requests.length, requestCount + 3, 'expired pages are refreshed');
 complete(requests.at(-1)); await settle();
+tabs = [new Element('http://localhost/signage'), new Element('http://localhost/signage/screens')];
+handlers['signage:content-added']();
+assert.equal(requests.at(-1).url, 'http://localhost/signage/screens', 'the Screens tab is prepared before a click');
+const screensRequest = requests.at(-1);
+const beforeTabClick = requests.length;
+click('http://localhost/signage/screens');
+assert.equal(requests.length, beforeTabClick, 'opening Screens reuses its prepared page');
+complete(screensRequest); await settle();
 console.log('Passed menu navigation, history, stale-request, popup and draft-protection checks.');

@@ -76,6 +76,8 @@ final class SignageController
         if ($path === '' || !is_file($path)) {
             throw HttpException::notFound('This screen has no photo.');
         }
+        // Photo downloads do not need to hold up navigation in this session.
+        if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
         // The URL carries the file name as its version, so it can be cached.
         return new Response((string) file_get_contents($path), 200, [
             'Content-Type' => SignageScreenPhoto::mime($filename),

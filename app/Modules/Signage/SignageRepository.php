@@ -20,7 +20,7 @@ final class SignageRepository
     /** @return list<array<string,mixed>> */
     public function screens(): array
     {
-        return db()->all(self::SCREEN_SELECT . ' ORDER BY s.name, s.id');
+        return db()->all('SELECT s.* FROM signage_screens s ORDER BY s.name, s.id');
     }
 
     /** @return array<string,mixed>|null */

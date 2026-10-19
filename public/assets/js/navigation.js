@@ -63,6 +63,7 @@ export function initNavigation({beforeSwap, afterSwap}) {
       destination.hash = new URL(address, location.href).hash;
       if (push) history.pushState({nexusNavigation: true}, '', destination);
       afterSwap();
+      prepareTabs();
       if (scroll) window.scrollTo(scroll.x, scroll.y);
       else if (destination.hash) document.getElementById(decodeURIComponent(destination.hash.slice(1)))?.scrollIntoView();
       else window.scrollTo(0, 0);
@@ -85,12 +86,23 @@ export function initNavigation({beforeSwap, afterSwap}) {
     pageFor(url.href, true).promise.catch(() => {});
   };
   document.addEventListener('pointerover', prepareMenu);
+  // Prepare the neighboring Signage tab before the user clicks it.
+  const prepareTabs = () => {
+    if (hasDraft()) return;
+    document.querySelectorAll('.signage-tabs__link[href]').forEach(link => {
+      const url = new URL(link.href, location.href);
+      if (url.origin === location.origin && url.href !== location.href
+          && ['/signage', '/signage/screens'].includes(url.pathname) && !url.search && !url.hash) {
+        pageFor(url.href, true).promise.catch(() => {});
+      }
+    });
+  };
   document.addEventListener('focusin', prepareMenu);
   // A mutation invalidates prefetched lists as well as recently visited pages.
   document.addEventListener('submit', event => {
     if ((event.target.method ?? '').toLowerCase() !== 'get') pages.clear();
   }, true);
-  document.addEventListener('signage:content-added', () => pages.clear());
+  document.addEventListener('signage:content-added', () => { pages.clear(); prepareTabs(); });
 
   document.addEventListener('click', event => {
     const link = event.target.closest('a[href]');
@@ -110,4 +122,5 @@ export function initNavigation({beforeSwap, afterSwap}) {
     if (!event.state?.nexusNavigation || hasDraft()) { location.reload(); return; }
     navigate(location.href, {push: false, scroll: {x: event.state.scrollX ?? 0, y: event.state.scrollY ?? 0}});
   });
+  prepareTabs();
 }

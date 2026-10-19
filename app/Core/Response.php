@@ -89,7 +89,9 @@ final class Response
             'X-Content-Type-Options' => 'nosniff',
             'Referrer-Policy' => 'same-origin',
             'X-Frame-Options' => 'DENY',
-            'Cache-Control' => 'no-store',
+            // Dynamic pages stay uncached; explicitly versioned private assets
+            // can opt into browser caching without overriding security headers.
+            'Cache-Control' => $this->headers['Cache-Control'] ?? 'no-store',
         ];
         if ($this->playerDocument) {
             $headers['Content-Security-Policy'] = implode('; ', [

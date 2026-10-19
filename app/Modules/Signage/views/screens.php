@@ -26,7 +26,7 @@
         <?php /* A photo of the TV itself (Settings > Screen photo), not of its content. */ ?>
         <a class="signage-screen-card__photo" href="<?= e($editUrl) ?>" tabindex="-1" aria-hidden="true">
           <?php if ($photo !== ''): ?>
-            <img src="<?= e('/signage/screens/' . (int) $screen['id'] . '/photo?v=' . $photo) ?>" alt="" loading="lazy">
+            <img src="<?= e('/signage/screens/' . (int) $screen['id'] . '/photo?v=' . $photo) ?>" alt="" loading="lazy" decoding="async">
           <?php else: ?>
             <span class="signage-screen-photo__empty"><?= icon('tv-minimal', 'icon--xl') ?>Add a photo of this TV</span>
           <?php endif ?>
