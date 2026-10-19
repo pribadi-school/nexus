@@ -39,6 +39,7 @@ final class App
             403 => 'No access',
             404 => 'Page not found',
             405 => 'Not allowed',
+            413 => 'Upload too large',
             419 => 'Form expired',
         ];
         $title = $titles[$status] ?? 'Something went wrong';

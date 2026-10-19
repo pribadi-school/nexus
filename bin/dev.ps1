@@ -129,8 +129,10 @@ extension=zip
 memory_limit=256M
 upload_max_filesize=500M
 post_max_size=512M
-max_execution_time=300
-max_input_time=300
+max_execution_time=600
+max_input_time=1800
+display_errors=Off
+log_errors=On
 date.timezone=UTC
 "@ | Set-Content -Path $PhpIni -Encoding ascii
 $PhpArgs = @('-c', $PhpIni)

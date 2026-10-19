@@ -77,6 +77,10 @@ final class Router
     /** @param array{method:string, pattern:string, regex:string, handler:array{0:class-string,1:string}, public:bool, csrf:bool} $route */
     private function run(array $route, Request $request): Response
     {
+        // A rejected body has no _csrf field. Report its real cause before CSRF.
+        if ($request->exceedsPostLimit()) {
+            throw new HttpException(413, 'The upload exceeds this server\'s request size limit. Choose a smaller file or increase the PHP upload limits for Nexus.');
+        }
         if ($request->method === 'POST' && $route['csrf'] && !Csrf::verify($request)) {
             throw new HttpException(419, 'This form expired. Go back, reload the page and try again.');
         }

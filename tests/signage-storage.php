@@ -44,6 +44,6 @@ try {
     $row = partial('Signage::_editor-item', ['entry' => ['id' => 1, 'item_id' => 1, 'type' => 'image', 'name' => 'Poster', 'stored_filename' => str_repeat('a', 48) . '.png', 'duration_seconds' => 150], 'saved' => true, 'position' => 1, 'base' => '/signage/screens/1']);
     $check(str_contains($row, 'value="2.5"') && str_contains($row, '<img'), 'image playlist renders minutes and thumbnail');
     $row = partial('Signage::_editor-item', ['entry' => ['id' => 1, 'item_id' => 1, 'type' => 'video', 'name' => 'Clip', 'stored_filename' => str_repeat('a', 48) . '.mov', 'duration_seconds' => 120], 'saved' => true, 'position' => 1, 'base' => '/signage/screens/1']);
-    $check(str_contains($row, 'value="2"') && str_contains($row, 'data-item-duration') && !str_contains($row, 'full video'), 'video playlist renders editable minutes');
+    $check(!str_contains($row, 'data-item-duration') && str_contains($row, 'data-video-minutes'), 'video playlist uses its file duration without an editable field');
 } finally { foreach ($files as $file) if (is_file($file)) unlink($file); }
 echo "Passed $checks upload storage checks. No database access required.\n";

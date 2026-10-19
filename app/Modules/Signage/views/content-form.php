@@ -13,7 +13,7 @@ $limit = round((int) $uploadLimitBytes / 1048576, 1);
 <header class="page-header"><div><h1 class="page-title"><?= $adding ? 'Add content' : 'Edit content' ?></h1><p class="page-subtitle">Upload a video or image, or add a website to use in playlists.</p></div></header>
 <?= partial('Signage::_tabs', ['tab' => 'content']) ?>
 <?php endif ?>
-<form class="<?= $inDialog ? 'signage-content-dialog__form' : 'card form-card' ?>" method="post" enctype="multipart/form-data" action="<?= e($base) ?>" data-signage-content-form<?= !$inDialog ? ' data-busy-on-submit' : '' ?> novalidate>
+<form class="<?= $inDialog ? 'signage-content-dialog__form' : 'card form-card' ?>" method="post" enctype="multipart/form-data" action="<?= e($base) ?>" data-signage-content-form data-upload-limit-bytes="<?= (int) $uploadLimitBytes ?>"<?= !$inDialog ? ' data-busy-on-submit' : '' ?> novalidate>
   <?= csrf_field() ?>
   <?php if ($inDialog): ?><p class="notice notice--error" role="alert" data-content-error hidden></p><?php endif ?>
   <?php if ($errors !== []): ?><div class="notice notice--error" role="alert"><?= icon('circle-alert') ?><div>Check the highlighted <?= count($errors) === 1 ? 'field' : 'fields' ?>. If an upload failed, select the file again.</div></div><?php endif ?>

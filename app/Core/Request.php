@@ -78,6 +78,16 @@ final class Request
         return $this->header('X-Requested-With') === 'fetch';
     }
 
+    /** PHP discards POST fields and files when the complete body exceeds this limit. */
+    public function exceedsPostLimit(): bool
+    {
+        $limit = ini_parse_quantity((string) ini_get('post_max_size'));
+        $length = $this->server['CONTENT_LENGTH'] ?? '';
+        return $this->method === 'POST' && $limit > 0
+            && (is_string($length) || is_int($length)) && ctype_digit((string) $length)
+            && (float) $length > $limit;
+    }
+
     public function ip(): string
     {
         return (string) ($this->server['REMOTE_ADDR'] ?? '');

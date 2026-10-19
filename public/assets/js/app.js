@@ -9,7 +9,7 @@ import { initStatusToggles } from './status-toggle.js';
 import { setBusy } from './util.js';
 import { initNavigation } from './navigation.js?v=20261019-performance';
 // cPanel caches modules for a year; new behavior needs fresh module URLs.
-import { initSignageAdmin } from './signage-admin.js?v=20261019-performance';
+import { initSignageAdmin } from './signage-admin.js?v=20261019-upload-limit';
 import { initSignageEditor } from './signage-editor.js?v=20261019-natural-video';
 import { initChromebookGoogle } from './chromebook-google.js';
 

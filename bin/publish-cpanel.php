@@ -72,12 +72,26 @@ try {
     $start = '# BEGIN NEXUS PUBLIC';
     $end = '# END NEXUS PUBLIC';
     $existing = preg_replace('/^# BEGIN NEXUS PUBLIC\R.*?^# END NEXUS PUBLIC\R?/ms', '', $existing);
+    $existing = preg_replace('/^# BEGIN NEXUS UPLOADS\R.*?^# END NEXUS UPLOADS\R?/ms', '', $existing ?? '');
     $rules = file_get_contents($source . '/.htaccess');
     if ($existing === null || $rules === false) {
         throw new RuntimeException('Cannot prepare website rewrite rules.');
     }
-    // Keep host-managed PHP settings and any ACME challenge directory intact.
-    $write($htaccessPath, $start . "\n" . rtrim($rules) . "\n" . $end . "\n" . ltrim($existing));
+    // Upload settings come last so an older host-managed 64M setting cannot win.
+    preg_match('/^# BEGIN NEXUS UPLOADS\R.*?^# END NEXUS UPLOADS\R?/ms', $rules, $uploads);
+    $rules = preg_replace('/^# BEGIN NEXUS UPLOADS\R.*?^# END NEXUS UPLOADS\R?/ms', '', $rules);
+    if ($rules === null || $uploads === []) throw new RuntimeException('Cannot prepare upload settings.');
+    // Keep the host's PHP handler, other settings and ACME challenge directory.
+    $write($htaccessPath, $start . "\n" . rtrim($rules) . "\n" . $end . "\n" . trim($existing) . "\n\n" . $uploads[0]);
+
+    $userIniPath = $target . '/.user.ini';
+    if (is_link($userIniPath)) throw new RuntimeException('The website .user.ini must not be a symbolic link.');
+    $userIni = is_file($userIniPath) ? file_get_contents($userIniPath) : '';
+    $uploadIni = file_get_contents($source . '/.user.ini');
+    if ($userIni === false || $uploadIni === false) throw new RuntimeException('Cannot read PHP upload settings.');
+    $userIni = preg_replace('/^; BEGIN NEXUS UPLOADS\R.*?^; END NEXUS UPLOADS\R?/ms', '', $userIni);
+    if ($userIni === null) throw new RuntimeException('Cannot prepare PHP upload settings.');
+    $write($userIniPath, rtrim($userIni) . "\n\n; BEGIN NEXUS UPLOADS\n" . rtrim($uploadIni) . "\n; END NEXUS UPLOADS\n");
     $write($target . '/index.php', "<?php\ndeclare(strict_types=1);\n\n// Application code stays outside public_html.\nrequire " . var_export($source . '/index.php', true) . ";\n");
 
     echo "Public website files published to: $target\n";

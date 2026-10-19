@@ -1,4 +1,4 @@
-import { initContentForms } from './signage-content.js';
+import { initContentForms } from './signage-content.js?v=20261019-upload-limit';
 import { initContentActions } from './signage-content-actions.js?v=20261019-playlists';
 import { toast } from './toast.js';
 

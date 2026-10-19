@@ -1,5 +1,5 @@
 import {toast} from './toast.js';
-import {setBusy} from './util.js';
+import {setBusy, csrfToken} from './util.js';
 
 /** One shared form supports both the regular page and the immediately available dialog. */
 export function initContentForms() {
@@ -11,6 +11,11 @@ export function initContentForms() {
   const type = form.querySelector('[data-content-type]');
   const file = form.querySelector('[name="file"]');
   const feedback = form.querySelector('[data-upload-feedback]');
+  const sizeError = () => {
+    const limit = Number(form.dataset.uploadLimitBytes);
+    if (type.value === 'website' || !file.files[0] || !limit || file.files[0].size <= limit) return '';
+    return `This file is too large. Choose a file up to ${new Intl.NumberFormat(undefined, {maximumFractionDigits: 1}).format(limit / 1048576)} MB.`;
+  };
   const updateType = () => {
     form.querySelectorAll('[data-content-fields]').forEach(group => {
       const active = group.dataset.contentFields.split(' ').includes(type.value);
@@ -25,7 +30,9 @@ export function initContentForms() {
   type.addEventListener('change', updateType);
   updateType();
   if (!(dialog instanceof HTMLDialogElement)) {
-    form.addEventListener('submit', () => {
+    form.addEventListener('submit', event => {
+      const error = sizeError();
+      if (error) { event.preventDefault(); feedback.textContent = error; return; }
       if (type.value !== 'website' && file.files.length) feedback.textContent = 'Uploading file. Keep this page open until the upload finishes.';
     });
     return () => lifetime.abort();
@@ -62,8 +69,13 @@ export function initContentForms() {
     event.preventDefault();
     if (uploading) return;
     clearErrors();
+    const fileError = sizeError();
+    if (fileError) { errorNotice.textContent = fileError; errorNotice.hidden = false; return; }
     if (!form.reportValidity()) return;
     const body = new FormData(form);
+    // Use the current page token rather than an older token in a cached form.
+    const token = csrfToken();
+    if (token) body.set('_csrf', token);
     const editorSave = document.querySelector('[data-playlist-save]');
     const screenId = editorSave?.getAttribute('action')?.match(/^\/signage\/screens\/(\d+)\/playlist$/)?.[1];
     if (screenId) body.set('screen_id', screenId);
@@ -74,8 +86,9 @@ export function initContentForms() {
     dialog.querySelectorAll('[data-content-cancel]').forEach(close => { close.disabled = true; });
     feedback.textContent = type.value === 'website' ? 'Adding website…' : 'Uploading file…';
     try {
-      const response = await fetch(form.action, {method: 'POST', body, credentials: 'same-origin', headers: {'X-Requested-With': 'fetch', Accept: 'application/json'}, signal});
+      const response = await fetch(form.action, {method: 'POST', body, credentials: 'same-origin', headers: {'X-Requested-With': 'fetch', 'X-CSRF-Token': token, Accept: 'application/json'}, signal});
       if (response.redirected && new URL(response.url).pathname === '/login') throw new Error('Your session expired. Sign in in another tab, then try again.');
+      if (response.status === 413) throw new Error('The server rejected this file because it exceeds its upload limit. Choose a smaller file, or check the Nexus PHP limits in cPanel.');
       let result;
       try { result = await response.json(); } catch { throw new Error('The upload could not finish. Check your connection and the server upload limit.'); }
       if (!response.ok) {

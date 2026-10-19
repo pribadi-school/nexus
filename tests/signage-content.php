@@ -30,6 +30,7 @@ $check(!str_contains($html, '<h1') && !str_contains($html, 'back-link'), 'popup 
 preg_match_all('/\bid="([^"]+)"/', $html, $ids);
 $check(count($ids[1]) === count(array_unique($ids[1])) && in_array('content-dialog-type', $ids[1]), 'popup fields have unique prefixed IDs');
 $check(!str_contains($html, 'name="name"'), 'popup has no separate content name input');
+$check(str_contains($html, 'data-upload-limit-bytes="500000"'), 'popup supplies the effective size limit for validation before upload');
 $inputMethod = new ReflectionMethod(SignageController::class, 'contentInput');
 $input = $inputMethod->invoke($controller, new Request('POST', '/', [], ['type' => 'video', 'name' => 'Ignore manual name'], [], [
     'file' => ['name' => 'C:\\fakepath\\School event.mov', 'error' => UPLOAD_ERR_OK],

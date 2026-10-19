@@ -112,6 +112,8 @@ final class SignageStorage
         foreach (['upload_max_filesize', 'post_max_size'] as $key) {
             $bytes = self::iniBytes((string) ini_get($key));
             if ($bytes > 0) {
+                // Leave space for multipart boundaries and ordinary form fields.
+                if ($key === 'post_max_size') $bytes = max(1, $bytes - 1048576);
                 $limits[] = $bytes;
             }
         }

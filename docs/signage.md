@@ -65,6 +65,10 @@ enough for the Nexus playlist or it will leave the page at that duration.
   `max_input_time` / `max_execution_time` values for slow uploads. The content
   form shows the effective limit, including PHP's limits. Hosting proxy limits
   may impose a smaller cap.
+- `update.sh` publishes Nexus-only 500M/512M PHP upload/request settings for
+  LiteSpeed/LSAPI and CGI/FastCGI. The browser checks file size before upload;
+  discarded oversized request bodies return 413, rather than a misleading
+  form-expired error. Valid uploads still require the session CSRF token.
 - Files consume the hosting plan's disk space and transfer allowance. Browser
   caching may reduce transfers, but repeated playback across many TVs can
   consume substantial bandwidth. Check the hosting provider's media-serving
