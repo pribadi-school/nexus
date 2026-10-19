@@ -86,19 +86,19 @@ The publisher preserves this block. The account-wide PHP setting stays 8.1.
 Confirm web PHP separately from terminal PHP. If diagnostic scripts are used,
 remove them after verifying the version and extensions; do not publish phpinfo.
 
-The publisher now applies 500 MB upload settings to the Nexus subdomain through
+The publisher now applies 250 MB upload settings to the Nexus subdomain through
 its managed `.htaccess` block (LiteSpeed/LSAPI) and `.user.ini` (CGI/FastCGI).
 It preserves the host's PHP handler and unrelated settings. If your provider
 locks these values, set them for the subdomain in the PHP INI editor or ask hosting support:
 
 ```ini
-upload_max_filesize = 500M
-post_max_size = 512M
+upload_max_filesize = 250M
+post_max_size = 256M
 max_input_time = 1800
 max_execution_time = 600
 ```
 
-Reload Add content and check that it says **Up to 500 MB per upload**.
+Reload Add content and check that it says **Up to 250 MB**.
 CGI/FastCGI may cache `.user.ini` for five minutes. A smaller displayed limit
 means PHP is still enforcing that lower cap. An upstream web-server/proxy cap
 may also need the provider's help. No database migration or APK update is needed.
@@ -129,7 +129,7 @@ DB_PORT=3306
 DB_DATABASE=pribadisch_nexus
 DB_USERNAME=pribadisch_nexus
 DB_PASSWORD="your-database-password"
-SIGNAGE_MAX_UPLOAD_MB=500
+SIGNAGE_MAX_UPLOAD_MB=250
 ```
 
 Do not copy the local development `.env`. Restrict the production file to the

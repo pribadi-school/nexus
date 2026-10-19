@@ -31,10 +31,7 @@ $limit = round((int) $uploadLimitBytes / 1048576, 1);
       <label class="field__label" for="<?= $prefix ?>file" data-file-label><?= !$adding ? 'Replace file' : 'Upload file' ?></label>
       <input class="input signage-file" type="file" id="<?= $prefix ?>file" name="file" accept="video/mp4,video/quicktime,.mp4,.mov,image/png,image/jpeg,.png,.jpg,.jpeg"<?= $invalid('file') ?>><?= $error('file') ?>
       <?php if (!$adding && $item['type'] !== 'website'): ?><p class="field__hint">Current file: <?= e($item['original_filename']) ?>. Leave this blank to keep it.</p><?php endif ?>
-      <p class="field__hint">Up to <?= e($limit) ?> MB per upload. Files use your hosting storage.</p>
-      <p class="field__hint">The content name follows the uploaded filename.</p>
-      <p class="field__hint" data-content-fields="video">MP4 or MOV. H.264 video with AAC audio is recommended. Codec support depends on the TV or browser.</p>
-      <p class="field__hint" data-content-fields="image">PNG or JPG, up to 40 megapixels. Set its display duration in minutes in the screen playlist.</p>
+      <p class="field__hint">Up to <?= e($limit) ?> MB</p>
       <p class="field__hint" data-upload-feedback aria-live="polite"></p>
     </div>
     <div class="field field--full<?= $field('source_url') ? ' has-error' : '' ?>" data-content-fields="website">

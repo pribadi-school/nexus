@@ -108,7 +108,7 @@ final class SignageStorage
 
     public static function maxUploadBytes(): int
     {
-        $limits = [max(1, min(100000, (int) config('signage.max_upload_mb', 500))) * 1024 * 1024];
+        $limits = [max(1, min(250, (int) config('signage.max_upload_mb', 250))) * 1024 * 1024];
         foreach (['upload_max_filesize', 'post_max_size'] as $key) {
             $bytes = self::iniBytes((string) ini_get($key));
             if ($bytes > 0) {

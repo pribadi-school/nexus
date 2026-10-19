@@ -9,6 +9,7 @@ $check = static function (bool $condition, string $message) use (&$checks): void
     if (!$condition) throw new RuntimeException('Failed: ' . $message);
     $checks++;
 };
+$check(SignageStorage::maxUploadBytes() <= 250 * 1048576, 'upload enforcement is capped at 250 MB even with an older environment setting');
 try {
     foreach (['0.5' => 30, '2.5' => 150, '0.083333' => 5, '1440' => 86400] as $minutes => $seconds) {
         [$data, $errors] = SignageValidation::playlistItem(['duration_minutes' => (string) $minutes], false);

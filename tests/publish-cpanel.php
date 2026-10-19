@@ -27,9 +27,9 @@ try {
         $userIni = file_get_contents($target . '/.user.ini');
         $settings = parse_ini_file($target . '/.user.ini');
         $check(str_contains($htaccess, $handler), 'existing PHP handler is preserved');
-        $check(strpos($htaccess, 'php_value upload_max_filesize 500M') > strpos($htaccess, 'php_value upload_max_filesize 64M'), 'managed upload limit overrides the earlier 64M cap');
+        $check(strpos($htaccess, 'php_value upload_max_filesize 250M') > strpos($htaccess, 'php_value upload_max_filesize 64M'), 'managed upload limit overrides the earlier 64M cap');
         $check(substr_count($htaccess, '# BEGIN NEXUS UPLOADS') === 1, 'managed htaccess upload settings occur once');
-        $check($settings['upload_max_filesize'] === '500M' && $settings['post_max_size'] === '512M', 'CGI upload settings allow 500 MB plus form overhead');
+        $check($settings['upload_max_filesize'] === '250M' && $settings['post_max_size'] === '256M', 'CGI upload settings allow 250 MB plus form overhead');
         $check($settings['date.timezone'] === 'Asia/Jakarta', 'unrelated PHP settings are preserved');
         $check($settings['display_errors'] === '' && $settings['log_errors'] === '1', 'startup warnings are logged without corrupting JSON');
         $check(str_contains($htaccess, '<Files ".user.ini">'), 'PHP configuration is denied over HTTP');

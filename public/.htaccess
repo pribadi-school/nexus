@@ -18,16 +18,16 @@ DirectoryIndex index.php
 # BEGIN NEXUS UPLOADS
 # LiteSpeed / CloudLinux LSAPI read these instead of CGI/FastCGI .user.ini.
 <IfModule LiteSpeed>
-  php_value upload_max_filesize 500M
-  php_value post_max_size 512M
+  php_value upload_max_filesize 250M
+  php_value post_max_size 256M
   php_value max_input_time 1800
   php_value max_execution_time 600
   php_flag display_errors Off
   php_flag log_errors On
 </IfModule>
 <IfModule lsapi_module>
-  php_value upload_max_filesize 500M
-  php_value post_max_size 512M
+  php_value upload_max_filesize 250M
+  php_value post_max_size 256M
   php_value max_input_time 1800
   php_value max_execution_time 600
   php_flag display_errors Off

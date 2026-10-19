@@ -58,14 +58,15 @@ enough for the Nexus playlist or it will leave the page at that duration.
   root. Uploads are served through Nexus with byte-range support for video.
 - PHP needs `fileinfo`, alongside the app's existing extensions. No Composer,
   Node.js, FFmpeg, worker, or background daemon is required on the server.
-- `SIGNAGE_MAX_UPLOAD_MB=500` sets the application's maximum per MP4. This is
-  configurable; it is not an AbleSign quota. In cPanel's MultiPHP INI Editor,
+- `SIGNAGE_MAX_UPLOAD_MB=250` sets the application's maximum per media file.
+  You can lower this value; the application caps uploads at 250 MB even if an
+  older `.env` still says 500. In cPanel's MultiPHP INI Editor,
   also set `upload_max_filesize` to the desired file limit, `post_max_size`
-  slightly larger (for example, 512M for a 500M upload), and suitable
+  slightly larger (for example, 256M for a 250M upload), and suitable
   `max_input_time` / `max_execution_time` values for slow uploads. The content
   form shows the effective limit, including PHP's limits. Hosting proxy limits
   may impose a smaller cap.
-- `update.sh` publishes Nexus-only 500M/512M PHP upload/request settings for
+- `update.sh` publishes Nexus-only 250M/256M PHP upload/request settings for
   LiteSpeed/LSAPI and CGI/FastCGI. The browser checks file size before upload;
   discarded oversized request bodies return 413, rather than a misleading
   form-expired error. Valid uploads still require the session CSRF token.
