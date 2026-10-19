@@ -123,6 +123,7 @@ extension_dir="$PhpDir\ext"
 extension=pdo_mysql
 extension=mbstring
 extension=openssl
+extension=curl
 extension=fileinfo
 extension=zip
 memory_limit=256M

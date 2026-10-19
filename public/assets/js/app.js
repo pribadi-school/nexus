@@ -10,6 +10,7 @@ import { setBusy } from './util.js';
 import { initNavigation } from './navigation.js';
 import { initSignageAdmin } from './signage-admin.js';
 import { initSignageEditor } from './signage-editor.js';
+import { initChromebookGoogle } from './chromebook-google.js';
 
 function initDismiss() {
   document.addEventListener('click', (event) => {
@@ -45,7 +46,8 @@ function initPage() {
   initNoteForms();
   const cleanupEditor = initSignageEditor();
   const cleanupSignage = initSignageAdmin();
-  cleanupPage = () => { cleanupFilters(); cleanupEditor(); cleanupSignage(); };
+  const cleanupGoogle = initChromebookGoogle();
+  cleanupPage = () => { cleanupFilters(); cleanupEditor(); cleanupSignage(); cleanupGoogle(); };
 }
 initPage();
 initNavigation({beforeSwap: () => cleanupPage(), afterSwap: initPage});

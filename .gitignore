@@ -1,5 +1,7 @@
 # Secrets: never commit
 .env
+storage/private/*
+!storage/private/.gitkeep
 
 # Local dev database and tooling
 .dev/

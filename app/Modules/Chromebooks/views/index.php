@@ -22,6 +22,7 @@ $targetYear = $year ?? $years[0];
     </p>
   </div>
   <div class="page-actions">
+    <a class="btn btn--secondary" href="/chromebooks/google"><?= icon('settings', 'icon--sm') ?>Google Admin</a>
     <a class="btn btn--secondary" href="/chromebooks/import?year=<?= $targetYear ?>"><?= icon('upload', 'icon--sm') ?>Import</a>
     <a class="btn btn--primary" href="/chromebooks/new?year=<?= $targetYear ?>"><?= icon('plus', 'icon--sm') ?>Add Chromebook</a>
   </div>

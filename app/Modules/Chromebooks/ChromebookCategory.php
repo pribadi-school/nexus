@@ -74,6 +74,10 @@ final class ChromebookCategory extends Category
     public function registerRoutes(Router $router): void
     {
         $router->get('/chromebooks', [ChromebookController::class, 'index']);
+        $router->get('/chromebooks/google', [GoogleChromebookController::class, 'setup']);
+        $router->post('/chromebooks/{id}/google/refresh', [GoogleChromebookController::class, 'refresh']);
+        $router->get('/chromebooks/{id}/google/ou', [GoogleChromebookController::class, 'orgUnits']);
+        $router->post('/chromebooks/{id}/google/ou', [GoogleChromebookController::class, 'move']);
         $router->get('/chromebooks/new', [ChromebookController::class, 'create']);
         $router->post('/chromebooks', [ChromebookController::class, 'store']);
         $router->get('/chromebooks/export', [ChromebookController::class, 'export']);

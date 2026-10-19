@@ -170,6 +170,7 @@ final class ChromebookController
             'history' => $this->chromebooks->history($id),
             'notes' => $notes->forDevice($id),
             'noteCount' => $notes->countForDevice($id),
+            'google' => GoogleChromebookController::viewData($chromebook),
         ], 'layouts/app', $this->category->title($id) . ' · Chromebooks'));
     }
 
