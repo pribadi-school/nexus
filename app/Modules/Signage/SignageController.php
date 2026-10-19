@@ -245,15 +245,21 @@ final class SignageController
     public function addContentToScreens(Request $request): Response
     {
         try {
-            $targets = SignageValidation::screenTargets($request->body['screen_ids'] ?? null);
+            $sync = $request->input('membership_mode') === 'sync';
+            $targets = SignageValidation::screenTargets($request->body['screen_ids'] ?? ($sync ? [] : null), $sync);
+            $original = $sync ? SignageValidation::screenTargets($request->body['original_screen_ids'] ?? [], true) : [];
             $item = $this->contentItem($request);
-            $result = $this->signage->addContentToScreens((int) $item['id'], $targets);
+            $result = $sync ? $this->signage->updateContentScreens((int) $item['id'], $targets, $original)
+                : $this->signage->addContentToScreens((int) $item['id'], $targets);
         } catch (InvalidArgumentException $error) {
             if ($request->isFetch()) return Response::json(['error' => $error->getMessage()], 422);
             Session::flash('error', $error->getMessage());
             return Response::redirect('/signage');
         }
-        $message = $result['added'] > 0 ? 'Added to ' . $result['added'] . ($result['added'] === 1 ? ' TV.' : ' TVs.') : 'Content is already in the selected playlists.';
+        $parts = [];
+        if ($result['added'] > 0) $parts[] = 'Added to ' . $result['added'] . ($result['added'] === 1 ? ' TV' : ' TVs');
+        if (($result['removed'] ?? 0) > 0) $parts[] = 'Removed from ' . $result['removed'] . ($result['removed'] === 1 ? ' TV' : ' TVs');
+        $message = $parts !== [] ? implode('. ', $parts) . '.' : 'TV playlists are already up to date.';
         if ($request->isFetch()) return Response::json([
             'message' => $message,
             'screen_ids' => $this->signage->contentScreens((int) $item['id'])[(int) $item['id']] ?? [],

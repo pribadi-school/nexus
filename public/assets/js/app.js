@@ -8,8 +8,9 @@ import { initNoteForms } from './note-form.js';
 import { initStatusToggles } from './status-toggle.js';
 import { setBusy } from './util.js';
 import { initNavigation } from './navigation.js';
-import { initSignageAdmin } from './signage-admin.js';
-import { initSignageEditor } from './signage-editor.js';
+// cPanel caches modules for a year; new behavior needs fresh module URLs.
+import { initSignageAdmin } from './signage-admin.js?v=20261019-playlists';
+import { initSignageEditor } from './signage-editor.js?v=20261019-playlists';
 import { initChromebookGoogle } from './chromebook-google.js';
 
 function initDismiss() {

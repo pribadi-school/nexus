@@ -3,6 +3,7 @@ export function initSignageEditor() {
 const lifetime = new AbortController();
 const {signal} = lifetime;
 let cleanupDrag = () => {};
+let menuSequence = 0;
 const editor = document.querySelector('[data-screen-editor]');
 document.querySelector('[href="#screen-settings"]')?.addEventListener('click', () => {
   document.getElementById('screen-settings').open = true;
@@ -33,18 +34,9 @@ if (editor) {
   slot.className = 'signage-drag-slot';
   slot.setAttribute('aria-hidden', 'true');
 
-  // Content already in the playlist is hidden from the library (no duplicates)
-  // and shows again when it is removed from the playlist.
-  const syncLibrary = () => {
-    const used = new Set(rows().map(row => row.dataset.contentId));
-    const all = [...library.querySelectorAll('[data-editor-item]')];
-    all.forEach(row => row.toggleAttribute('data-in-playlist', used.has(row.dataset.contentId)));
-    const allUsed = editor.querySelector('[data-library-all-used]');
-    if (allUsed) allUsed.hidden = !all.length || all.some(row => !row.hasAttribute('data-in-playlist'));
-  };
+  // Keep the complete library visible; repeated content can have its own duration.
   const update = (message = '') => {
     const items = rows();
-    syncLibrary();
     dirty = JSON.stringify(serialize()) !== initial;
     editor.dataset.unsaved = String(dirty || saving);
     items.forEach((row, index) => {
@@ -62,7 +54,8 @@ if (editor) {
     const minutes = new Intl.NumberFormat(undefined, {maximumFractionDigits: 2}).format(seconds / 60);
     const total = `${minutes} min`;
     editor.querySelector('[data-playlist-duration]').textContent = total;
-    feedback.textContent = message && dirty ? message : `${items.length} ${items.length === 1 ? 'item' : 'items'}${dirty ? ' · Unsaved changes' : ''}`;
+    editor.querySelector('[data-playlist-count]').textContent = `${items.length} ${items.length === 1 ? 'item' : 'items'}${dirty ? ' · Unsaved changes' : ''}`;
+    feedback.textContent = message && dirty ? message : '';
   };
   document.addEventListener('signage:duration', event => {
     editor.querySelectorAll('[data-video-src]').forEach(preview => {
@@ -70,7 +63,7 @@ if (editor) {
       preview.dataset.videoDuration = String(event.detail.seconds);
       preview.dataset.durationUnavailable = String(!event.detail.seconds);
       preview.closest('[data-editor-item]').querySelector('[data-video-minutes]').textContent = event.detail.seconds
-        ? `Video length: ${new Intl.NumberFormat(undefined, {maximumFractionDigits: 2}).format(event.detail.seconds / 60)} min` : 'Video length unavailable';
+        ? `Video · ${new Intl.NumberFormat(undefined, {maximumFractionDigits: 2}).format(event.detail.seconds / 60)} min` : 'Video';
     });
     update();
   }, {signal});
@@ -85,15 +78,17 @@ if (editor) {
     }
   };
   const prepare = row => {
+    const menu = row.querySelector('.signage-editor-item__menu');
+    const menuButton = row.querySelector('[data-row-menu-button]');
+    if (menu && menuButton) {
+      menu.id = `playlist-actions-${Date.now()}-${++menuSequence}`;
+      menuButton.setAttribute('popovertarget', menu.id);
+    }
     row.draggable = false;
     row.dataset.draggable = 'true';
     row.querySelectorAll('a, img').forEach(node => { node.draggable = false; });
   };
   const add = (source, before = null) => {
-    if (rows().some(row => row.dataset.contentId === source.dataset.contentId)) {
-      update(`${source.dataset.contentName} is already in this playlist.`);
-      return;
-    }
     if (rows().length >= 1000) {
       feedback.textContent = 'A playlist can contain up to 1,000 items.';
       feedback.classList.add('is-error');
@@ -132,6 +127,8 @@ if (editor) {
   editor.addEventListener('submit', event => {
     const form = event.target;
     const row = form.closest('[data-editor-item]');
+    const menu = form.closest('[popover]');
+    if (menu?.matches(':popover-open')) menu.hidePopover();
     if (form.matches('[data-duration-form]')) {
       event.preventDefault();
       save.requestSubmit();
@@ -149,7 +146,7 @@ if (editor) {
       if (!target) return;
       animateChange(() => list.insertBefore(row, form.dataset.itemMove === 'up' ? target : target.nextElementSibling));
       update(`Moved ${row.dataset.contentName}. Save changes to update this TV.`);
-      form.querySelector('button').focus();
+      row.querySelector('[data-row-menu-button]').focus();
     }
   });
   editor.addEventListener('input', event => {
@@ -157,7 +154,7 @@ if (editor) {
   });
   editor.querySelector('[data-library-search]').addEventListener('input', event => {
     const query = event.target.value.trim().toLocaleLowerCase();
-    const available = [...library.querySelectorAll('[data-editor-item]:not([data-in-playlist])')];
+    const available = [...library.querySelectorAll('[data-editor-item]')];
     available.forEach(row => { row.hidden = !row.dataset.contentName.toLocaleLowerCase().includes(query); });
     editor.querySelector('[data-library-no-results]').hidden = !available.length || available.some(row => !row.hidden);
   });
@@ -298,16 +295,36 @@ if (editor) {
   }, {signal});
 }
 
-// Native popovers provide light dismissal, Escape and focus handling.
-document.addEventListener('beforetoggle', event => {
-    const menu = event.target;
-    if (!menu.matches('.signage-content-menu')) return;
-    if (event.newState !== 'open') return;
-    const trigger = document.querySelector(`[popovertarget="${menu.id}"]`);
-    const rect = trigger.getBoundingClientRect();
-    const width = Math.min(280, innerWidth - 32);
-    menu.style.left = `${Math.max(16, Math.min(rect.right - width, innerWidth - width - 16))}px`;
-    menu.style.top = `${Math.max(16, Math.min(rect.bottom + 4, innerHeight - Math.min(menu.scrollHeight || 300, innerHeight * .6) - 16))}px`;
+// Measure open popovers instead of estimating their height while they are hidden.
+const positionMenu = menu => {
+  const trigger = document.querySelector(`[popovertarget="${menu.id}"]`);
+  if (!trigger) return;
+  const viewport = window.visualViewport;
+  const leftEdge = (viewport?.offsetLeft ?? 0) + 16;
+  const topEdge = (viewport?.offsetTop ?? 0) + 16;
+  const rightEdge = (viewport?.offsetLeft ?? 0) + (viewport?.width ?? innerWidth) - 16;
+  let bottomEdge = (viewport?.offsetTop ?? 0) + (viewport?.height ?? innerHeight) - 16;
+  const nav = document.querySelector('.bottom-nav')?.getBoundingClientRect();
+  if (nav?.height && nav.top > topEdge) bottomEdge = Math.min(bottomEdge, nav.top - 16);
+  const maxHeight = Math.max(1, bottomEdge - topEdge);
+  const width = Math.min(280, rightEdge - leftEdge);
+  menu.style.width = `${width}px`;
+  menu.style.maxHeight = `${maxHeight}px`;
+  const rect = trigger.getBoundingClientRect();
+  const height = menu.getBoundingClientRect().height || maxHeight;
+  const below = rect.bottom + 4;
+  const above = rect.top - height - 4;
+  const preferred = below + height <= bottomEdge ? below : above >= topEdge ? above : bottomEdge - height;
+  menu.style.left = `${Math.max(leftEdge, Math.min(rect.right - width, rightEdge - width))}px`;
+  menu.style.top = `${Math.max(topEdge, Math.min(preferred, bottomEdge - height))}px`;
+};
+for (const name of ['beforetoggle', 'toggle']) document.addEventListener(name, event => {
+  if (event.newState === 'open' && event.target.matches('.signage-content-menu')) positionMenu(event.target);
 }, {capture: true, signal});
+const repositionMenus = () => document.querySelectorAll('.signage-content-menu:popover-open').forEach(positionMenu);
+window.addEventListener('resize', repositionMenus, {signal});
+window.addEventListener('scroll', repositionMenus, {signal});
+window.visualViewport?.addEventListener('resize', repositionMenus, {signal});
+window.visualViewport?.addEventListener('scroll', repositionMenus, {signal});
 return () => { cleanupDrag(); lifetime.abort(); };
 }

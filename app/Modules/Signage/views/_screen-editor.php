@@ -7,15 +7,13 @@
         <button class="btn btn--primary btn--sm" type="submit" data-save-playlist hidden disabled>Save changes</button>
       </form>
     </div>
-    <p class="signage-help">Drag from the library, reorder, drag back to the library to remove, then save to update this TV.</p>
-    <p class="signage-help">Set each item's duration in minutes. Videos loop if needed to fill the selected time.</p>
-    <p class="signage-editor__feedback" aria-live="polite" data-editor-feedback><?= e(plural(count($items), 'item')) ?></p>
-    <p class="signage-help">Playlist duration: <strong data-playlist-duration>Calculating…</strong></p>
+    <p class="signage-editor__summary"><span data-playlist-count><?= e(plural(count($items), 'item')) ?></span><span aria-hidden="true"> · </span><strong data-playlist-duration>Calculating…</strong></p>
     <ol class="signage-editor__list" aria-label="Playlist playback order" data-playlist-drop>
       <?php foreach ($items as $index => $entry): ?>
         <?= partial('Signage::_editor-item', ['entry' => $entry, 'base' => $base, 'position' => $index + 1, 'saved' => true]) ?>
       <?php endforeach ?>
     </ol>
+    <p class="signage-editor__feedback" aria-live="polite" data-editor-feedback></p>
     <p class="signage-editor__empty" data-playlist-empty<?= $items !== [] ? ' hidden' : '' ?>><?= icon('plus') ?>Drop videos, images or websites here to start this screen's playlist.</p>
   </div>
   <div class="signage-editor__library" data-library-panel>
@@ -28,7 +26,7 @@
     </ul>
     <?php if ($content === []): ?><p class="signage-help" data-library-empty>Upload a video or image, or add a website to start.</p><?php endif ?>
     <p class="signage-help" data-library-no-results hidden>No matching content.</p>
-    <p class="signage-help" data-library-all-used hidden>Everything in the library is already in this playlist.</p>
   </div>
+  <details class="signage-editor__help"><summary>Playlist help</summary><p class="signage-help">Drag content between the columns to add or remove it. Drag rows to reorder, or use each row’s menu. Set durations in minutes, then save changes. Videos loop to fill the selected time.</p></details>
 </section>
 <?= partial('Signage::_content-dialog', ['uploadLimitBytes' => \App\Modules\Signage\SignageStorage::maxUploadBytes()]) ?>

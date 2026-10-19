@@ -56,6 +56,8 @@ $card = partial('Signage::_content-card', [
     'entry' => ['id' => 1, 'name' => 'Poster.png', 'type' => 'image', 'stored_filename' => str_repeat('a', 48) . '.png', 'size_bytes' => 10, 'used_count' => 1, 'updated_at' => gmdate('Y-m-d H:i:s')],
     'screens' => [['id' => 1, 'name' => 'First TV'], ['id' => 2, 'name' => 'Second TV']], 'assignedScreens' => [1],
 ]);
-$check(str_contains($card, 'name="screen_ids[]" value="1" checked disabled') && str_contains($card, 'name="screen_ids[]" value="2"'), 'existing TVs are checked and new TVs selectable');
-$check(str_contains($card, 'data-content-delete data-confirm=') && str_contains($card, 'Add to selected TVs'), 'menu exposes batch add and confirmed deletion');
+$check(str_contains($card, 'name="screen_ids[]" value="1" checked') && !str_contains($card, 'checked disabled') && str_contains($card, 'name="screen_ids[]" value="2"'), 'existing TVs can be unchecked and new TVs selected');
+$check(str_contains($card, 'name="original_screen_ids[]" value="1"') && str_contains($card, 'name="membership_mode" value="sync"'), 'membership form carries the baseline for scoped changes');
+$check(SignageValidation::screenTargets([], true) === [], 'membership updates allow removing content from all TVs');
+$check(str_contains($card, 'data-content-delete data-confirm=') && str_contains($card, 'Save TV playlists'), 'menu exposes membership editing and confirmed deletion');
 echo "Passed $checks content popup checks. No database access required.\n";

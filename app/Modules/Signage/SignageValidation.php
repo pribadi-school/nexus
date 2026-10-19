@@ -9,8 +9,9 @@ use App\Core\Validator;
 final class SignageValidation
 {
     /** @return list<int> */
-    public static function screenTargets(mixed $values): array
+    public static function screenTargets(mixed $values, bool $allowEmpty = false): array
     {
+        if ($allowEmpty && $values === []) return [];
         if (!is_array($values) || $values === [] || count($values) > 1000) {
             throw new \InvalidArgumentException('Select at least one TV (up to 1,000 at once).');
         }

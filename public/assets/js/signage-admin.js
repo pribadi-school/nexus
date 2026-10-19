@@ -1,5 +1,5 @@
 import { initContentForms } from './signage-content.js';
-import { initContentActions } from './signage-content-actions.js';
+import { initContentActions } from './signage-content-actions.js?v=20261019-playlists';
 import { toast } from './toast.js';
 
 export function initSignageAdmin() {

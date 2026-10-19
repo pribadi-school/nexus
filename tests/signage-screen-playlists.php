@@ -90,7 +90,7 @@ try {
     $html = $controller->editScreen($request)->body;
     $check(str_contains($html, 'data-screen-editor') && str_contains($html, 'data-screen-library') && !str_contains($html, 'name="playlist_id"'), 'screen contains library and playlist without assignment picker');
     $html = $controller->content(new Request('GET', '/signage', [], [], []))->body;
-    $check(str_contains($html, 'popovertarget="content-menu-') && str_contains($html, 'Add to TV playlist'), 'content kebab menu includes direct TV action');
+    $check(str_contains($html, 'popovertarget="content-menu-') && str_contains($html, 'Save TV playlists'), 'content kebab menu includes TV membership editing');
     $tabs = partial('Signage::_tabs', ['tab' => 'screens']);
     $check(!str_contains($tabs, '/signage/playlists'), 'separate playlists tab removed');
     $repo->deleteScreen($fresh);

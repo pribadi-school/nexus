@@ -197,6 +197,42 @@ final class SignageRepository
         });
     }
 
+    /** Apply only the user's checkbox changes, leaving other TVs and retained timings alone. */
+    public function updateContentScreens(int $contentId, array $selected, array $original): array
+    {
+        $add = array_values(array_diff(array_unique($selected), $original));
+        $remove = array_values(array_diff(array_unique($original), $selected));
+        $changed = [...$add, ...$remove];
+        sort($changed);
+        if ($changed === []) return ['added' => 0, 'removed' => 0];
+        return db()->transaction(function () use ($contentId, $add, $changed): array {
+            $found = db()->all('SELECT id FROM signage_screens WHERE id IN ('
+                . implode(',', array_fill(0, count($changed), '?')) . ') ORDER BY id FOR UPDATE', $changed);
+            if (count($found) !== count($changed)) throw new InvalidArgumentException('A selected TV no longer exists. Reload the list and try again.');
+            $result = ['added' => 0, 'removed' => 0];
+            foreach ($changed as $screenId) {
+                // Legacy shared playlists are copied before this TV is changed.
+                $playlistId = $this->screenPlaylistId($screenId);
+                $this->lockPlaylist($playlistId);
+                if (in_array($screenId, $add, true)) {
+                    if (db()->value('SELECT 1 FROM signage_playlist_items WHERE playlist_id = ? AND content_id = ? LIMIT 1', [$playlistId, $contentId]) === null) {
+                        $this->addPlaylistItem($playlistId, $contentId, 30);
+                        $result['added']++;
+                    }
+                } else {
+                    $this->lockedItems($playlistId);
+                    $deleted = db()->run('DELETE FROM signage_playlist_items WHERE playlist_id = ? AND content_id = ?', [$playlistId, $contentId])->rowCount();
+                    if ($deleted > 0) {
+                        $this->saveOrder($playlistId, array_map('intval', array_column($this->lockedItems($playlistId), 'id')));
+                        $this->touchPlaylist($playlistId);
+                        $result['removed']++;
+                    }
+                }
+            }
+            return $result;
+        });
+    }
+
     public function usageBytes(): int
     {
         return (int) db()->value('SELECT COALESCE(SUM(size_bytes), 0) FROM signage_content');

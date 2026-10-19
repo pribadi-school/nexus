@@ -56,7 +56,7 @@ try {
     catch (HttpException $error) { $check($error->status === 404, 'unassigned media blocked'); }
     $request->params['id'] = (string) $screenId;
     $html = (new SignageController())->editScreen($request)->body;
-    $check(str_contains($html, 'Duration (minutes)') && str_contains($html, 'value="2.5"') && str_contains($html, 'data-playlist-duration'), 'screen renders editable minutes and playlist total');
+    $check(str_contains($html, 'Duration in minutes for') && str_contains($html, 'value="2.5"') && str_contains($html, 'data-playlist-duration'), 'screen renders editable minutes and playlist total');
     $html = (new SignageController())->createContent(new Request('GET', '/', [], [], []))->body;
     $check(str_contains($html, '>Video</option>') && str_contains($html, '>Image</option>') && str_contains($html, '.mov'), 'upload form offers Video and Image');
     $response = (new SignageController())->storeContent(new Request('POST', '/signage/content', [], [

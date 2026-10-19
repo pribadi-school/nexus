@@ -5,10 +5,11 @@ export function initContentActions() {
   const lifetime = new AbortController();
   const {signal} = lifetime;
   const updateTargets = form => {
-    const selected = form.querySelectorAll('input[name="screen_ids[]"]:checked:not(:disabled)').length;
+    const changes = [...form.querySelectorAll('input[name="screen_ids[]"]')].filter(input => input.checked !== input.defaultChecked).length;
     const button = form.querySelector('[type="submit"]');
-    button.disabled = selected === 0;
-    button.textContent = selected ? `Add to ${selected} ${selected === 1 ? 'TV' : 'TVs'}` : 'Add to selected TVs';
+    button.disabled = changes === 0;
+    button.textContent = changes ? `Save ${changes} ${changes === 1 ? 'change' : 'changes'}` : 'Save TV playlists';
+    form.dataset.unsaved = String(changes > 0);
   };
   document.querySelectorAll('[data-content-targets]').forEach(updateTargets);
   document.addEventListener('signage:content-added', () => document.querySelectorAll('[data-content-targets]').forEach(updateTargets), {signal});
@@ -53,11 +54,11 @@ export function initContentActions() {
       } else {
         form.querySelectorAll('input[name="screen_ids[]"]').forEach(input => {
           const assigned = result.screen_ids.includes(Number(input.value));
-          input.checked = assigned; input.disabled = assigned;
-          const label = input.nextElementSibling;
-          if (assigned && !label.querySelector('small')) {
-            const note = document.createElement('small'); note.textContent = 'Already added'; label.append(note);
-          }
+          input.checked = assigned; input.defaultChecked = assigned; input.disabled = false;
+        });
+        form.querySelectorAll('input[name="original_screen_ids[]"]').forEach(input => input.remove());
+        result.screen_ids.forEach(id => {
+          const input = document.createElement('input'); input.type = 'hidden'; input.name = 'original_screen_ids[]'; input.value = String(id); form.append(input);
         });
         card.querySelector('[data-content-usage]').textContent = `${result.used_count} playlist ${result.used_count === 1 ? 'use' : 'uses'}`;
       }
@@ -69,6 +70,9 @@ export function initContentActions() {
       delete form.dataset.saving; form.inert = false; setBusy(button, false);
       if (!deleting) updateTargets(form);
     }
+  }, {signal});
+  window.addEventListener('beforeunload', event => {
+    if (document.querySelector('[data-content-targets][data-unsaved="true"]')) { event.preventDefault(); event.returnValue = ''; }
   }, {signal});
   return () => lifetime.abort();
 }

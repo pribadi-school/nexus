@@ -63,7 +63,9 @@ completely separate from the school's WordPress site. UI language: English.
    screen owns its playlist, edited beside a shared content library with mouse
    drag/drop, keyboard/touch buttons and atomic Save changes. There is no
    separate playlist menu or assignment selector. Content cards have a native
-   three-dot popover for editing or adding directly to a selected TV. Older
+   three-dot popover with editable TV checkboxes: checking adds, unchecking
+   removes every occurrence from that TV when saved. Only changed TVs are
+   updated; retained items keep their durations. Older
    shared playlists are copied before screen edits; no schema migration is
    needed. `tests/signage-screen-playlists.php` covers ownership, draft saves,
    stale revisions and isolation. MP4 uploads live outside
@@ -75,9 +77,12 @@ completely separate from the school's WordPress site. UI language: English.
    `signage_screens.photo_filename`; `SignageScreenPhoto`, JPG/PNG/WebP up to
    8 MB in `storage/signage/screens/`, served to signed-in users at
    `/signage/screens/{id}/photo`). The Screens page card shows that photo,
-   the name, status and last seen only. In the editor, content already in
-   the playlist is hidden from the library (no duplicates); dragging a
-   playlist item onto the library removes it. Each screen has a random revocable player URL and a
+   the name, status and last seen only. The editor uses matching compact
+   rows in two equal columns, duration fields on the right, and row action
+   popovers. The full library remains visible; repeated content is supported
+   with independent durations. Dragging a playlist item onto the library
+   removes that occurrence. Popovers are measured after opening and kept
+   within the viewport above mobile navigation. Each screen has a random revocable player URL and a
    last-connected heartbeat; the standalone browser player polls every 30s,
    loops MP4s and timed website frames, and supports range streaming. It needs
    connectivity. The companion `android-tv/` app pairs by a six-digit code,
