@@ -44,9 +44,9 @@ final class GoogleAdminClient
                 throw new GoogleApiError('Google returned too many matching results. Check the complete serial number.');
             }
             $seen[$page] = true;
-            $data = $this->api('GET', $this->directory('/devices/chromeos'), [
-                'query' => 'id:' . $serial, 'projection' => 'FULL', 'maxResults' => 300, 'pageToken' => $page,
-            ]);
+            $query = ['query' => 'id:' . $serial, 'projection' => 'FULL', 'maxResults' => 300];
+            if ($page !== '') $query['pageToken'] = $page;
+            $data = $this->api('GET', $this->directory('/devices/chromeos'), $query);
             foreach ($data['chromeosdevices'] ?? [] as $device) {
                 if (strcasecmp(trim($device['serialNumber'] ?? ''), $serial) === 0) {
                     $matches[] = $device;
@@ -111,15 +111,54 @@ final class GoogleAdminClient
             'Authorization: Bearer ' . $token, 'Accept: application/json', 'Content-Type: application/json',
         ], $body === null ? null : json_encode($body, JSON_THROW_ON_ERROR));
         if ($result['status'] < 200 || $result['status'] >= 300) {
-            // Google's raw errors can contain tenant data; expose only an actionable summary.
-            throw new GoogleApiError(match ($result['status']) {
-                401, 403 => 'Google denied access. Check API scopes, delegated admin privileges and reporting permissions.',
-                404 => 'Google has no report for this device. Check enrollment and reporting policies.',
-                429 => 'Google is limiting requests. Try again later.',
-                default => 'Google could not complete the request. Try again later.',
-            }, $result['status']);
+            $service = str_starts_with($url, 'https://chromemanagement.googleapis.com/') ? 'Google telemetry' : 'Google Directory';
+            throw new GoogleApiError(self::apiError($service, $result['status'], $result['body']), $result['status']);
         }
         return $this->decode($result['body']);
+    }
+
+    /** Show only recognized error codes and parameter names, never raw Google messages or metadata. */
+    private static function apiError(string $service, int $status, string $body): string
+    {
+        $data = json_decode($body, true);
+        $error = is_array($data['error'] ?? null) ? $data['error'] : [];
+        $knownReasons = [
+            'badRequest', 'invalid', 'invalidParameter', 'notFound', 'customerNotFound', 'domainNotFound',
+            'authError', 'forbidden', 'insufficientPermissions', 'accessNotConfigured',
+            'rateLimitExceeded', 'userRateLimitExceeded', 'dailyLimitExceeded', 'quotaExceeded',
+            'backendError', 'internalError', 'SERVICE_DISABLED', 'API_DISABLED',
+            'ACCESS_TOKEN_SCOPE_INSUFFICIENT', 'PERMISSION_DENIED', 'INVALID_ARGUMENT', 'RESOURCE_EXHAUSTED',
+        ];
+        $reasons = [];
+        foreach (['errors', 'details'] as $collection) {
+            foreach (is_array($error[$collection] ?? null) ? $error[$collection] : [] as $entry) {
+                $reason = is_array($entry) ? ($entry['reason'] ?? null) : null;
+                if (is_string($reason) && in_array($reason, $knownReasons, true)) $reasons[] = $reason;
+            }
+        }
+        if (is_string($error['status'] ?? null) && in_array($error['status'], $knownReasons, true)) $reasons[] = $error['status'];
+        $reasons = array_values(array_unique($reasons));
+        $field = null;
+        $googleMessage = is_string($error['message'] ?? null) ? $error['message'] : '';
+        foreach (['customerId', 'pageToken', 'query', 'projection', 'maxResults', 'orgUnitPath', 'deviceIds'] as $parameter) {
+            if (preg_match('/\b' . $parameter . '\b/i', $googleMessage)) { $field = $parameter; break; }
+        }
+        $disabled = array_intersect($reasons, ['accessNotConfigured', 'SERVICE_DISABLED', 'API_DISABLED']) !== [];
+        $limited = array_intersect($reasons, ['rateLimitExceeded', 'userRateLimitExceeded', 'dailyLimitExceeded', 'quotaExceeded', 'RESOURCE_EXHAUSTED']) !== [];
+        $hint = match (true) {
+            $disabled => 'Enable the ' . ($service === 'Google telemetry' ? 'Chrome Management API' : 'Admin SDK API') . ' in the Google Cloud project that owns the service account.',
+            $limited || $status === 429 => 'Google is limiting requests. Wait before refreshing again.',
+            $status === 400 && $field === 'customerId' => 'Check GOOGLE_CUSTOMER_ID in .env. Copy the exact Customer ID from Google Admin → Account → Account settings → Profile.',
+            $status === 400 && $field === 'pageToken' => 'Google rejected the pagination token. Refresh to restart the device lookup.',
+            $status === 400 => 'Google rejected the request. Check the exact Customer ID in .env and the complete Chromebook serial number.',
+            $status === 401 || $status === 403 => 'Google denied access. Check API scopes, delegated admin privileges and reporting permissions.',
+            $status === 404 && $service === 'Google Directory' => 'Check the Customer ID, enrolled device and administrator access in Google Admin.',
+            $status === 404 => 'Google has no telemetry report for this device. Check enrollment and reporting policies.',
+            $status >= 500 => 'Google’s service could not complete the request. Try again later.',
+            default => 'Google could not complete the request. Check the connection settings and try again.',
+        };
+        $details = implode(', ', array_filter([...array_slice($reasons, 0, 3), $field]));
+        return $service . ' HTTP ' . $status . ($details !== '' ? ' (' . $details . ')' : '') . '. ' . $hint;
     }
 
     private function token(string $purpose): string

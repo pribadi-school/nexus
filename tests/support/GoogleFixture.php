@@ -20,6 +20,7 @@ final class GoogleFixture
     public array $pages = [];
     public array $units = ['/', '/Students', '/Staff'];
     public int $readStatus = 200;
+    public ?array $readError = null;
     public int $telemetryStatus = 200;
     public int $moveStatus = 200;
     public bool $moveTimeout = false;
@@ -76,6 +77,10 @@ final class GoogleFixture
             return $reply([], $this->moveStatus);
         }
         if (str_ends_with($path, '/devices/chromeos')) {
+            if (array_key_exists('pageToken', $query) && $query['pageToken'] === '') {
+                return $reply(['error' => ['message' => 'Invalid Input: pageToken', 'errors' => [['reason' => 'invalid']]]], 400);
+            }
+            if ($this->readError !== null) return $reply($this->readError, $this->readStatus);
             return $reply($this->pages[$query['pageToken'] ?? ''] ?? ['chromeosdevices' => [$this->device]], $this->readStatus);
         }
         if (str_ends_with($path, '/devices/chromeos/google-device-1')) return $reply($this->device, $this->readStatus);

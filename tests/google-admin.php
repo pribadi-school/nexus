@@ -25,6 +25,8 @@ try {
         'next' => ['chromeosdevices' => [$fixture->device]],
     ];
     $check($client->findDevice('TEST-SERIAL-123')['deviceId'] === 'google-device-1', 'exact serial match across pages, partial match ignored');
+    $lookups = array_values(array_filter($fixture->calls, static fn ($call) => str_contains($call[1], '/devices/chromeos?')));
+    $check(!str_contains($lookups[0][1], 'pageToken=') && str_contains($lookups[1][1], 'pageToken=next'), 'first lookup omits page token; later lookup sends the returned token');
     $claims = $fixture->claims[0];
     $check($claims['scope'] === 'https://www.googleapis.com/auth/admin.directory.device.chromeos.readonly'
         && $claims['sub'] === 'admin@example.invalid' && $claims['aud'] === 'https://oauth2.googleapis.com/token'
@@ -43,7 +45,26 @@ try {
     $check(end($fixture->claims)['scope'] === 'https://www.googleapis.com/auth/admin.directory.device.chromeos', 'write gets separate scoped authorization');
     $fixture->readStatus = 403;
     $reject(fn () => $client->getDevice('google-device-1', 'TEST-SERIAL-123'), 'permission failure surfaced');
-    $fixture->readStatus = 200;
+    $fixture->readStatus = 400;
+    $fixture->readError = ['error' => ['message' => 'Invalid Input: customerId private@example.invalid secret-customer-123', 'errors' => [['reason' => 'invalid']]]];
+    try { $client->findDevice('TEST-SERIAL-123'); $check(false, 'customer error expected'); }
+    catch (GoogleApiError $e) {
+        $check($e->httpStatus === 400 && str_contains($e->getMessage(), 'Google Directory HTTP 400')
+            && str_contains($e->getMessage(), 'GOOGLE_CUSTOMER_ID'), 'bad customer response includes stage, status and configuration guidance');
+        $check(!str_contains($e->getMessage(), 'private@example.invalid') && !str_contains($e->getMessage(), 'secret-customer'), 'raw Google error values never enter the UI');
+    }
+    $fixture->readStatus = 403;
+    $fixture->readError = ['error' => ['details' => [['reason' => 'SERVICE_DISABLED', 'metadata' => ['consumer' => 'private-project-id']]]]];
+    try { $client->findDevice('TEST-SERIAL-123'); $check(false, 'disabled API error expected'); }
+    catch (GoogleApiError $e) {
+        $check(str_contains($e->getMessage(), 'SERVICE_DISABLED') && str_contains($e->getMessage(), 'Enable the Admin SDK API')
+            && !str_contains($e->getMessage(), 'private-project'), 'disabled API has actionable guidance without leaking metadata');
+    }
+    $fixture->readStatus = 503;
+    $fixture->readError = ['error' => ['message' => 'private backend data', 'errors' => [['reason' => 'backendError']]]];
+    try { $client->findDevice('TEST-SERIAL-123'); $check(false, 'server error expected'); }
+    catch (GoogleApiError $e) { $check(str_contains($e->getMessage(), 'HTTP 503') && str_contains($e->getMessage(), 'Try again later'), 'transient server failure is distinguished from bad configuration'); }
+    $fixture->readStatus = 200; $fixture->readError = null;
     $telemetry = $fixture->telemetry;
     $telemetry['networkStatusReport'][] = ['reportTime' => '2026-10-18T01:00:00Z', 'connectionState' => 'NOT_CONNECTED'];
     $report = GoogleDeviceService::report($fixture->device, $telemetry);
