@@ -131,6 +131,7 @@ final class SignageController
         return $this->render('content', [
             'content' => $this->signage->content(), 'usageBytes' => $this->signage->usageBytes(),
             'screens' => $this->signage->screens(),
+            'screenMemberships' => $this->signage->contentScreens(),
             'uploadLimitBytes' => SignageStorage::maxUploadBytes(),
         ], 'content', 'Signage content');
     }
@@ -224,12 +225,14 @@ final class SignageController
         try {
             $deleted = $this->signage->deleteContent((int) $item['id']);
         } catch (InvalidArgumentException $error) {
+            if ($request->isFetch()) return Response::json(['error' => $error->getMessage()], 422);
             Session::flash('error', $error->getMessage());
-            return Response::redirect('/signage/content/' . $item['id'] . '/edit');
+            return Response::redirect($request->input('from_library') === '1' ? '/signage' : '/signage/content/' . $item['id'] . '/edit');
         }
         if ($deleted['stored_filename'] !== null) {
             SignageStorage::delete($deleted['stored_filename']);
         }
+        if ($request->isFetch()) return Response::json(['message' => 'Content deleted.']);
         Session::flash('success', 'Content deleted.');
         return Response::redirect('/signage/content');
     }
@@ -237,6 +240,27 @@ final class SignageController
     public function playlists(Request $request): Response
     {
         return Response::redirect('/signage/screens');
+    }
+
+    public function addContentToScreens(Request $request): Response
+    {
+        try {
+            $targets = SignageValidation::screenTargets($request->body['screen_ids'] ?? null);
+            $item = $this->contentItem($request);
+            $result = $this->signage->addContentToScreens((int) $item['id'], $targets);
+        } catch (InvalidArgumentException $error) {
+            if ($request->isFetch()) return Response::json(['error' => $error->getMessage()], 422);
+            Session::flash('error', $error->getMessage());
+            return Response::redirect('/signage');
+        }
+        $message = $result['added'] > 0 ? 'Added to ' . $result['added'] . ($result['added'] === 1 ? ' TV.' : ' TVs.') : 'Content is already in the selected playlists.';
+        if ($request->isFetch()) return Response::json([
+            'message' => $message,
+            'screen_ids' => $this->signage->contentScreens((int) $item['id'])[(int) $item['id']] ?? [],
+            'used_count' => (int) $this->signage->contentItem((int) $item['id'])['used_count'],
+        ]);
+        Session::flash('success', $message);
+        return Response::redirect('/signage');
     }
 
     public function editPlaylist(Request $request): Response

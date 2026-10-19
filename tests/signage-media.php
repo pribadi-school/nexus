@@ -64,6 +64,25 @@ try {
     ], ['HTTP_X_REQUESTED_WITH' => 'fetch']));
     $data = json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
     $check($response->status === 201 && str_contains($data['card_html'], 'https://example.com') && str_contains($data['editor_html'], 'data-library-add'), 'popup creation returns a library card and screen item without redirecting');
+    $secondScreen = $repo->createScreenWithPlaylist(['name' => 'Second media TV', 'orientation' => 'landscape', 'fit' => 'contain', 'muted' => 1, 'enabled' => 1]);
+    $batch = $repo->addContentToScreens($image, [$screenId, $secondScreen]);
+    $check($batch === ['added' => 1, 'skipped' => 1], 'batch add skips the TV already using content');
+    $check($repo->addContentToScreens($image, [$screenId, $secondScreen]) === ['added' => 0, 'skipped' => 2], 'retrying a batch does not duplicate items');
+    $check(count($repo->contentScreens($image)[$image]) === 2, 'TV membership tracks all selected playlists');
+    $assign = new Request('POST', '/', [], ['screen_ids' => [(string) $screenId, (string) $secondScreen]], ['HTTP_X_REQUESTED_WITH' => 'fetch']);
+    $assign->params['id'] = (string) $image;
+    $response = (new SignageController())->addContentToScreens($assign);
+    $assigned = json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
+    $check($response->status === 200 && count($assigned['screen_ids']) === 2 && $assigned['used_count'] === 2, 'batch endpoint returns current membership and usage for an in-place update');
+    $beforeItems = count($repo->playlistItems($playlist));
+    try { $repo->addContentToScreens((int) $data['id'], [$screenId, 4294967295]); throw new LogicException('Missing TV accepted'); }
+    catch (InvalidArgumentException) { $check(count($repo->playlistItems($playlist)) === $beforeItems, 'missing TV leaves all selected playlists unchanged'); }
+    $delete = new Request('POST', '/', [], [], ['HTTP_X_REQUESTED_WITH' => 'fetch']); $delete->params['id'] = (string) $image;
+    $response = (new SignageController())->deleteContent($delete);
+    $check($response->status === 422 && $repo->contentItem($image) !== null, 'content used by TVs cannot be deleted accidentally');
+    $delete->params['id'] = (string) $data['id'];
+    $response = (new SignageController())->deleteContent($delete);
+    $check($response->status === 200 && $repo->contentItem((int) $data['id']) === null, 'unused content can be deleted from the menu without redirecting');
 } catch (Throwable $error) { $failure = $error; }
 finally {
     if ($pdo->inTransaction()) $pdo->rollBack();

@@ -6,6 +6,7 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 use App\Core\Request;
 use App\Core\Response;
 use App\Modules\Signage\SignageController;
+use App\Modules\Signage\SignageValidation;
 
 $checks = 0;
 $check = static function (bool $condition, string $message) use (&$checks): void {
@@ -44,4 +45,17 @@ $headersMethod = new ReflectionMethod(Response::class, 'securityHeaders');
 $headers = $headersMethod->invoke(new Response('photo', 200, ['Cache-Control' => 'private, max-age=31536000, immutable']));
 $check($headers['Cache-Control'] === 'private, max-age=31536000, immutable', 'versioned private photos retain their caching header');
 $check($headersMethod->invoke(Response::html(''))['Cache-Control'] === 'no-store', 'ordinary pages retain no-store');
+$check(SignageValidation::screenTargets(['2', '1', '2']) === [2, 1], 'multiple TV selections are deduplicated');
+foreach ([null, [], '1', ['0'], ['-1'], [['1']], ['4294967296'], array_fill(0, 1001, '1')] as $targets) {
+    try { SignageValidation::screenTargets($targets); throw new LogicException('Invalid TVs accepted'); }
+    catch (InvalidArgumentException) { $check(true, 'invalid TV selections rejected'); }
+}
+$response = $controller->addContentToScreens(new Request('POST', '/', [], [], ['HTTP_X_REQUESTED_WITH' => 'fetch']));
+$check($response->status === 422 && str_contains($response->body, 'Select at least one TV'), 'empty selection stays in the menu without a redirect');
+$card = partial('Signage::_content-card', [
+    'entry' => ['id' => 1, 'name' => 'Poster.png', 'type' => 'image', 'stored_filename' => str_repeat('a', 48) . '.png', 'size_bytes' => 10, 'used_count' => 1, 'updated_at' => gmdate('Y-m-d H:i:s')],
+    'screens' => [['id' => 1, 'name' => 'First TV'], ['id' => 2, 'name' => 'Second TV']], 'assignedScreens' => [1],
+]);
+$check(str_contains($card, 'name="screen_ids[]" value="1" checked disabled') && str_contains($card, 'name="screen_ids[]" value="2"'), 'existing TVs are checked and new TVs selectable');
+$check(str_contains($card, 'data-content-delete data-confirm=') && str_contains($card, 'Add to selected TVs'), 'menu exposes batch add and confirmed deletion');
 echo "Passed $checks content popup checks. No database access required.\n";

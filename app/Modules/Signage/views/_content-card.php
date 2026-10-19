@@ -2,11 +2,12 @@
 $bytes = static fn (int $value): string => $value >= 1073741824 ? round($value / 1073741824, 2) . ' GB' : ($value >= 1048576 ? round($value / 1048576, 1) . ' MB' : round($value / 1024, 1) . ' KB');
 $video = $entry['type'] === 'video';
 $image = $entry['type'] === 'image';
+$assignedScreens ??= [];
 $editUrl = '/signage/content/' . (int) $entry['id'] . '/edit';
 $host = $video || $image ? '' : (string) parse_url((string) $entry['source_url'], PHP_URL_HOST);
 $previewUrl = $video || $image ? url('/signage/preview/media/' . (int) $entry['id'], ['v' => substr(hash('sha256', (string) $entry['stored_filename']), 0, 16)]) : '';
 ?>
-<li class="card signage-content-card"<?= $video ? ' data-signage-thumbnail data-video-src="' . e($previewUrl) . '"' : '' ?>>
+<li class="card signage-content-card" data-content-card data-content-id="<?= (int) $entry['id'] ?>" data-size-bytes="<?= (int) $entry['size_bytes'] ?>"<?= $video ? ' data-signage-thumbnail data-video-src="' . e($previewUrl) . '"' : '' ?>>
   <a class="signage-thumbnail<?= !$video && !$image ? ' signage-thumbnail--website' : '' ?>" href="<?= e($editUrl) ?>" aria-label="Edit <?= e($entry['name']) ?>">
     <?php if ($video): ?>
       <img class="signage-thumbnail__image" alt="" data-thumbnail-image hidden>
@@ -27,12 +28,23 @@ $previewUrl = $video || $image ? url('/signage/preview/media/' . (int) $entry['i
         <a class="menu-item" href="<?= e($editUrl) ?>"><?= icon('pencil', 'icon--sm') ?>Edit content</a>
         <p class="signage-content-menu__label">Add to TV playlist</p>
         <?php if ($screens === []): ?><a class="menu-item" href="/signage/screens/create">Add your first screen</a><?php endif ?>
-        <?php foreach ($screens as $target): ?>
-          <form method="post" action="/signage/screens/<?= (int) $target['id'] ?>/items"><?= csrf_field() ?><input type="hidden" name="content_id" value="<?= (int) $entry['id'] ?>"><input type="hidden" name="duration_seconds" value="30"><input type="hidden" name="from_library" value="1"><button class="menu-item" type="submit"><?= icon('tv-minimal', 'icon--sm') ?><span><?= e($target['name']) ?></span></button></form>
-        <?php endforeach ?>
+        <?php if ($screens !== []): ?>
+          <form method="post" action="/signage/content/<?= (int) $entry['id'] ?>/screens" data-content-targets>
+            <?= csrf_field() ?>
+            <fieldset class="signage-content-targets"><legend class="visually-hidden">Choose TVs for <?= e($entry['name']) ?></legend>
+              <?php foreach ($screens as $target): $assigned = in_array((int) $target['id'], $assignedScreens, true); ?>
+                <label class="signage-content-target"><input type="checkbox" name="screen_ids[]" value="<?= (int) $target['id'] ?>"<?= $assigned ? ' checked disabled' : '' ?>><span><?= e($target['name']) ?><?php if ($assigned): ?><small>Already added</small><?php endif ?></span></label>
+              <?php endforeach ?>
+            </fieldset>
+            <button class="btn btn--primary btn--sm signage-content-targets__save" type="submit">Add to selected TVs</button>
+          </form>
+        <?php endif ?>
+        <form class="signage-content-menu__delete" method="post" action="/signage/content/<?= (int) $entry['id'] ?>/delete" data-content-delete data-confirm="Delete this content?" data-confirm-text="The uploaded file will be deleted. Content used in a playlist must be removed from that playlist first." data-confirm-button="Delete content" data-confirm-tone="danger">
+          <?= csrf_field() ?><input type="hidden" name="from_library" value="1"><button class="menu-item btn--danger-quiet" type="submit"><?= icon('trash-2', 'icon--sm') ?>Delete content</button>
+        </form>
       </div>
     </div>
     <p class="signage-content-card__meta"><?= $video ? 'Video' : ($image ? 'Image' : 'Website') ?><span data-thumbnail-orientation></span> · <?= e(time_ago($entry['updated_at'])) ?></p>
-    <p class="signage-content-card__details"><?= $video || $image ? e($bytes((int) $entry['size_bytes'])) . ' · ' : '' ?><?= e(plural((int) $entry['used_count'], 'playlist use')) ?></p>
+    <p class="signage-content-card__details"><?= $video || $image ? e($bytes((int) $entry['size_bytes'])) . ' · ' : '' ?><span data-content-usage><?= e(plural((int) $entry['used_count'], 'playlist use')) ?></span></p>
   </div>
 </li>

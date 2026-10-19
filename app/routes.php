@@ -58,6 +58,7 @@ $router->post('/signage/content', [SignageController::class, 'storeContent']);
 $router->get('/signage/content/{id}/edit', [SignageController::class, 'editContent']);
 $router->post('/signage/content/{id}', [SignageController::class, 'updateContent']);
 $router->post('/signage/content/{id}/delete', [SignageController::class, 'deleteContent']);
+$router->post('/signage/content/{id}/screens', [SignageController::class, 'addContentToScreens']);
 
 // Older bookmarks lead to the screen that owns the playlist.
 $router->get('/signage/playlists', [SignageController::class, 'playlists']);

@@ -7,7 +7,7 @@
 <?php endif ?>
   <ul data-content-grid class="signage-content-grid" aria-label="Content library">
     <?php foreach ($content as $entry): ?>
-      <?= partial('Signage::_content-card', ['entry' => $entry, 'screens' => $screens]) ?>
+      <?= partial('Signage::_content-card', ['entry' => $entry, 'screens' => $screens, 'assignedScreens' => $screenMemberships[(int) $entry['id']] ?? []]) ?>
     <?php endforeach ?>
   </ul>
 <?= partial('Signage::_content-dialog', ['uploadLimitBytes' => $uploadLimitBytes]) ?>

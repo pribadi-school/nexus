@@ -103,6 +103,7 @@ export function initNavigation({beforeSwap, afterSwap}) {
     if ((event.target.method ?? '').toLowerCase() !== 'get') pages.clear();
   }, true);
   document.addEventListener('signage:content-added', () => { pages.clear(); prepareTabs(); });
+  document.addEventListener('signage:content-changed', () => { pages.clear(); prepareTabs(); });
 
   document.addEventListener('click', event => {
     const link = event.target.closest('a[href]');

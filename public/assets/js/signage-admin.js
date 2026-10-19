@@ -1,4 +1,5 @@
 import { initContentForms } from './signage-content.js';
+import { initContentActions } from './signage-content-actions.js';
 import { toast } from './toast.js';
 
 export function initSignageAdmin() {
@@ -151,6 +152,7 @@ if (copy && address && navigator.clipboard?.writeText) {
 }
 
 const cleanupContent = initContentForms();
+const cleanupActions = initContentActions();
 const stopPreviews = () => {
   disposed = true;
   clearTimeout(thumbnailStartTimer);
@@ -159,5 +161,5 @@ const stopPreviews = () => {
   pendingThumbnails.forEach(finish => finish(false));
 };
 document.addEventListener('nexus:navigation-start', stopPreviews, {signal});
-return () => { stopPreviews(); lifetime.abort(); cleanupContent(); };
+return () => { stopPreviews(); lifetime.abort(); cleanupContent(); cleanupActions(); };
 }

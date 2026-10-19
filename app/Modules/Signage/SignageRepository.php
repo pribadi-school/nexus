@@ -165,6 +165,38 @@ final class SignageRepository
             FROM signage_content c WHERE c.id = ?', [$id]);
     }
 
+    /** @return array<int,list<int>> Content ID to TVs that already use it. */
+    public function contentScreens(?int $contentId = null): array
+    {
+        $rows = db()->all('SELECT DISTINCT i.content_id, s.id AS screen_id FROM signage_screens s
+            JOIN signage_playlist_items i ON i.playlist_id = s.playlist_id'
+            . ($contentId !== null ? ' WHERE i.content_id = ?' : ''), $contentId !== null ? [$contentId] : []);
+        $result = [];
+        foreach ($rows as $row) $result[(int) $row['content_id']][] = (int) $row['screen_id'];
+        return $result;
+    }
+
+    /** Add once per selected TV, atomically, preserving each TV's own playlist. */
+    public function addContentToScreens(int $contentId, array $screenIds): array
+    {
+        if ($screenIds === []) throw new InvalidArgumentException('Select at least one TV.');
+        return db()->transaction(function () use ($contentId, $screenIds): array {
+            $screenIds = array_values(array_unique($screenIds));
+            sort($screenIds);
+            $found = db()->all('SELECT id FROM signage_screens WHERE id IN ('
+                . implode(',', array_fill(0, count($screenIds), '?')) . ') ORDER BY id FOR UPDATE', $screenIds);
+            if (count($found) !== count($screenIds)) throw new InvalidArgumentException('A selected TV no longer exists. Reload the list and try again.');
+            $added = 0;
+            foreach ($screenIds as $screenId) {
+                $playlistId = $this->screenPlaylistId($screenId);
+                if (db()->value('SELECT 1 FROM signage_playlist_items WHERE playlist_id = ? AND content_id = ? LIMIT 1', [$playlistId, $contentId]) !== null) continue;
+                $this->addPlaylistItem($playlistId, $contentId, 30);
+                $added++;
+            }
+            return ['added' => $added, 'skipped' => count($screenIds) - $added];
+        });
+    }
+
     public function usageBytes(): int
     {
         return (int) db()->value('SELECT COALESCE(SUM(size_bytes), 0) FROM signage_content');

@@ -28,6 +28,14 @@
 .signage-content-menu { position: fixed; inset: auto; margin: 0; width: min(280px, calc(100vw - 32px)); max-height: 60vh; overflow-y: auto; padding: var(--space-2); border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-foreground); }
 .signage-content-menu__label { margin: var(--space-2) 0 var(--space-1); padding: var(--space-2); border-top: 1px solid var(--color-border); font-size: var(--fs-caption); color: var(--color-muted-foreground); }
 .signage-content-menu .menu-item span { overflow-wrap: anywhere; text-align: left; }
+.signage-content-targets { margin: 0; padding: 0; border: 0; min-width: 0; }
+.signage-content-target { display: flex; align-items: center; gap: var(--space-2); min-height: 44px; padding: var(--space-2); cursor: pointer; }
+.signage-content-target:hover { background: var(--color-surface-muted); }
+.signage-content-target input { width: 18px; height: 18px; flex: none; accent-color: var(--color-action); }
+.signage-content-target span { min-width: 0; overflow-wrap: anywhere; }
+.signage-content-target small { display: block; color: var(--color-muted-foreground); font-size: var(--fs-caption); }
+.signage-content-targets__save { width: 100%; margin-top: var(--space-2); }
+.signage-content-menu__delete { margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--color-border); }
 .signage-editor { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); margin-bottom: var(--space-6); scroll-margin-top: var(--space-5); }
 .signage-editor__playlist, .signage-editor__library { min-width: 0; }
 .signage-editor__heading { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); min-height: 40px; }

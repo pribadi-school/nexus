@@ -8,6 +8,22 @@ use App\Core\Validator;
 
 final class SignageValidation
 {
+    /** @return list<int> */
+    public static function screenTargets(mixed $values): array
+    {
+        if (!is_array($values) || $values === [] || count($values) > 1000) {
+            throw new \InvalidArgumentException('Select at least one TV (up to 1,000 at once).');
+        }
+        $ids = [];
+        foreach ($values as $value) {
+            if (!is_string($value) || !ctype_digit($value) || (int) $value < 1 || (float) $value > 4294967295) {
+                throw new \InvalidArgumentException('Choose valid TVs from the list.');
+            }
+            $ids[] = (int) $value;
+        }
+        return array_values(array_unique($ids));
+    }
+
     /** @return array{0:array<string,mixed>,1:array<string,string>} */
     public static function screen(array $input): array
     {
