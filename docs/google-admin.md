@@ -1,7 +1,7 @@
 # Google Admin connection for Chromebooks
 
 Nexus matches a Chromebook's complete serial number to one enrolled Google
-ChromeOS device. Reports appear inside Details → Google Admin. Local student
+ChromeOS device. Reports appear in Google Admin, directly below Notes. Local student
 assignments, repair status, and model information are never overwritten.
 
 ## Easy setup: six steps
@@ -85,7 +85,7 @@ cd ~/repositories/nexus
 /opt/alt/php82/usr/bin/php bin/migrate.php
 ```
 
-In Nexus, open **Chromebooks → a Chromebook → Details → Google Admin → Refresh**.
+In Nexus, open **Chromebooks → a Chromebook → Google Admin (below Notes) → Refresh**.
 Its serial number must match the enrolled Google device. The setup page is at
 `/chromebooks/google`.
 
@@ -185,7 +185,7 @@ verify it in Google Admin before retrying.
 - Location is the administrator's annotation, not GPS. Missing reports remain
   “Not reported”; they never become a fabricated online/offline status.
 - No Google credentials, access tokens, full user history, or raw API errors are
-  returned to browsers. The cache stores only the fields used by the Details UI.
+  returned to browsers. The cache stores only the fields used by the Google Admin card.
 - All signed-in Nexus staff can read the Google device reports, like the existing
   inventory details. Delete the connection values to disable access; remove the
   delegation grant in Google Admin to revoke the service account's authority.

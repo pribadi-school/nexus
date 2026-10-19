@@ -486,8 +486,10 @@ ol.history { list-style: none; margin: 0; padding: 0 var(--space-4) var(--space-
   .history__title, ol.history, .history__empty { padding-left: var(--space-5); padding-right: var(--space-5); }
 }
 
-/* Google device reports sit inside the Chromebook Details card. */
-.google-device { border-top: 1px solid var(--color-border); padding: var(--space-4); }
+/* The Chromebook's right column stacks Google reports directly below Notes. */
+.detail--with-assign > .detail__notes { display: grid; gap: var(--space-4); min-width: 0; }
+@media (min-width: 1024px) { .detail--with-assign > .detail__notes { gap: var(--space-5); } }
+.google-device { padding: var(--space-4); }
 .google-device__header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
 .google-device__header form { margin: 0; }
 .google-device__details { padding: 0; }

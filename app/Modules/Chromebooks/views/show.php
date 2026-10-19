@@ -93,6 +93,7 @@ $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? 
 
     <div class="detail__notes">
       <?= partial('partials/notes-log', ['category' => $category, 'device' => $chromebook, 'notes' => $notes, 'noteCount' => $noteCount]) ?>
+      <?= partial('Chromebooks::_google-details', $google) ?>
     </div>
 
     <section class="card detail__info" aria-labelledby="details-title">
@@ -111,6 +112,5 @@ $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? 
           <dd><time datetime="<?= e(iso_time($chromebook['created_at'])) ?>"><?= e(format_datetime($chromebook['created_at'])) ?></time><?= $chromebook['created_by_name'] ? ' by ' . e($chromebook['created_by_name']) : '' ?></dd>
         </div>
       </dl>
-      <?= partial('Chromebooks::_google-details', $google) ?>
     </section>
 </div>

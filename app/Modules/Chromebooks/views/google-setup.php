@@ -47,7 +47,7 @@ GOOGLE_TELEMETRY_ENABLED=true</pre>
       <p>After the latest Nexus code is deployed, open <strong>cPanel → Terminal</strong> and run:</p>
       <pre>cd ~/repositories/nexus
 /opt/alt/php82/usr/bin/php bin/migrate.php</pre>
-      <p>In Nexus, open <strong>Chromebooks → a Chromebook → Details → Google Admin → Refresh</strong>.</p>
+      <p>In Nexus, open <strong>Chromebooks → a Chromebook → Google Admin (below Notes) → Refresh</strong>.</p>
       <p>You should see its Google details. The serial number in Nexus must match the enrolled device in Google Admin.</p>
     </section>
     <details class="google-setup__extra">

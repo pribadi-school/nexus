@@ -9,9 +9,9 @@ $googleTime = static function (?string $value): string {
 };
 $googleLabel = static fn (?string $value): string => $value ? ucwords(strtolower(str_replace('_', ' ', $value))) : 'Not reported';
 ?>
-<div class="google-device" id="google-admin" data-google-device data-google-refresh="/chromebooks/<?= $googleId ?>/google/refresh"<?= $googleReady ? ' data-google-auto-refresh' : '' ?>>
+<section class="card google-device" id="google-admin" aria-labelledby="google-admin-title" data-google-device data-google-refresh="/chromebooks/<?= $googleId ?>/google/refresh"<?= $googleReady ? ' data-google-auto-refresh' : '' ?>>
   <div class="google-device__header">
-    <h3 class="card__title">Google Admin</h3>
+    <h2 class="card__title" id="google-admin-title">Google Admin</h2>
     <?php if ($googleReady): ?>
       <form method="post" action="/chromebooks/<?= $googleId ?>/google/refresh" data-google-refresh-form>
         <?= csrf_field() ?><input type="hidden" name="force" value="1">
@@ -72,4 +72,4 @@ $googleLabel = static fn (?string $value): string => $value ? ucwords(strtolower
       </details>
     <?php endif ?>
   <?php endif ?>
-</div>
+</section>
