@@ -16,8 +16,9 @@ final class Status
     public const BORROWED = 'borrowed';
     public const BROKEN = 'broken';
     public const UNMARKED = 'unmarked';
+    public const NORMAL = 'normal';
     public const ALL = [self::OK, self::PROBLEM];
-    public const CHROMEBOOK = [self::PROBLEM, self::FIXED, self::BORROWED, self::REPLACED, self::BROKEN];
+    public const CHROMEBOOK = [self::NORMAL, self::PROBLEM, self::FIXED, self::BORROWED, self::REPLACED, self::BROKEN];
     public const KNOWN = [self::OK, self::UNMARKED, self::REPORTED, self::REPAIRED, ...self::CHROMEBOOK];
 
     public static function isValid(string $status): bool

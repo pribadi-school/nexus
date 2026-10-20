@@ -66,9 +66,7 @@ $back = '/chromebooks?year=' . (int) $chromebook['academic_year'];
       </p>
     </section>
 
-    <section class="card detail__assign chromebook-info-placeholder" aria-label="Additional information">
-      <p>-</p>
-    </section>
+    <?= partial('Chromebooks::_student-details', ['chromebook' => $chromebook]) ?>
 
     <div class="detail__notes">
       <?= partial('partials/notes-log', ['category' => $category, 'device' => $chromebook, 'notes' => $notes, 'noteCount' => $noteCount]) ?>

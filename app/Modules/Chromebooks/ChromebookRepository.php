@@ -113,6 +113,7 @@ final class ChromebookRepository
                     COALESCE(SUM(d.status = 'reported'), 0) AS reported,
                     COALESCE(SUM(d.status = 'repaired'), 0) AS repaired,
                     COALESCE(SUM(d.status = 'unmarked'), 0) AS unmarked,
+                    COALESCE(SUM(d.status = 'normal'), 0) AS normal,
                     COALESCE(SUM(d.status = 'fixed'), 0) AS fixed,
                     COALESCE(SUM(d.status = 'borrowed'), 0) AS borrowed,
                     COALESCE(SUM(d.status = 'broken'), 0) AS broken,
@@ -221,6 +222,7 @@ final class ChromebookRepository
                 return false;
             }
             db()->update('chromebooks', ['student_email' => $email], ['device_id' => $id]);
+            db()->update('devices', ['updated_at' => Database::now(), 'updated_by' => $userId], ['id' => $id]);
             return true;
         }
 

@@ -185,7 +185,7 @@ final class ChromebookController
             'model' => null,
             'student_name' => null,
             'student_email' => null,
-            'status' => null,
+            'status' => Status::NORMAL,
         ], []);
     }
 
@@ -199,7 +199,7 @@ final class ChromebookController
         }
         $data['academic_year'] = (int) $data['academic_year'];
 
-        $data['status'] ??= Status::UNMARKED;
+        $data['status'] ??= Status::NORMAL;
 
         try {
             $id = $this->chromebooks->create($this->category, $data, Auth::id());
@@ -246,6 +246,7 @@ final class ChromebookController
         $v = new Validator($request->body, self::LABELS);
         $data = $v->validate($this->assignRules());
         if ($v->fails()) {
+            Session::put('chromebook.student.draft', ['id' => (int) $chromebook['id'], 'values' => $data, 'errors' => $v->errors()]);
             Session::flash('error', implode(' ', $v->errors()));
             return Response::redirect($this->category->detailPath((int) $chromebook['id']) . '#assign');
         }

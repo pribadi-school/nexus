@@ -1,7 +1,7 @@
 <?php
 /**
  * Add / edit a Chromebook. Student and email are set here only when adding;
- * later imports maintain the assignment history.
+ * the detail page and imports maintain the assignment history after that.
  *
  * @var \App\Modules\Chromebooks\ChromebookCategory $category
  * @var array<string, mixed>|null $chromebook  null when adding
@@ -25,7 +25,7 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
     <p class="page-subtitle">
       <?= $adding
           ? 'Adding several Chromebooks? <a href="/chromebooks/import?year=' . (int) $values['academic_year'] . '">Import the list</a> instead.'
-          : 'Status and notes are changed on the Chromebook\'s page.' ?>
+          : 'Name, email, status and notes are changed on the Chromebook\'s page.' ?>
     </p>
   </div>
 </header>
@@ -94,7 +94,6 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
       <div class="field<?= $field('status') ? ' has-error' : '' ?>">
         <label class="field__label" for="status">Status</label>
         <select class="select" id="status" name="status"<?= $invalid('status') ?>>
-          <option value="">Choose status</option>
           <?php foreach ($category->statuses() as $status): ?>
             <option value="<?= e($status) ?>"<?= ($values['status'] ?? null) === $status ? ' selected' : '' ?>><?= e($category->statusLabel($status)) ?></option>
           <?php endforeach ?>

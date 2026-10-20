@@ -45,7 +45,7 @@ try {
             'model' => 'Status fixture', 'status' => $status, 'student_name' => null, 'student_email' => null,
         ], null);
     }
-    $check($category->statuses() === ['problem', 'fixed', 'borrowed', 'replaced', 'broken'], 'five statuses appear in the requested order');
+    $check($category->statuses() === ['normal', 'problem', 'fixed', 'borrowed', 'replaced', 'broken'], 'six statuses include Normal first');
     $counts = $repo->counts($year);
     $shared = (new DeviceRepository())->countsByCategory()['chromebook'];
     foreach (array_keys($ids) as $status) {
@@ -58,7 +58,7 @@ try {
     $showRequest->params['id'] = (string) $ids['unmarked'];
     $html = $controller->show($showRequest)->body;
     $check(!str_contains($html, 'data-status-toggle') && !str_contains($html, 'data-set-status') && !str_contains($html, 'id="note-status"') && !str_contains($html, 'Kind of note'), 'notes are plain text and the old switch and note status picker are absent');
-    $check(!str_contains($html, 'id="assign"') && str_contains($html, 'chromebook-info-placeholder') && str_contains($html, '<p>-</p>'), 'information section remains with a dash replacing assignment information');
+    $check(str_contains($html, 'id="assign"') && str_contains($html, 'id="student_name"') && str_contains($html, 'id="student_email"'), 'name and email fields are restored on the detail page');
     $check(!str_contains($html, 'OK (legacy)') && $repo->find($ids['unmarked']) === $legacy, 'unmarked records do not acquire a false fixed status');
     foreach ($category->statuses() as $status) {
         $response = $devices->status($request($ids['unmarked'], 'status', ['status' => $status]));
@@ -94,13 +94,13 @@ try {
     $lines = preg_split('/\r\n|\n|\r/', trim(preg_replace('/^\xEF\xBB\xBF/', '', $export->body)));
     $table = array_map(static fn ($line) => str_getcsv($line, ',', '"', ''), $lines);
     $plan = ChromebookCsv::plan($table, $year, $repo);
-    $check($plan['error'] === null && count($plan['rows']) === 6 && array_unique(array_column($plan['rows'], 'action')) === ['same'], 'five-status CSV export reimports without changes');
+    $check($plan['error'] === null && count($plan['rows']) === 7 && array_unique(array_column($plan['rows'], 'action')) === ['same'], 'six-status CSV export reimports without changes');
     $rows = [];
     foreach (['Problem', 'Fixed', 'Borrowed', 'Replaced', 'Broken', '-'] as $i => $status) $rows[] = ["$token-new$i", '', '', '', '', $status];
     $plan = ChromebookCsv::plan([ChromebookCsv::COLUMNS, ...$rows], $year, $repo);
-    $check(array_unique(array_column($plan['rows'], 'action')) === ['add'], 'imports accept the four statuses and legacy exports');
+    $check(array_unique(array_column($plan['rows'], 'action')) === ['add'], 'imports accept all statuses and legacy exports');
     ChromebookCsv::apply($plan['rows'], $year, $category, $repo, null);
-    foreach (['problem', 'fixed', 'borrowed', 'replaced', 'broken', 'unmarked'] as $i => $status) $check($repo->findByAsset("$token-new$i")['status'] === $status, "import persists $status");
+    foreach (['problem', 'fixed', 'borrowed', 'replaced', 'broken', 'normal'] as $i => $status) $check($repo->findByAsset("$token-new$i")['status'] === $status, "import persists $status");
     $check(in_array($ids['replaced'], $category->searchIds('Replaced', 1000), true), 'dashboard search recognizes new status labels');
     $infoId = $ids['fixed'];
     $repo->assign($repo->find($infoId), 'Automatic assignment fixture', null, null);
@@ -125,7 +125,7 @@ try {
     }
     $check(count($notes->forDevice($infoId, manualOnly: true)) === 2, 'new plain notes and older manually entered notes remain visible');
     $create = $controller->create(new Request('GET', '/chromebooks/new', [], [], []))->body;
-    $check(str_contains($create, 'id="status" name="status"') && !str_contains($create, 'name="status" value="ok"'), 'add form uses the four-status dropdown');
+    $check(str_contains($create, '<option value="normal" selected>Normal</option>') && !str_contains($create, 'name="status" value="ok"'), 'add form preselects Normal');
 } finally {
     if ($pdo->inTransaction()) $pdo->rollBack();
 }

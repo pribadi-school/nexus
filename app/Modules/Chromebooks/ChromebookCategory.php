@@ -65,7 +65,7 @@ final class ChromebookCategory extends Category
             Status::BORROWED => 'Borrowed',
             Status::REPLACED => 'Replaced',
             Status::BROKEN => 'Broken',
-            Status::OK, Status::UNMARKED => '-',
+            Status::NORMAL, Status::OK, Status::UNMARKED => 'Normal',
             default => $status,
         };
     }
@@ -78,6 +78,7 @@ final class ChromebookCategory extends Category
     public function statusMeta(string $status): array
     {
         [$tone, $icon] = match ($status) {
+            Status::NORMAL => ['quiet', 'circle-check'],
             Status::PROBLEM => ['problem', 'triangle-alert'],
             Status::FIXED => ['success', 'wrench'],
             Status::BORROWED => ['action', 'user-round-check'],

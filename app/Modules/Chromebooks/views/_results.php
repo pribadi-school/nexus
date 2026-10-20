@@ -70,6 +70,7 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
           <th scope="col">Asset ID</th>
           <th scope="col">Student</th>
           <th scope="col">Serial number</th>
+          <th scope="col">Status</th>
           <th scope="col">Latest note</th>
           <th scope="col">Last updated</th>
         </tr>
@@ -81,9 +82,9 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
             <td>
               <a class="data-table__link<?= $c['student_name'] === null ? ' is-unassigned' : '' ?>" href="/chromebooks/<?= (int) $c['id'] ?>"><?= e($student($c)) ?></a>
               <?php if ($c['student_email']): ?><span class="data-table__sub"><?= e($c['student_email']) ?></span><?php endif ?>
-              <?= partial('Chromebooks::_status', ['category' => $category, 'status' => $c['status']]) ?>
             </td>
             <td class="num"><?= e($c['serial_number'] ?? '–') ?></td>
+            <td class="nowrap"><?= partial('Chromebooks::_status', ['category' => $category, 'status' => $c['status']]) ?></td>
             <td class="data-table__note"><?= partial('partials/latest-note', ['device' => $c, 'href' => '/chromebooks/' . (int) $c['id'], 'emptyLabel' => '-']) ?></td>
             <td class="data-table__muted">
               <time datetime="<?= e(iso_time($c['updated_at'])) ?>" title="<?= e(format_datetime($c['updated_at'])) ?><?= $c['updated_by_name'] ? ' by ' . e($c['updated_by_name']) : '' ?>"><?= e(time_ago($c['updated_at'])) ?></time>

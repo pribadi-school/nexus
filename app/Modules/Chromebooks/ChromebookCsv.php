@@ -237,7 +237,7 @@ final class ChromebookCsv
             $status = $value('status');
             if ($status !== null) {
                 $row['status'] = match (mb_strtolower($status)) {
-                    '-', 'unmarked', 'ok', 'ok (legacy)', 'running well', 'good', 'baik' => Status::UNMARKED,
+                    'normal', '-', 'unmarked', 'ok', 'ok (legacy)', 'running well', 'good', 'baik' => Status::NORMAL,
                     'reported', 'problem', 'has problem', 'error' => Status::PROBLEM,
                     'fixed', 'repaired', 'fix' => Status::FIXED,
                     'borrowed' => Status::BORROWED,
@@ -260,7 +260,7 @@ final class ChromebookCsv
                 $row['student_name'] !== null && mb_strlen($row['student_name']) > 120 => 'Student name is too long.',
                 $row['student_email'] !== null && filter_var($row['student_email'], FILTER_VALIDATE_EMAIL) === false => "Email \"{$row['student_email']}\" is not an email address.",
                 $row['model'] !== null && mb_strlen($row['model']) > 100 => 'Model is too long.',
-                $status !== null && $row['status'] === null => "Status \"$status\" must be Problem, Fixed, Borrowed, Replaced or Broken.",
+                $status !== null && $row['status'] === null => "Status \"$status\" must be Normal, Problem, Fixed, Borrowed, Replaced or Broken.",
                 default => null,
             };
             if ($assetKey !== null) {
@@ -340,7 +340,7 @@ final class ChromebookCsv
                         'asset_id' => $row['asset_id'],
                         'serial_number' => $row['serial_number'],
                         'model' => $row['model'],
-                        'status' => $row['status'] ?? Status::UNMARKED,
+                        'status' => $row['status'] ?? Status::NORMAL,
                         'student_name' => $row['student_name'],
                         'student_email' => $row['student_email'],
                     ], $userId);
