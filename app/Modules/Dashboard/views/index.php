@@ -1,13 +1,14 @@
 <?php
 /**
  * Dashboard: header, search across every device, one stat strip (a cell per
- * category + "Needs attention"), a problem alert, then the devices with a
- * problem (left) and recent activity (right). Same layout as the other
+ * category + "Needs attention"), an attention alert, then devices needing
+ * attention (left) and recent activity (right). Same layout as the other
  * Pribadi apps.
  *
  * @var list<array{category:\App\Devices\Category, total:int, ok:int, problem:int}> $summaries
- * @var list<array<string, mixed>> $attention  devices with a problem, newest first
- * @var int $problemTotal
+ * @var list<array<string, mixed>> $attention  problem or borrowed devices, newest first
+ * @var array{problem:int, borrowed:int} $attentionCounts
+ * @var int $attentionTotal
  * @var int $deviceTotal
  * @var list<array<string, mixed>> $feed       latest few notes
  * @var list<string> $pendingMigrations
@@ -59,19 +60,19 @@ use App\Devices\Status;
         </span>
       </a>
     <?php endforeach ?>
-    <a class="stat stat--attention<?= $problemTotal > 0 ? ' has-problems' : '' ?>" href="#attention">
+    <a class="stat stat--attention<?= $attentionTotal > 0 ? ' has-items' : '' ?>" href="#attention">
       <span class="stat__label">Needs attention <?= icon('arrow-right', 'icon--sm stat__arrow') ?></span>
-      <span class="stat__value"><?= $problemTotal ?> <span class="stat__unit"><?= $problemTotal === 1 ? 'device' : 'devices' ?></span></span>
-      <span class="stat__sub">out of <?= e(plural($deviceTotal, 'device')) ?></span>
+      <span class="stat__value"><?= $attentionTotal ?> <span class="stat__unit"><?= $attentionTotal === 1 ? 'device' : 'devices' ?></span></span>
+      <span class="stat__sub"><span class="status-word status-word--problem"><?= $attentionCounts['problem'] ?> problem</span> · <span class="status-word status-word--borrowed"><?= $attentionCounts['borrowed'] ?> borrowed</span></span>
     </a>
   </section>
 
-  <?php if ($problemTotal > 0): ?>
-    <div class="dash-alert" role="status">
-      <?= icon('triangle-alert', 'icon--lg') ?>
+  <?php if ($attentionTotal > 0): ?>
+    <div class="dash-alert dash-alert--attention" role="status">
+      <?= icon('circle-alert', 'icon--lg') ?>
       <div>
-        <p class="dash-alert__title"><?= $problemTotal ?> <?= $problemTotal === 1 ? 'device has a problem' : 'devices have a problem' ?></p>
-        <p class="dash-alert__text">Check them, and add a note on the device's page when they're fixed.</p>
+        <p class="dash-alert__title"><?= e(plural($attentionTotal, 'device')) ?> <?= $attentionTotal === 1 ? 'needs' : 'need' ?> attention</p>
+        <p class="dash-alert__text">Review problems and borrowed devices, then add a note when the situation changes.</p>
       </div>
       <a class="link-quiet dash-alert__link" href="#attention">View list<?= icon('arrow-right', 'icon--sm') ?></a>
     </div>
@@ -82,14 +83,14 @@ use App\Devices\Status;
       <div class="card__header card__header--stack">
         <div>
           <h2 class="card__title" id="attention-title">Needs attention</h2>
-          <p class="card__subtitle">Devices with a problem, newest first.</p>
+          <p class="card__subtitle">Problem and borrowed devices, newest first.</p>
         </div>
       </div>
 
       <?php if ($deviceTotal === 0): ?>
-        <?= partial('partials/empty-state', ['icon' => 'inbox', 'title' => 'No devices yet', 'text' => 'Add StudyTouch boards, cameras or Chromebooks, and any with a problem will be listed here.', 'compact' => true]) ?>
+        <?= partial('partials/empty-state', ['icon' => 'inbox', 'title' => 'No devices yet', 'text' => 'Add devices to track problems and borrowed Chromebooks here.', 'compact' => true]) ?>
       <?php elseif ($attention === []): ?>
-        <?= partial('partials/empty-state', ['icon' => 'circle-check', 'title' => 'Everything is running well', 'text' => 'No device has a problem right now.', 'compact' => true]) ?>
+        <?= partial('partials/empty-state', ['icon' => 'circle-check', 'title' => 'Nothing needs attention', 'text' => 'No problems or borrowed devices to review right now.', 'compact' => true]) ?>
       <?php else: ?>
         <div class="table-scroll">
           <table class="data-table data-table--compact">
@@ -103,16 +104,18 @@ use App\Devices\Status;
             </thead>
             <tbody>
               <?php foreach ($attention as $d): $category = categories()->find((string) $d['category']); ?>
-                <tr class="is-problem">
+                <?php $borrowed = $d['attention_kind'] === NoteKind::BORROWED; ?>
+                <tr class="attention-row attention-row--<?= $borrowed ? 'borrowed' : 'problem' ?>">
                   <th scope="row">
                     <a class="data-table__link" href="<?= e($d['url']) ?>"><?= e($d['title']) ?></a>
                     <span class="data-table__sub"><?= e($d['context']) ?></span>
+                    <span class="chip chip--<?= $borrowed ? 'action' : 'problem' ?> attention-kind"><?= icon($borrowed ? 'user-round-check' : 'triangle-alert', 'icon--sm') ?><?= $borrowed ? 'Borrowed' : 'Problem' ?></span>
                   </th>
                   <td><span class="chip"><?= e($category?->name() ?? '') ?></span></td>
                   <td class="dash-note"><?= $d['latest_note'] ? e($d['latest_note']) : '<span class="data-table__muted">No note yet</span>' ?></td>
                   <td class="data-table__muted align-right">
-                    <?php if ($d['status_changed_at']): ?>
-                      <time datetime="<?= e(iso_time($d['status_changed_at'])) ?>" title="<?= e(format_datetime($d['status_changed_at'])) ?>"><?= e(time_ago($d['status_changed_at'])) ?></time>
+                    <?php if ($d['attention_since']): ?>
+                      <time datetime="<?= e(iso_time($d['attention_since'])) ?>" title="<?= e(format_datetime($d['attention_since'])) ?>"><?= e(time_ago($d['attention_since'])) ?></time>
                     <?php endif ?>
                   </td>
                 </tr>
@@ -120,8 +123,8 @@ use App\Devices\Status;
             </tbody>
           </table>
         </div>
-        <?php if ($problemTotal > count($attention)): ?>
-          <p class="attention__more">and <?= $problemTotal - count($attention) ?> more. Filter each page by "Has problem" to see them all.</p>
+        <?php if ($attentionTotal > count($attention)): ?>
+          <p class="attention__more">and <?= $attentionTotal - count($attention) ?> more. Open the device pages to review their latest notes.</p>
         <?php endif ?>
       <?php endif ?>
     </section>

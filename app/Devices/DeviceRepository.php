@@ -7,6 +7,25 @@ namespace App\Devices;
 /** Queries on the shared `devices` table, for every category at once. */
 final class DeviceRepository
 {
+    /** Latest manual Chromebook note drives its attention state; other categories use device status. */
+    private const ATTENTION_SELECT = "SELECT d.id AS device_id, d.category,
+                    n.body AS latest_note, n.kind AS latest_note_kind, n.created_at AS latest_note_at,
+                    CASE WHEN d.category = 'chromebook' AND n.id IS NOT NULL
+                         THEN n.created_at ELSE d.status_changed_at END AS attention_since,
+                    CASE
+                        WHEN d.category = 'chromebook' AND n.id IS NOT NULL THEN
+                            CASE WHEN n.kind IN ('problem', 'borrowed') THEN n.kind ELSE NULL END
+                        WHEN d.status = 'problem' THEN 'problem'
+                        ELSE NULL
+                    END AS attention_kind
+             FROM devices d
+             LEFT JOIN device_notes n ON n.id = (
+                 SELECT n2.id FROM device_notes n2
+                 WHERE n2.device_id = d.id AND n2.kind NOT IN ('status', 'assignment')
+                 ORDER BY n2.created_at DESC, n2.id DESC LIMIT 1
+             )
+             WHERE d.deleted_at IS NULL";
+
     /** @return array<string, mixed>|null A device that has not been deleted. */
     public function find(int $id): ?array
     {
@@ -66,6 +85,27 @@ final class DeviceRepository
              LIMIT " . max(1, $limit),
             [Status::PROBLEM],
         );
+        return categories()->describeRows($rows);
+    }
+
+    /** @return array{problem:int, borrowed:int} Counts use the same state as the attention list. */
+    public function attentionCounts(): array
+    {
+        $counts = ['problem' => 0, 'borrowed' => 0];
+        foreach (db()->all('SELECT attention_kind, COUNT(*) AS n FROM (' . self::ATTENTION_SELECT . ') a
+                           WHERE attention_kind IS NOT NULL GROUP BY attention_kind') as $row) {
+            $counts[$row['attention_kind']] = (int) $row['n'];
+        }
+        return $counts;
+    }
+
+    /** @return list<array<string, mixed>> One entry per device, newest attention state first. */
+    public function needingAttention(int $limit = 10): array
+    {
+        $rows = db()->all('SELECT * FROM (' . self::ATTENTION_SELECT . ') a
+                          WHERE attention_kind IS NOT NULL
+                          ORDER BY attention_since IS NULL, attention_since DESC, device_id DESC
+                          LIMIT ' . max(1, $limit));
         return categories()->describeRows($rows);
     }
 

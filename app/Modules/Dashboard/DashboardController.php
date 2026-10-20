@@ -21,6 +21,7 @@ final class DashboardController
     {
         $devices = new DeviceRepository();
         $counts = $devices->countsByCategory();
+        $attentionCounts = $devices->attentionCounts();
 
         $summaries = [];
         foreach (categories()->all() as $key => $category) {
@@ -29,8 +30,9 @@ final class DashboardController
 
         return Response::html(View::render('Dashboard::index', [
             'summaries' => $summaries,
-            'attention' => $devices->withProblems(10),
-            'problemTotal' => array_sum(array_column($counts, 'problem')),
+            'attention' => $devices->needingAttention(10),
+            'attentionCounts' => $attentionCounts,
+            'attentionTotal' => array_sum($attentionCounts),
             'deviceTotal' => array_sum(array_column($counts, 'total')),
             'feed' => (new NoteRepository())->recent(self::RECENT_ON_DASHBOARD, null, (new DashboardActivityVisibility())->since()),
             'pendingMigrations' => Migrations::pending(),

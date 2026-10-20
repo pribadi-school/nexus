@@ -326,6 +326,7 @@
 .stat__unit { font-size: var(--fs-body); font-weight: 500; letter-spacing: 0; color: var(--color-muted-foreground); }
 .stat__sub { font-size: var(--fs-caption); color: var(--color-muted-foreground); }
 .stat--attention.has-problems .stat__value { color: var(--color-problem); }
+.stat--attention.has-items .stat__value { color: var(--color-action); }
 
 /* Problem alert under the stat strip. */
 .dash-alert {
@@ -344,6 +345,11 @@
 .dash-alert__title { font-weight: 700; }
 .dash-alert__text { font-size: var(--fs-ui); color: var(--color-foreground-alt); }
 .dash-alert__link { flex: none; }
+.dash-alert--attention { border-color: color-mix(in srgb, var(--color-action) 30%, transparent); background: var(--color-action-tint); }
+.dash-alert--attention > .icon { color: var(--color-action); }
+.data-table tr.attention-row--problem { background: var(--color-problem-tint); }
+.data-table tr.attention-row--borrowed { background: var(--color-action-tint); }
+.attention-kind { margin-top: var(--space-1); }
 
 .dash-columns { display: grid; gap: var(--space-4); align-items: start; }
 @media (min-width: 1100px) {
@@ -468,6 +474,7 @@
 .status-word--reported { color: var(--color-warning); }
 .status-word--repaired { color: var(--color-success); }
 .status-word--replaced { color: var(--color-action); }
+.status-word--borrowed { color: var(--color-action); }
 
 .feed__more {
   display: flex;
