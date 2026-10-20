@@ -97,7 +97,7 @@ completely separate from the school's WordPress site. UI language: English.
    connectivity. The companion `android-tv/` app pairs by a six-digit code,
    downloads complete MP4 playlists for offline playback, and supports
    one-time default Home configuration for TV startup (see `docs/android-tv.md`).
-   Android player 1.3.1 supports API25 (the school's T960X Android 7.1.2 native
+   Android player 1.3.2 supports API25 (the school's T960X Android 7.1.2 native
    portrait panel), bounded/EXIF-aware image decoding on its own executor,
    native portrait without double rotation, touch-and-hold controls and wrapped
    buttons. `Fullscreen` restores immersive playback and menus after focus/resume;
@@ -105,11 +105,16 @@ completely separate from the school's WordPress site. UI language: English.
    automatic boot startup; optional explicit device-owner provisioning of
    `.KioskAdmin` enables persistent Home and lock task mode, with a maintenance
    pause in Settings. See `docs/t960x-setup.md`. No OS/security bypass or launcher
-   deletion is used. `WifiStartup` enables the Wi-Fi radio at launch on Android
-   7–9 by default, with an opt-out/live status/explicit retry in Settings. Its
-   pure `WifiStartupSession` has a one-minute window, at most three requests,
-   airplane/manual-OFF guards and cancellation; it never edits saved networks
-   or credentials. Android 10+ makes no toggle request. It does not use the
+   deletion is used. `WifiKeeperService` monitors Wi-Fi on Android 7–9 by default,
+   starting at boot/package update and Nexus resume, and continuing through
+   activity pauses/standby. Settings → Wi-Fi keeper has live status and a
+   Keep Wi-Fi on 24/7 opt-out (existing `wifi_startup` preference). Automatic
+   retries use 15/30/60-second cooldowns; Wi-Fi/CPU wake locks are released when
+   disabled, in airplane mode or on service destruction. Disable the keeper
+   before intentionally switching Wi-Fi off. It never edits saved networks,
+   credentials, DHCP or hotspot settings and performs no scans. Radio enabled
+   does not imply internet; connectivity restoration schedules a playlist sync.
+   Android 10+ makes no toggle request. It does not use the
    AbleSign API. Migration 007 adds expiring device-secret
    pairing requests and hashed-IP start throttling; only its two public POST
    APIs omit CSRF. The signed-in pairing approval form still requires CSRF.

@@ -34,6 +34,9 @@ public final class Startup extends BroadcastReceiver {
     }
     @Override public void onReceive(Context context, Intent intent) {
         if (!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) && !Intent.ACTION_MY_PACKAGE_REPLACED.equals(intent.getAction())) return;
+        // Connectivity recovery must survive vendor restrictions on launching a
+        // Home Activity, and must not depend on somebody touching the display.
+        WifiStartup.ensureStarted(context);
         try { KioskAdmin.configure(context); } catch (RuntimeException ignored) { /* Normal Home startup remains available. */ }
         // Modern Android starts the selected HOME app. On older TVs the boot
         // receiver also works after the first installation/setup launch.

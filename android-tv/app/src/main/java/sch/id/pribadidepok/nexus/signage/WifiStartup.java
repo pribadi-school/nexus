@@ -2,61 +2,83 @@ package sch.id.pribadidepok.nexus.signage;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.net.wifi.WifiManager;
+import android.content.Intent;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.SystemClock;
-import android.provider.Settings;
 import java.util.function.Consumer;
 
-/** Legacy Android 7–9 startup support; no scans, credentials or network edits. */
+/** UI facade for the single application Wi-Fi keeper, independent of Activity lifetime. */
 final class WifiStartup {
-    private static final String PREFERENCE = "wifi_startup";
+    static final String PREFERENCE = "wifi_startup";
+    static final String STATUS = "wifi_keeper_status";
+    private final Context app;
     private final SharedPreferences settings;
-    private final WifiStartupSession session;
+    private final Consumer<String> report;
+    private final SharedPreferences.OnSharedPreferenceChangeListener listener;
+    private boolean listening;
 
     WifiStartup(Context context, Consumer<String> report) {
-        Context app = context.getApplicationContext();
-        settings = app.getSharedPreferences("nexus", Context.MODE_PRIVATE);
-        Handler handler = new Handler(Looper.getMainLooper());
-        session = new WifiStartupSession(new WifiStartupSession.Radio() {
-            private WifiManager manager() {
-                WifiManager manager = app.getSystemService(WifiManager.class);
-                if (manager == null) throw new IllegalStateException("Wi-Fi service is unavailable.");
-                return manager;
-            }
-            @Override public boolean airplaneMode() {
-                return Settings.Global.getInt(app.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
-            }
-            @Override public WifiStartupSession.State state() {
-                switch (manager().getWifiState()) {
-                    case WifiManager.WIFI_STATE_DISABLED: return WifiStartupSession.State.DISABLED;
-                    case WifiManager.WIFI_STATE_DISABLING: return WifiStartupSession.State.DISABLING;
-                    case WifiManager.WIFI_STATE_ENABLING: return WifiStartupSession.State.ENABLING;
-                    case WifiManager.WIFI_STATE_ENABLED: return WifiStartupSession.State.ENABLED;
-                    default: return WifiStartupSession.State.UNKNOWN;
-                }
-            }
-            @Override public boolean enable() {
-                // Newer Android versions require the system's own Wi-Fi UI.
-                return supported() && manager().setWifiEnabled(true);
-            }
-        }, new WifiStartupSession.Timer() {
-            @Override public long now() { return SystemClock.elapsedRealtime(); }
-            @Override public void postDelayed(Runnable callback, long delay) { handler.postDelayed(callback, delay); }
-            @Override public void remove(Runnable callback) { handler.removeCallbacks(callback); }
-        }, message -> { android.util.Log.i("NexusWifiStartup", message); report.accept(message); });
+        app = context.getApplicationContext();
+        settings = preferences(app);
+        this.report = report;
+        listener = (preferences, key) -> { if (STATUS.equals(key)) this.report.accept(status()); };
     }
 
     static boolean supported() { return Build.VERSION.SDK_INT < 29; }
-    boolean enabled() { return settings.getBoolean(PREFERENCE, supported()); }
-    void enabled(boolean enabled) {
-        settings.edit().putBoolean(PREFERENCE, enabled).apply();
-        if (enabled) retry(); else session.restart(false, supported());
+    static SharedPreferences preferences(Context context) { return context.getSharedPreferences("nexus", Context.MODE_PRIVATE); }
+    static boolean enabled(Context context) { return supported() && preferences(context).getBoolean(PREFERENCE, true); }
+    static void publish(Context context, String detail) {
+        SharedPreferences preferences = preferences(context);
+        if (!detail.equals(preferences.getString(STATUS, ""))) {
+            preferences.edit().putString(STATUS, detail).apply();
+            android.util.Log.i("NexusWifiKeeper", detail);
+        }
     }
-    void start() { session.start(enabled(), supported()); }
-    void retry() { session.restart(enabled(), supported()); }
-    void stop() { session.stop(); }
-    String status() { return session.status(); }
+
+    /** Safe from boot and foreground entry; the service owns all radio work. */
+    static void ensureStarted(Context context) { launch(context.getApplicationContext(), false); }
+
+    private static void launch(Context app, boolean retry) {
+        if (!supported()) return;
+        if (!enabled(app)) {
+            stopService(app);
+            publish(app, "Automatic Wi-Fi keeper is off.");
+            return;
+        }
+        Intent keeper = new Intent(app, WifiKeeperService.class);
+        if (retry) keeper.setAction(WifiKeeperService.ACTION_RETRY);
+        try {
+            if (Build.VERSION.SDK_INT >= 26) app.startForegroundService(keeper); else app.startService(keeper);
+        } catch (RuntimeException blocked) {
+            android.util.Log.e("NexusWifiKeeper", "Could not start Wi-Fi keeper", blocked);
+            publish(app, "Android blocked the Wi-Fi keeper. Open Nexus and check this display's startup settings.");
+        }
+    }
+
+    private static void stopService(Context app) {
+        try { app.stopService(new Intent(app, WifiKeeperService.class)); }
+        catch (RuntimeException blocked) { android.util.Log.e("NexusWifiKeeper", "Could not stop Wi-Fi keeper; disabled preference prevents further requests", blocked); }
+    }
+
+    boolean enabled() { return enabled(app); }
+    void enabled(boolean enabled) {
+        settings.edit().putBoolean(PREFERENCE, enabled && supported()).apply();
+        if (enabled && supported()) retry();
+        else {
+            stopService(app);
+            publish(app, "Automatic Wi-Fi keeper is off.");
+        }
+    }
+    void start() {
+        if (!listening) { settings.registerOnSharedPreferenceChangeListener(listener); listening = true; }
+        report.accept(status());
+        ensureStarted(app);
+    }
+    void retry() { launch(app, true); }
+    /** Activity pause only detaches its view; unattended recovery continues. */
+    void stop() { if (listening) { settings.unregisterOnSharedPreferenceChangeListener(listener); listening = false; } }
+    String status() {
+        if (!supported()) return "This Android version requires Wi-Fi to be enabled in System settings.";
+        if (!enabled()) return "Automatic Wi-Fi keeper is off.";
+        return settings.getString(STATUS, "Starting automatic Wi-Fi recovery…");
+    }
 }

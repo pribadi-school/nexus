@@ -42,20 +42,31 @@ Android can briefly expose transient bars after an edge swipe, and external
 Settings/keyboards retain their system navigation. Device-owner kiosk mode
 provides the stronger navigation lock.
 
-Version **1.3.1** adds **Settings → Wi-Fi startup**. It is on by default on Android
-7–9 and runs once when the activity is created (including Home-app startup after
-boot), independently of pairing. It requests the Wi-Fi radio be enabled, then
-checks the actual radio state; this does not imply internet or authentication
-succeeded. Android handles auto-connection to existing saved networks. There are
-at most three enable requests and a one-minute startup window. Already enabled
-or enabling radios, airplane mode, permission denial and vendor failures are
-handled without crashing playback. Leaving the app cancels pending checks;
-returning from Settings does not repeatedly override manual Wi-Fi OFF changes.
-The settings dialog has live status and an explicit Retry startup button.
-No saved network, credential, DHCP, sleep or hotspot setting is modified. On
-Android 10+ the feature is unavailable and no Wi-Fi toggle request is made.
-The manifest adds only normal Wi-Fi state/read-control permissions and declares
-Wi-Fi hardware optional. See [Android's Wi-Fi API](https://developer.android.com/reference/android/net/wifi/WifiManager#setWifiEnabled(boolean)).
+Version **1.3.2** replaces the one-shot Wi-Fi startup check with **Settings →
+Wi-Fi keeper → Keep Wi-Fi on 24/7**, enabled by default on Android 7–9. The old
+check could be cancelled when the activity paused and did not resume itself;
+it could also finish before the TV's Wi-Fi service was ready. The keeper is a
+persistent foreground service launched at boot, package update and Nexus resume,
+independently of pairing. It monitors the actual radio state and requests Wi-Fi
+again when off. Failed attempts retry with 15/30/60-second cooldowns rather than
+requiring the user to press Retry. Pausing the activity or putting the display
+in standby does not stop the keeper. Its ongoing notification identifies the
+service, and Wi-Fi/CPU wake locks support unattended use on a powered display.
+
+The setting retains the existing `wifi_startup` preference. Disable it before
+intentionally turning Wi-Fi off for maintenance; otherwise Nexus turns the radio
+back on. Airplane mode suspends requests and releases locks. Disabling or stopping
+the keeper also releases its locks. Radio-on status does not imply internet or
+authentication succeeded: Android manages reconnecting to existing saved networks.
+Nexus immediately schedules a playlist sync on network restoration and retains
+downloaded media when offline. No saved network, credential, DHCP, sleep or hotspot
+setting is modified, and no Wi-Fi scan is used.
+
+On Android 10+ automatic radio control is unavailable and no toggle request is
+made. Wi-Fi hardware remains optional. Hardware/driver failure, lost power,
+Force stop and vendor restrictions cannot be bypassed by an ordinary APK. Verify
+cold boot, standby/wake and radio-off recovery on each physical TV; local builds
+do not prove those behaviors. See [Android's Wi-Fi API](https://developer.android.com/reference/android/net/wifi/WifiManager#setWifiEnabled(boolean)).
 
 ## Installation and pairing
 

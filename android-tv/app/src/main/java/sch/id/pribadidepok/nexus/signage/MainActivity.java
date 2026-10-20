@@ -12,6 +12,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
 import android.net.ConnectivityManager;
+import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.Uri;
 import android.net.http.SslError;
@@ -73,6 +74,10 @@ public final class MainActivity extends Activity {
     private ScrollView setupForm;
     private Fullscreen fullscreen;
     private WifiStartup wifiStartup;
+    private ConnectivityManager.NetworkCallback connectivityCallback;
+    private Network notifiedNetwork;
+    private int notifiedNetworkState;
+    private volatile long networkEvents;
     private TextView wifiStatus;
     private TextView headline, explanation, status;
     private ExoPlayer player;
@@ -100,7 +105,6 @@ public final class MainActivity extends Activity {
         createStage();
         wifiStartup = new WifiStartup(this, detail -> { if (wifiStatus != null) wifiStatus.setText(detail); });
         if (token().isEmpty()) setup("Connect this TV to Nexus."); else loadSaved();
-        wifiStartup.start();
     }
 
     private int navy() { return getColor(R.color.nexus_navy); }
@@ -199,6 +203,7 @@ public final class MainActivity extends Activity {
     }
     private void tick() {
         long attempt = epoch;
+        long connectionEvent = networkEvents;
         try {
             if (!foreground) return;
             if (token().isEmpty()) {
@@ -227,7 +232,46 @@ public final class MainActivity extends Activity {
             else if (token().isEmpty() && failure.status == 410) ui.post(() -> { if (attempt != epoch) return; pairingCode = null; headline.setTextSize(36); setup("That pairing code expired. Request a new code to continue."); });
             else ui.post(() -> { if (attempt == epoch) disconnected(friendly(failure)); });
         } catch (Exception exception) { if (attempt == epoch) ui.post(() -> disconnected(friendly(exception))); }
-        finally { schedule(token().isEmpty() ? 5 : 30); }
+        finally { schedule(connectionEvent != networkEvents ? 0 : token().isEmpty() ? 5 : 30); }
+    }
+    private void watchConnectivity() {
+        if (connectivityCallback != null) return;
+        ConnectivityManager manager = getSystemService(ConnectivityManager.class);
+        if (manager == null) return;
+        ConnectivityManager.NetworkCallback callback = new ConnectivityManager.NetworkCallback() {
+            @Override public void onCapabilitiesChanged(Network connected, NetworkCapabilities capabilities) {
+                int state = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) ? 2
+                    : capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) ? 1 : 0;
+                ui.post(() -> {
+                    if (!foreground || connectivityCallback != this) return;
+                    boolean restored = state > 0 && (!connected.equals(notifiedNetwork) || state > notifiedNetworkState);
+                    notifiedNetwork = connected; notifiedNetworkState = state;
+                    if (restored) { networkEvents++; schedule(0); }
+                });
+            }
+            @Override public void onLost(Network disconnected) {
+                ui.post(() -> {
+                    if (connectivityCallback == this && disconnected.equals(notifiedNetwork)) {
+                        notifiedNetwork = null; notifiedNetworkState = 0;
+                    }
+                });
+            }
+        };
+        connectivityCallback = callback;
+        try { manager.registerDefaultNetworkCallback(callback); }
+        catch (RuntimeException unavailable) {
+            connectivityCallback = null;
+            android.util.Log.w("NexusConnectivity", "Network callback unavailable; normal polling remains active.", unavailable);
+        }
+    }
+    private void stopWatchingConnectivity() {
+        ConnectivityManager.NetworkCallback callback = connectivityCallback;
+        connectivityCallback = null; notifiedNetwork = null; notifiedNetworkState = 0;
+        ConnectivityManager manager = getSystemService(ConnectivityManager.class);
+        if (manager != null && callback != null) {
+            try { manager.unregisterNetworkCallback(callback); }
+            catch (RuntimeException ignored) { /* Some vendor services discard callbacks on restart. */ }
+        }
     }
     private String pairingingCode() { return pairingCode == null ? "" : pairingCode; }
     private String friendly(Exception exception) { return exception instanceof NexusApi.Failure || exception instanceof IllegalArgumentException || exception instanceof java.io.IOException ? (exception.getMessage() == null ? "Check the network connection." : exception.getMessage()) : "Check the server address and network connection."; }
@@ -391,7 +435,7 @@ public final class MainActivity extends Activity {
     }
     private void options() {
         new FullscreenDialogBuilder(this).setTitle("Nexus Signage settings")
-            .setItems(new String[]{"Automatic startup", "Display orientation", "Display information", "Change server / pair again", "System settings", settings.getBoolean("kiosk", true) ? "Pause managed kiosk lock" : "Resume managed kiosk lock", "Wi-Fi startup"}, (dialog, which) -> {
+            .setItems(new String[]{"Automatic startup", "Display orientation", "Display information", "Change server / pair again", "System settings", settings.getBoolean("kiosk", true) ? "Pause managed kiosk lock" : "Resume managed kiosk lock", "Wi-Fi keeper"}, (dialog, which) -> {
                 if (which == 0) startup();
                 else if (which == 1) orientationOptions();
                 else if (which == 2) displayInformation();
@@ -407,25 +451,23 @@ public final class MainActivity extends Activity {
     private void wifiOptions() {
         LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dp(24), dp(12), dp(24), dp(12));
-        CheckBox enabled = new CheckBox(this); enabled.setText("Turn Wi-Fi on when Nexus starts");
+        CheckBox enabled = new CheckBox(this); enabled.setText("Keep Wi-Fi on 24/7");
         enabled.setChecked(WifiStartup.supported() && wifiStartup.enabled()); enabled.setEnabled(WifiStartup.supported());
         layout.addView(enabled);
         TextView help = new TextView(this); help.setTextSize(16); help.setPadding(0, dp(12), 0, dp(12));
         help.setText(WifiStartup.supported()
-            ? "Android reconnects to its saved network. Nexus does not change your network or password. Airplane mode is respected."
+            ? "Nexus keeps Wi-Fi awake and turns it back on automatically, including after boot and standby. Android uses your saved network. Turn this off before Wi-Fi maintenance. Airplane mode pauses recovery."
             : "This Android version requires Wi-Fi to be enabled in System settings.");
         layout.addView(help);
         TextView state = new TextView(this); state.setTextSize(16); state.setText(wifiStartup.status());
         wifiStatus = state; layout.addView(state);
         enabled.setOnCheckedChangeListener((button, checked) -> wifiStartup.enabled(checked));
         ScrollView scroll = new ScrollView(this); scroll.addView(layout);
-        android.app.AlertDialog dialog = new FullscreenDialogBuilder(this).setTitle("Wi-Fi startup").setView(scroll)
-            .setPositiveButton("Close", null).setNeutralButton("Retry startup", (d, which) -> wifiStartup.retry()).show();
+        android.app.AlertDialog dialog = new FullscreenDialogBuilder(this).setTitle("Wi-Fi keeper").setView(scroll)
+            .setPositiveButton("Close", null).show();
         // Keep the status view only while its dialog is actually visible.
         dialog.setOnCancelListener(ignored -> { if (wifiStatus == state) wifiStatus = null; });
         dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> { if (wifiStatus == state) wifiStatus = null; dialog.dismiss(); });
-        dialog.getButton(android.app.AlertDialog.BUTTON_NEUTRAL).setEnabled(WifiStartup.supported());
-        dialog.getButton(android.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> wifiStartup.retry());
     }
     private void revealControls() {
         controls.setVisibility(View.VISIBLE); controlButtons.getChildAt(0).requestFocus();
@@ -466,7 +508,7 @@ public final class MainActivity extends Activity {
             + "\nApp output: " + stage.getWidth() + " × " + stage.getHeight()
             + "\nDefault Home: " + (Startup.isHome(this) ? "Nexus" : "Not selected")
             + "\nManaged kiosk: " + (KioskAdmin.isOwner(this) ? "Available" : "Not provisioned")
-            + "\nWi-Fi startup: " + (!WifiStartup.supported() ? "Not available on this Android version" : wifiStartup.enabled() ? "On" : "Off") + "\n" + wifiStartup.status()
+            + "\nWi-Fi keeper: " + (!WifiStartup.supported() ? "Not available on this Android version" : wifiStartup.enabled() ? "On" : "Off") + "\n" + wifiStartup.status()
             + (lastError.isEmpty() ? "" : "\nLast playback error: " + lastError)).setPositiveButton("OK", null).show();
     }
     private void enterKiosk() {
@@ -500,12 +542,14 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume(); foreground = true;
+        wifiStartup.start();
+        watchConnectivity();
         enterKiosk();
         fullscreen.start();
         if (!token().isEmpty() && active != null && player == null && website == null && imageBitmap == null && !imageLoading && remoteEnabled) play(current < 0 ? 0 : current);
         schedule(0);
     }
     @Override public void onWindowFocusChanged(boolean hasFocus) { super.onWindowFocusChanged(hasFocus); if (hasFocus && fullscreen != null) fullscreen.focusReturned(); }
-    @Override protected void onPause() { foreground = false; fullscreen.stop(); wifiStartup.stop(); if (touchControls != null) ui.removeCallbacks(touchControls); synchronized (this) { if (pollTask != null) pollTask.cancel(false); } releaseMedia(); super.onPause(); }
-    @Override protected void onDestroy() { foreground = false; epoch++; ui.removeCallbacksAndMessages(null); network.shutdownNow(); downloader.shutdownNow(); imageDecoder.shutdownNow(); releaseMedia(); super.onDestroy(); }
+    @Override protected void onPause() { foreground = false; fullscreen.stop(); wifiStartup.stop(); stopWatchingConnectivity(); if (touchControls != null) ui.removeCallbacks(touchControls); synchronized (this) { if (pollTask != null) pollTask.cancel(false); } releaseMedia(); super.onPause(); }
+    @Override protected void onDestroy() { foreground = false; epoch++; wifiStartup.stop(); stopWatchingConnectivity(); ui.removeCallbacksAndMessages(null); network.shutdownNow(); downloader.shutdownNow(); imageDecoder.shutdownNow(); releaseMedia(); super.onDestroy(); }
 }

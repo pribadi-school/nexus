@@ -18,11 +18,16 @@ controls wrap on narrow screens, and image decoding has a heap budget and JPEG
 orientation support. Default Home startup and optional device-owner kiosk
 locking are included. See the [T960X quick setup](../docs/t960x-setup.md).
 
-Version 1.3.1 turns Wi-Fi on at Nexus startup on Android 7–9 by default.
-**Settings → Wi-Fi startup** can disable it or retry the bounded startup check.
-It preserves Android's saved networks, pairing and downloaded media, respects
-airplane mode and manual OFF changes, and never scans or stores Wi-Fi passwords.
-Android 10+ uses System settings for Wi-Fi control instead.
+Version 1.3.2 adds an unattended Wi-Fi keeper on Android 7–9, enabled by default.
+**Settings → Wi-Fi keeper → Keep Wi-Fi on 24/7** controls it. Its foreground
+service starts at boot and Nexus resume, keeps monitoring during standby or
+activity pauses, and automatically retries radio turn-on with 15/30/60-second
+cooldowns. Wi-Fi and CPU wake locks support a powered display. Disable the
+keeper before intentionally turning Wi-Fi off; airplane mode suspends it.
+Android retains the saved network/password, and Nexus syncs when connectivity
+returns. Android 10+ uses System settings for Wi-Fi control instead. Physical
+boot/wake tests remain necessary; the APK cannot repair drivers, restore power,
+or bypass Force stop. Update over the existing app to retain pairing and media.
 
 ## Build on Windows
 

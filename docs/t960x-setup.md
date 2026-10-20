@@ -1,4 +1,4 @@
-# T960X vertical display — Nexus 1.3.1
+# T960X vertical display — Nexus 1.3.2
 
 Built for the supplied **T960X, Android 7.1.2 (API25), 2 GB, native portrait**
 display. Supports video, image and website playlists and 4K display coordinates.
@@ -6,7 +6,7 @@ Physical playback and power-on still need checking on the display itself.
 
 ## Install once
 
-1. Copy **nexus-signage-t960x-portrait-1.3.1.apk** to a USB drive and install it
+1. Copy **nexus-signage-t960x-portrait-1.3.2.apk** to a USB drive and install it
    on the display. Allow installation from that USB/file manager if Android asks.
 2. Open **Nexus Signage** once. Keep the server address
    **https://nexus.pribadidepok.sch.id**, then choose **Get pairing code**.
@@ -24,26 +24,41 @@ Installing alone cannot select Home silently or start an app never opened.
 Default Home is Android's supported automatic startup method. Keep the old
 launcher installed so IT can restore it through Android settings if needed.
 
-## Updating from 1.3.0 — automatic Wi-Fi startup
+## Updating — automatic Wi-Fi keeper
 
-Install **1.3.1 over the existing app** and choose Update. Do not uninstall first:
+Install **1.3.2 over the existing app** and choose Update. Do not uninstall first:
 the update uses the same app/signing key and preserves pairing, Home selection,
 downloaded media and settings.
 
-On this Android 7.1.2 display, **Turn Wi-Fi on when Nexus starts** is enabled by
-default. Nexus makes a bounded startup attempt and lets Android reconnect to
-the network already saved on the TV. It never requests or changes the password.
-To see the result: hold the display for one second → **Settings → Wi-Fi startup**.
-The status updates while Android turns Wi-Fi on. Use **Retry startup** if needed;
-uncheck the option to stop future automatic requests. Airplane mode is respected.
-Turning the radio on is separate from connecting to the school network/internet.
+On this Android 7.1.2 display, **Settings → Wi-Fi keeper → Keep Wi-Fi on 24/7**
+is enabled by default. Nexus automatically starts the keeper at boot and when
+opened, monitors the radio, and requests Wi-Fi again if it turns off. Failed
+attempts retry automatically with a delay that grows from 15 to 30 to 60 seconds.
+There is no Retry button to press. The keeper continues while Nexus is paused
+or the display is in standby and shows an ongoing **Wi-Fi keeper** notification.
 
-After updating, do one full power-off/on test with Nexus still selected as Home.
-Allow up to one minute for its startup check. Confirm Wi-Fi reconnects and the
-Nexus screen reports online. If Android rejects the request or the radio stays
-off, photograph the Wi-Fi startup status. Firmware/driver faults can still
-require vendor support; this APK cannot repair the physical Wi-Fi module.
-The feature runs only on Android 7–9; Android 10+ uses System settings instead.
+Android reconnects to the network already saved on the TV. Nexus does not change
+networks, passwords or router settings. Wi-Fi and CPU wake locks help keep the
+keeper running on this powered display. They do not guarantee that a router,
+internet connection, driver or Wi-Fi module will work. Radio-on status alone
+does not mean internet is available. Nexus checks its playlist immediately when
+network connectivity returns and retains downloaded videos/images while offline.
+
+Uncheck **Keep Wi-Fi on 24/7** before deliberately turning Wi-Fi off for
+maintenance. Airplane mode suspends automatic turn-on requests and wake locks;
+turn it off to let the keeper resume. Nexus releases its locks when the keeper
+is disabled or stopped. The feature runs only on Android 7–9; Android 10+ uses
+System settings instead.
+
+After updating, check a full power-off/on with Nexus still selected as Home,
+then standby and wake. Confirm the saved Wi-Fi reconnects and Nexus reports
+online without touching its controls. Also turn Wi-Fi off once with the keeper
+enabled and verify it turns back on. Connection can take a few seconds; a failed
+attempt may need the automatic retry delay. These checks require the physical
+TV and have not been performed by the local APK build. If recovery fails,
+photograph **Settings → Wi-Fi keeper** status for IT. Power loss, Force stop and
+vendor restrictions can prevent operation; firmware/driver faults need vendor
+support.
 
 ## Content and display
 
@@ -61,7 +76,8 @@ The feature runs only on Android 7–9; Android 10+ uses System settings instead
   update the supported WebView through the vendor/Play Store when available.
 
 Video/image files stay downloaded for offline playback. Websites need internet.
-Screen/playlist changes are checked about every 30 seconds online.
+Screen/playlist changes are checked about every 30 seconds online and when
+network connectivity returns.
 
 **Settings → Display information** shows actual app output dimensions. A 4K
 panel can still be configured by its firmware to output a lower resolution.
@@ -85,7 +101,7 @@ Ordinary installation does not grant that control.
 With a computer already authorized for this display's USB debugging:
 
 ```sh
-adb install -r nexus-signage-t960x-portrait-1.3.1.apk
+adb install -r nexus-signage-t960x-portrait-1.3.2.apk
 adb shell dpm set-device-owner sch.id.pribadidepok.nexus.signage/.KioskAdmin
 adb shell am start -n sch.id.pribadidepok.nexus.signage/.MainActivity
 ```
