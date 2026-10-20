@@ -8,6 +8,10 @@ Videos play once for their full file duration, then advance. Set image and
 website display times in minutes in the Nexus screen playlist. Codec support
 depends on the TV. Update installed TVs to version 1.2.0 for this behavior.
 
+Version 1.2.1 fixes website sizing: a desktop viewport scales to fit the screen
+regardless of Android display density. Single-website playlists remain open for
+the website's live updates; mixed playlists retain configured display times.
+
 ## Build on Windows
 
 Install JDK 17 and the Android SDK packages `platforms;android-36`,

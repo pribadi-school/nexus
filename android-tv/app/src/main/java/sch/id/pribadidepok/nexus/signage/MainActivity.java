@@ -330,15 +330,26 @@ public final class MainActivity extends Activity {
                 });
             });
         } else if ("website".equals(item.optString("type")) && UrlPolicy.website(item.optString("url"))) {
-            website = new WebView(this); WebSettings web = website.getSettings(); web.setJavaScriptEnabled(true); web.setDomStorageEnabled(true); web.setAllowFileAccess(false); web.setAllowContentAccess(false); web.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW); web.setMediaPlaybackRequiresUserGesture(false); web.setSupportMultipleWindows(false);
+            WebsiteFrame websiteFrame = new WebsiteFrame(this);
+            website = websiteFrame.browser;
+            WebSettings web = website.getSettings(); web.setJavaScriptEnabled(true); web.setDomStorageEnabled(true); web.setAllowFileAccess(false); web.setAllowContentAccess(false); web.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW); web.setMediaPlaybackRequiresUserGesture(false); web.setSupportMultipleWindows(false);
+            web.setUseWideViewPort(true);
+            web.setLoadWithOverviewMode(true);
+            web.setTextZoom(100);
+            web.setSupportZoom(false);
+            web.setUserAgentString(WebsiteLayout.desktopUserAgent(web.getUserAgentString()));
             CookieManager.getInstance().setAcceptCookie(false); CookieManager.getInstance().setAcceptThirdPartyCookies(website, false);
             website.setWebViewClient(new WebViewClient() {
                 @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return !UrlPolicy.website(request.getUrl().toString()); }
                 @Override public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) { handler.cancel(); failedItem("The website has a certificate error.", generation); }
                 @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) { if (request.isForMainFrame()) failedItem("The website could not load.", generation); }
             });
-            media.addView(website, new FrameLayout.LayoutParams(-1, -1)); website.loadUrl(item.optString("url"));
-            advance = () -> { if (generation == playbackGeneration) play(current + 1); }; ui.postDelayed(advance, Math.max(5, Math.min(86400, item.optInt("duration_seconds", 30))) * 1000L);
+            media.addView(websiteFrame, new FrameLayout.LayoutParams(-1, -1)); websiteFrame.loadPage(item.optString("url"));
+            // A one-website playlist stays open so its own live updates never reset.
+            if (items.length() > 1) {
+                advance = () -> { if (generation == playbackGeneration) play(current + 1); };
+                ui.postDelayed(advance, Math.max(5, Math.min(86400, item.optInt("duration_seconds", 30))) * 1000L);
+            }
         } else failedItem("This playlist item is not supported.", generation);
     }
     private void failedItem(String reason, long generation) {

@@ -11,6 +11,17 @@ Set image and website display durations in minutes in the left playlist
 video's detected file length. MOV uploads retain
 their original encoding, so playback depends on the TV or browser's codec support.
 
+TV app version 1.2.1 gives website items a desktop viewport of at least 1,280
+CSS pixels and scales it proportionally into the display area. This avoids
+mobile breakpoints caused by Android TV's display density, supports portrait
+output, and retains the installed WebView's Chromium version in the desktop
+user agent. Install the APK update to apply these website changes.
+
+A playlist containing just one website keeps that page open. The website's own
+live polling or streaming updates continue without a manual refresh or periodic
+playlist reload. A website that does not update itself will still need its own
+refresh mechanism. Mixed playlists continue using each website's display time.
+
 ## Installation and pairing
 
 1. Deploy Nexus, then import `007_signage_pairing.sql` after migration 006.
