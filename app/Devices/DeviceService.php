@@ -41,7 +41,7 @@ final class DeviceService
             'updated_at' => $now,
         ]));
 
-        if ($fields['status'] !== Status::OK) {
+        if (!in_array($fields['status'], [Status::OK, Status::UNMARKED], true)) {
             $this->writeStatusNote($category, $id, null, $fields['status'], $userId, $now);
         }
         return $id;

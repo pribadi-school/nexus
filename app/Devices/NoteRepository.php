@@ -7,11 +7,12 @@ namespace App\Devices;
 /** The notes log (device_notes): every report, problem, fix and status change. */
 final class NoteRepository
 {
-    private const SELECT = 'SELECT n.id, n.device_id, n.kind, n.body, n.meta, n.created_at,
-                                   d.category, u.name AS author_name
+    private const SELECT = 'SELECT n.id, n.device_id, n.kind, n.body, n.meta, n.created_at, n.edited_at,
+                                   d.category, u.name AS author_name, eu.name AS editor_name
                             FROM device_notes n
                             JOIN devices d ON d.id = n.device_id
-                            LEFT JOIN users u ON u.id = n.user_id';
+                            LEFT JOIN users u ON u.id = n.user_id
+                            LEFT JOIN users eu ON eu.id = n.edited_by';
 
     /**
      * Newest notes across all devices, for the dashboard feed. Pass the id of
@@ -66,6 +67,12 @@ final class NoteRepository
     {
         return (int) db()->value('SELECT COUNT(*) FROM device_notes WHERE device_id = ?'
             . ($manualOnly ? " AND kind NOT IN ('status', 'assignment')" : ''), [$deviceId]);
+    }
+
+    public function statusHistory(int $deviceId, int $limit = 200): array
+    {
+        return array_map([$this, 'hydrate'], db()->all(self::SELECT . " WHERE n.device_id = ? AND n.kind = 'status'
+            ORDER BY n.created_at DESC, n.id DESC LIMIT " . max(1, $limit), [$deviceId]));
     }
 
     /**

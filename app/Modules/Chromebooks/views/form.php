@@ -92,8 +92,8 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
       </div>
 
       <div class="field<?= $field('status') ? ' has-error' : '' ?>">
-        <label class="field__label" for="status">Status <span class="field__required">required</span></label>
-        <select class="select" id="status" name="status" required<?= $invalid('status') ?>>
+        <label class="field__label" for="status">Status</label>
+        <select class="select" id="status" name="status"<?= $invalid('status') ?>>
           <option value="">Choose status</option>
           <?php foreach ($category->statuses() as $status): ?>
             <option value="<?= e($status) ?>"<?= ($values['status'] ?? null) === $status ? ' selected' : '' ?>><?= e($category->statusLabel($status)) ?></option>

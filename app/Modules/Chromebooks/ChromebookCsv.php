@@ -237,10 +237,11 @@ final class ChromebookCsv
             $status = $value('status');
             if ($status !== null) {
                 $row['status'] = match (mb_strtolower($status)) {
-                    'ok', 'ok (legacy)', 'running well', 'good', 'baik' => Status::OK,
-                    'reported' => Status::REPORTED,
-                    'problem', 'has problem', 'rusak', 'broken', 'error' => Status::PROBLEM,
-                    'repaired' => Status::REPAIRED,
+                    '-', 'unmarked', 'ok', 'ok (legacy)', 'running well', 'good', 'baik' => Status::UNMARKED,
+                    'reported', 'problem', 'has problem', 'error' => Status::PROBLEM,
+                    'fixed', 'repaired', 'fix' => Status::FIXED,
+                    'borrowed' => Status::BORROWED,
+                    'broken', 'rusak' => Status::BROKEN,
                     'replaced' => Status::REPLACED,
                     default => null,
                 };
@@ -259,7 +260,7 @@ final class ChromebookCsv
                 $row['student_name'] !== null && mb_strlen($row['student_name']) > 120 => 'Student name is too long.',
                 $row['student_email'] !== null && filter_var($row['student_email'], FILTER_VALIDATE_EMAIL) === false => "Email \"{$row['student_email']}\" is not an email address.",
                 $row['model'] !== null && mb_strlen($row['model']) > 100 => 'Model is too long.',
-                $status !== null && $row['status'] === null => "Status \"$status\" must be Reported, Problem, Repaired or Replaced (legacy OK is also accepted).",
+                $status !== null && $row['status'] === null => "Status \"$status\" must be Problem, Fixed, Borrowed, Replaced or Broken.",
                 default => null,
             };
             if ($assetKey !== null) {
@@ -339,7 +340,7 @@ final class ChromebookCsv
                         'asset_id' => $row['asset_id'],
                         'serial_number' => $row['serial_number'],
                         'model' => $row['model'],
-                        'status' => $row['status'] ?? Status::OK,
+                        'status' => $row['status'] ?? Status::UNMARKED,
                         'student_name' => $row['student_name'],
                         'student_email' => $row['student_email'],
                     ], $userId);

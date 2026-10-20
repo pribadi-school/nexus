@@ -475,6 +475,8 @@
 .status-word--repaired { color: var(--color-success); }
 .status-word--replaced { color: var(--color-action); }
 .status-word--borrowed { color: var(--color-action); }
+.status-word--fixed { color: var(--color-success); }
+.status-word--broken { color: var(--color-warning); }
 
 .feed__more {
   display: flex;

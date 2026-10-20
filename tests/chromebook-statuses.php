@@ -39,13 +39,13 @@ try {
     $initial = $repo->counts($year);
     $sharedInitial = (new DeviceRepository())->countsByCategory()['chromebook'];
     $ids = [];
-    foreach (['ok', ...$category->statuses()] as $status) {
+    foreach (['unmarked', ...$category->statuses()] as $status) {
         $ids[$status] = $repo->create($category, [
             'academic_year' => $year, 'asset_id' => "$token-$status", 'serial_number' => null,
             'model' => 'Status fixture', 'status' => $status, 'student_name' => null, 'student_email' => null,
         ], null);
     }
-    $check($category->statuses() === ['reported', 'problem', 'repaired', 'replaced'], 'four statuses appear in the requested order');
+    $check($category->statuses() === ['problem', 'fixed', 'borrowed', 'replaced', 'broken'], 'five statuses appear in the requested order');
     $counts = $repo->counts($year);
     $shared = (new DeviceRepository())->countsByCategory()['chromebook'];
     foreach (array_keys($ids) as $status) {
@@ -53,37 +53,34 @@ try {
         $filtered = $repo->search(['year' => $year, 'q' => $token, 'status' => $status]);
         $check(array_column($filtered['rows'], 'id') === [$ids[$status]], "$status filter returns only that status");
     }
-    $legacy = $repo->find($ids['ok']);
-    $showRequest = new Request('GET', '/chromebooks/' . $ids['ok'], [], [], []);
-    $showRequest->params['id'] = (string) $ids['ok'];
+    $legacy = $repo->find($ids['unmarked']);
+    $showRequest = new Request('GET', '/chromebooks/' . $ids['unmarked'], [], [], []);
+    $showRequest->params['id'] = (string) $ids['unmarked'];
     $html = $controller->show($showRequest)->body;
-    $check(!str_contains($html, 'data-status-toggle') && !str_contains($html, 'data-set-status') && str_contains($html, 'id="note-status"'), 'detail and notes have dropdowns with no binary switch or checkbox');
+    $check(!str_contains($html, 'data-status-toggle') && !str_contains($html, 'data-set-status') && !str_contains($html, 'id="note-status"') && !str_contains($html, 'Kind of note'), 'notes are plain text and the old switch and note status picker are absent');
     $check(!str_contains($html, 'id="assign"') && str_contains($html, 'chromebook-info-placeholder') && str_contains($html, '<p>-</p>'), 'information section remains with a dash replacing assignment information');
-    $check(str_contains($html, 'OK (legacy)') && $repo->find($ids['ok']) === $legacy, 'opening a legacy OK device preserves its status and timestamps');
+    $check(!str_contains($html, 'OK (legacy)') && $repo->find($ids['unmarked']) === $legacy, 'unmarked records do not acquire a false fixed status');
     foreach ($category->statuses() as $status) {
-        $response = $devices->status($request($ids['ok'], 'status', ['status' => $status]));
+        $response = $devices->status($request($ids['unmarked'], 'status', ['status' => $status]));
         $json = json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
-        $note = db()->one('SELECT * FROM device_notes WHERE device_id = ? AND kind = ? ORDER BY id DESC LIMIT 1', [$ids['ok'], 'status']);
-        $check($json['changed'] === true && $repo->find($ids['ok'])['status'] === $status && json_decode($note['meta'], true)['to'] === $status, "$status saves and writes an audit entry");
-        $count = (int) db()->value('SELECT COUNT(*) FROM device_notes WHERE device_id = ?', [$ids['ok']]);
-        $devices->status($request($ids['ok'], 'status', ['status' => $status]));
-        $check((int) db()->value('SELECT COUNT(*) FROM device_notes WHERE device_id = ?', [$ids['ok']]) === $count, 'saving the current status does not duplicate history');
+        $note = db()->one('SELECT * FROM device_notes WHERE device_id = ? AND kind = ? ORDER BY id DESC LIMIT 1', [$ids['unmarked'], 'status']);
+        $check($json['changed'] === true && $repo->find($ids['unmarked'])['status'] === $status && json_decode($note['meta'], true)['to'] === $status, "$status saves and writes an audit entry");
+        $count = (int) db()->value('SELECT COUNT(*) FROM device_notes WHERE device_id = ?', [$ids['unmarked']]);
+        $devices->status($request($ids['unmarked'], 'status', ['status' => $status]));
+        $check((int) db()->value('SELECT COUNT(*) FROM device_notes WHERE device_id = ?', [$ids['unmarked']]) === $count, 'saving the current status does not duplicate history');
     }
-    foreach (['ok', 'bogus'] as $status) {
+    foreach (['ok', 'reported', 'repaired', 'bogus'] as $status) {
         try {
-            $devices->status($request($ids['ok'], 'status', ['status' => $status]));
+            $devices->status($request($ids['unmarked'], 'status', ['status' => $status]));
             throw new RuntimeException('Invalid Chromebook status was accepted.');
         } catch (HttpException $e) {
             $check($e->status === 422, "Chromebook status endpoint rejects $status");
         }
     }
-    $devices->addNote($request($ids['ok'], 'notes', ['kind' => 'problem', 'body' => 'Checked again', 'set_status' => 'reported']));
-    $check($repo->find($ids['ok'])['status'] === 'reported', 'notes can explicitly set any Chromebook status');
-    $devices->addNote($request($ids['ok'], 'notes', ['kind' => 'fixed', 'body' => 'Keep status', 'set_status' => '']));
-    $check($repo->find($ids['ok'])['status'] === 'reported', 'note kinds do not silently change the selected status');
-    $noteCount = (int) db()->value('SELECT COUNT(*) FROM device_notes WHERE device_id = ?', [$ids['ok']]);
-    $devices->addNote($request($ids['ok'], 'notes', ['kind' => 'fixed', 'body' => 'Invalid status note', 'set_status' => 'ok']));
-    $check((int) db()->value('SELECT COUNT(*) FROM device_notes WHERE device_id = ?', [$ids['ok']]) === $noteCount && Session::get('note.draft')['set_status'] === 'ok', 'invalid note status saves neither the note nor a status change');
+    $devices->addNote($request($ids['unmarked'], 'notes', ['body' => 'Plain note without a kind']));
+    $devices->addNote($request($ids['unmarked'], 'notes', ['kind' => 'fixed', 'body' => 'Old form cannot change status', 'set_status' => 'fixed']));
+    $check($repo->find($ids['unmarked'])['status'] === 'broken', 'plain notes never change status, including old form submissions');
+    $check(db()->value('SELECT kind FROM device_notes WHERE device_id = ? ORDER BY id DESC LIMIT 1', [$ids['unmarked']]) === 'note', 'notes always use the untyped note kind');
     foreach (['cctv', 'studytouch'] as $key) {
         $other = (new DeviceService())->create(categories()->get($key), ['serial_number' => null, 'model' => null, 'status' => 'ok'], null);
         try {
@@ -97,15 +94,15 @@ try {
     $lines = preg_split('/\r\n|\n|\r/', trim(preg_replace('/^\xEF\xBB\xBF/', '', $export->body)));
     $table = array_map(static fn ($line) => str_getcsv($line, ',', '"', ''), $lines);
     $plan = ChromebookCsv::plan($table, $year, $repo);
-    $check($plan['error'] === null && count($plan['rows']) === 5 && array_unique(array_column($plan['rows'], 'action')) === ['same'], 'four-status CSV export reimports without changes');
+    $check($plan['error'] === null && count($plan['rows']) === 6 && array_unique(array_column($plan['rows'], 'action')) === ['same'], 'five-status CSV export reimports without changes');
     $rows = [];
-    foreach (['Reported', 'Problem', 'Repaired', 'Replaced', 'OK (legacy)'] as $i => $status) $rows[] = ["$token-new$i", '', '', '', '', $status];
+    foreach (['Problem', 'Fixed', 'Borrowed', 'Replaced', 'Broken', '-'] as $i => $status) $rows[] = ["$token-new$i", '', '', '', '', $status];
     $plan = ChromebookCsv::plan([ChromebookCsv::COLUMNS, ...$rows], $year, $repo);
     $check(array_unique(array_column($plan['rows'], 'action')) === ['add'], 'imports accept the four statuses and legacy exports');
     ChromebookCsv::apply($plan['rows'], $year, $category, $repo, null);
-    foreach (['reported', 'problem', 'repaired', 'replaced', 'ok'] as $i => $status) $check($repo->findByAsset("$token-new$i")['status'] === $status, "import persists $status");
+    foreach (['problem', 'fixed', 'borrowed', 'replaced', 'broken', 'unmarked'] as $i => $status) $check($repo->findByAsset("$token-new$i")['status'] === $status, "import persists $status");
     $check(in_array($ids['replaced'], $category->searchIds('Replaced', 1000), true), 'dashboard search recognizes new status labels');
-    $infoId = $ids['repaired'];
+    $infoId = $ids['fixed'];
     $repo->assign($repo->find($infoId), 'Automatic assignment fixture', null, null);
     $notes = new NoteRepository();
     $check($notes->countForDevice($infoId, manualOnly: true) === 0 && $notes->forDevice($infoId, manualOnly: true) === [], 'manual notes exclude automatic assignment and status history');
@@ -121,12 +118,12 @@ try {
     $check($notes->countForDevice($infoId) > 1 && count($repo->history($infoId)) === 2, 'hidden automatic history is retained in storage');
     $noteHtml = $controller->show($showRequest)->body;
     $check(str_contains($noteHtml, $manualBody) && !str_contains($noteHtml, 'Assigned to Later automatic fixture.'), 'detail Notes show user-entered information without automatic assignment entries');
-    $check($category->noteKinds() === ['problem', 'fixed', 'borrowed', 'replaced', 'broken'], 'five note types appear in the requested order');
+    $check($category->noteKinds() === ['note'], 'notes have no types');
     foreach ($category->noteKinds() as $kind) {
         $devices->addNote($request($infoId, 'notes', ['kind' => $kind, 'body' => "Manual $kind fixture", 'set_status' => '']));
         $check(db()->value('SELECT kind FROM device_notes WHERE device_id = ? ORDER BY id DESC LIMIT 1', [$infoId]) === $kind, "$kind notes can be saved");
     }
-    $check(count($notes->forDevice($infoId, manualOnly: true)) === 6, 'all five note types and older manually entered reports remain visible');
+    $check(count($notes->forDevice($infoId, manualOnly: true)) === 2, 'new plain notes and older manually entered notes remain visible');
     $create = $controller->create(new Request('GET', '/chromebooks/new', [], [], []))->body;
     $check(str_contains($create, 'id="status" name="status"') && !str_contains($create, 'name="status" value="ok"'), 'add form uses the four-status dropdown');
 } finally {

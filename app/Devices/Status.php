@@ -12,9 +12,13 @@ final class Status
     public const REPORTED = 'reported';
     public const REPAIRED = 'repaired';
     public const REPLACED = 'replaced';
+    public const FIXED = 'fixed';
+    public const BORROWED = 'borrowed';
+    public const BROKEN = 'broken';
+    public const UNMARKED = 'unmarked';
     public const ALL = [self::OK, self::PROBLEM];
-    public const CHROMEBOOK = [self::REPORTED, self::PROBLEM, self::REPAIRED, self::REPLACED];
-    public const KNOWN = [self::OK, ...self::CHROMEBOOK];
+    public const CHROMEBOOK = [self::PROBLEM, self::FIXED, self::BORROWED, self::REPLACED, self::BROKEN];
+    public const KNOWN = [self::OK, self::UNMARKED, self::REPORTED, self::REPAIRED, ...self::CHROMEBOOK];
 
     public static function isValid(string $status): bool
     {

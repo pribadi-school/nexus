@@ -112,13 +112,17 @@ final class ChromebookRepository
                     COALESCE(SUM(d.status = 'ok'), 0) AS ok,
                     COALESCE(SUM(d.status = 'reported'), 0) AS reported,
                     COALESCE(SUM(d.status = 'repaired'), 0) AS repaired,
+                    COALESCE(SUM(d.status = 'unmarked'), 0) AS unmarked,
+                    COALESCE(SUM(d.status = 'fixed'), 0) AS fixed,
+                    COALESCE(SUM(d.status = 'borrowed'), 0) AS borrowed,
+                    COALESCE(SUM(d.status = 'broken'), 0) AS broken,
                     COALESCE(SUM(d.status = 'replaced'), 0) AS replaced,
                     COALESCE(SUM(c.student_name IS NULL), 0) AS unassigned
              FROM devices d JOIN chromebooks c ON c.device_id = d.id
              WHERE d.category = 'chromebook' AND d.deleted_at IS NULL" . ($year !== null ? ' AND c.academic_year = ?' : ''),
             $year !== null ? [$year] : [],
         );
-        return array_map('intval', $row ?? ['total' => 0, 'ok' => 0, 'reported' => 0, 'problem' => 0, 'repaired' => 0, 'replaced' => 0, 'unassigned' => 0]);
+        return array_map('intval', $row ?? (['total' => 0, 'unassigned' => 0] + array_fill_keys(Status::KNOWN, 0)));
     }
 
     /** @return array<int, array{total:int, problem:int}> per academic year, for the year filter */

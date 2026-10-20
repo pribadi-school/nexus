@@ -12,6 +12,7 @@ namespace App\Devices;
 final class NoteKind
 {
     public const REPORT = 'report';
+    public const NOTE = 'note';
     public const PROBLEM = 'problem';
     public const FIX = 'fix';
     public const FIXED = 'fixed';
@@ -24,6 +25,7 @@ final class NoteKind
 
     /** tone = colour role in the design system: neutral | problem | success | action */
     private const META = [
+        self::NOTE => ['label' => 'Note', 'icon' => 'message-square-text', 'tone' => 'neutral'],
         self::REPORT => ['label' => 'Report', 'icon' => 'message-square-text', 'tone' => 'neutral'],
         self::PROBLEM => ['label' => 'Problem', 'icon' => 'triangle-alert', 'tone' => 'problem'],
         self::FIX => ['label' => 'Fix', 'icon' => 'wrench', 'tone' => 'success'],

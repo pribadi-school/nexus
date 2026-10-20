@@ -60,9 +60,10 @@ final class DeviceController
         $id = (int) $device['id'];
         $back = $category->detailPath($id) . '#notes';
 
-        $kind = (string) $request->input('kind');
+        $plainNote = $category->key() === 'chromebook';
+        $kind = $plainNote ? NoteKind::NOTE : (string) $request->input('kind');
         $body = trim(str_replace("\r\n", "\n", (string) ($request->body['body'] ?? '')));
-        $setStatus = $request->input('set_status');
+        $setStatus = $plainNote ? null : $request->input('set_status');
 
         $error = match (true) {
             !in_array($kind, $category->noteKinds(), true) => 'Choose what kind of note this is.',
@@ -90,6 +91,25 @@ final class DeviceController
             ? 'Note added, and the status is now "' . $category->statusLabel((string) $setStatus) . '".'
             : 'Note added.');
         return Response::redirect($back);
+    }
+
+    /** POST /devices/{id}/notes/{noteId}: correct a saved note or status change. */
+    public function editNote(Request $request): Response
+    {
+        [$device, $category] = $this->load($request);
+        if ($category->key() !== 'chromebook') throw HttpException::forbidden();
+        $noteId = (int) $request->param('noteId');
+        $body = trim(str_replace("\r\n", "\n", (string) $request->input('body')));
+        try {
+            $changed = (new HistoryService())->edit($category, (int) $device['id'], $noteId, $body,
+                (string) $request->input('status'), (string) $request->input('version'), Auth::id());
+            Session::flash('success', $changed ? 'History entry updated. The previous version is kept.' : 'No changes to save.');
+        } catch (HttpException $error) {
+            if (!in_array($error->status, [409, 422], true)) throw $error;
+            Session::flash('error', $error->getMessage());
+            Session::put('history.draft', ['id' => $noteId, 'body' => $body, 'status' => $request->input('status')]);
+        }
+        return Response::redirect($category->detailPath((int) $device['id']) . '#note-' . $noteId);
     }
 
     /** @return array{0: array<string, mixed>, 1: Category} */

@@ -90,8 +90,8 @@ final class ChromebookController
     {
         $year = $this->category->yearLabel($this->year($request->query('year')));
         $body = "\xEF\xBB\xBF" . implode(',', ChromebookCsv::COLUMNS) . "\r\n"
-            . "$year-01,NXJAESN0015199901,Example Student,example@pribadidepok.sch.id,Acer Chromebook 311,OK\r\n"
-            . "$year-02,,Another Student,,,OK\r\n";
+            . "$year-01,NXJAESN0015199901,Example Student,example@pribadidepok.sch.id,Acer Chromebook 311,\r\n"
+            . "$year-02,,Another Student,,,\r\n";
         return new Response($body, 200, [
             'Content-Type' => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="chromebooks-example.csv"',
@@ -170,6 +170,7 @@ final class ChromebookController
             'history' => $this->chromebooks->history($id),
             'notes' => $notes->forDevice($id, manualOnly: true),
             'noteCount' => $notes->countForDevice($id, manualOnly: true),
+            'statusHistory' => $notes->statusHistory($id),
             'google' => GoogleChromebookController::viewData($chromebook),
         ], 'layouts/app', $this->category->title($id) . ' · Chromebooks'));
     }
@@ -192,11 +193,13 @@ final class ChromebookController
     public function store(Request $request): Response
     {
         $v = new Validator($request->body, self::LABELS);
-        $data = $v->validate($this->rules() + $this->assignRules() + ['status' => ['required', 'in:' . implode(',', $this->category->statuses())]]);
+        $data = $v->validate($this->rules() + $this->assignRules() + ['status' => ['in:' . implode(',', $this->category->statuses())]]);
         if ($v->fails()) {
             return $this->form(null, $data, $v->errors());
         }
         $data['academic_year'] = (int) $data['academic_year'];
+
+        $data['status'] ??= Status::UNMARKED;
 
         try {
             $id = $this->chromebooks->create($this->category, $data, Auth::id());
@@ -272,7 +275,7 @@ final class ChromebookController
     {
         return [
             'year' => $this->optionalYear($request->query('year')),
-            'status' => in_array($request->query('status'), [Status::OK, ...$this->category->statuses()], true) ? $request->query('status') : null,
+            'status' => in_array($request->query('status'), $this->category->statuses(), true) ? $request->query('status') : null,
             'q' => $request->query('q') !== null ? mb_substr((string) $request->query('q'), 0, 100) : null,
         ];
     }

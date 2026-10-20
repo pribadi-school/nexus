@@ -7,14 +7,12 @@ namespace App\Devices;
 /** Queries on the shared `devices` table, for every category at once. */
 final class DeviceRepository
 {
-    /** Latest manual Chromebook note drives its attention state; other categories use device status. */
+    /** Attention follows the saved device status; notes provide context only. */
     private const ATTENTION_SELECT = "SELECT d.id AS device_id, d.category,
                     n.body AS latest_note, n.kind AS latest_note_kind, n.created_at AS latest_note_at,
-                    CASE WHEN d.category = 'chromebook' AND n.id IS NOT NULL
-                         THEN n.created_at ELSE d.status_changed_at END AS attention_since,
+                    d.status_changed_at AS attention_since,
                     CASE
-                        WHEN d.category = 'chromebook' AND n.id IS NOT NULL THEN
-                            CASE WHEN n.kind IN ('problem', 'borrowed') THEN n.kind ELSE NULL END
+                        WHEN d.category = 'chromebook' AND d.status = 'borrowed' THEN 'borrowed'
                         WHEN d.status = 'problem' THEN 'problem'
                         ELSE NULL
                     END AS attention_kind

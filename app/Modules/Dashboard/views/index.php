@@ -53,7 +53,7 @@ use App\Devices\Status;
         <span class="stat__value"><?= $s['total'] ?> <span class="stat__unit"><?= e($category->noun()[$s['total'] === 1 ? 0 : 1]) ?></span></span>
         <span class="stat__sub">
           <?php if ($category->key() === 'chromebook'): ?>
-            <?= $s['reported'] ?> reported · <?= $s['problem'] ?> problem · <?= $s['repaired'] ?> repaired · <?= $s['replaced'] ?> replaced<?php if ($s['ok'] > 0): ?> · <?= $s['ok'] ?> legacy OK<?php endif ?>
+            <?= $s['problem'] ?> problem · <?= $s['fixed'] ?> fixed · <?= $s['borrowed'] ?> borrowed · <?= $s['replaced'] ?> replaced · <?= $s['broken'] ?> broken
           <?php else: ?>
           <?= $s['ok'] ?> <?= e(strtolower($category->statusLabel(Status::OK)) === 'ok' ? 'OK' : 'running well') ?><?php if ($s['problem'] > 0): ?> · <span class="status-word status-word--problem"><?= $s['problem'] ?> <?= $s['problem'] === 1 ? 'has' : 'have' ?> a problem</span><?php endif ?>
           <?php endif ?>
@@ -139,8 +139,9 @@ use App\Devices\Status;
       <?php else: ?>
         <ol class="mini-feed">
           <?php foreach ($feed as $note):
-              $kind = NoteKind::meta((string) $note['kind']);
               $cat = categories()->find((string) $note['category']);
+              $plainNote = $cat?->key() === 'chromebook' && !in_array($note['kind'], [NoteKind::STATUS, NoteKind::ASSIGNMENT], true);
+              $kind = NoteKind::meta($plainNote ? NoteKind::NOTE : (string) $note['kind']);
               $meta = is_array($note['meta']) ? $note['meta'] : [];
               $text = $note['kind'] === NoteKind::STATUS && isset($meta['to']) && Status::isValid((string) $meta['to'])
                   ? 'Status changed to ' . ($cat?->statusLabel((string) $meta['to']) ?? $meta['to'])

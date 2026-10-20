@@ -14,6 +14,7 @@ use App\Devices\NoteKind;
 use App\Devices\Status;
 
 $id = (int) $device['id'];
+$plainNotes = $category->key() === 'chromebook';
 $draft = Session::get('note.draft');
 if (is_array($draft) && ($draft['device'] ?? null) === $id) {
     Session::forget('note.draft');
@@ -34,6 +35,7 @@ $other = $isOk ? Status::PROBLEM : Status::OK;
   <form class="note-form" id="add-note" method="post" action="/devices/<?= $id ?>/notes"
         data-note-form data-busy-on-submit data-current-status="<?= e($device['status']) ?>">
     <?= csrf_field() ?>
+    <?php if (!$plainNotes): ?>
     <fieldset class="choice-group">
       <legend class="field__label">Kind of note</legend>
       <div class="choice-chips">
@@ -45,25 +47,16 @@ $other = $isOk ? Status::PROBLEM : Status::OK;
         <?php endforeach ?>
       </div>
     </fieldset>
+    <?php endif ?>
 
     <div class="field">
-      <label class="field__label" for="note-body">What happened?</label>
+      <label class="field__label" for="note-body"><?= $plainNotes ? 'Note' : 'What happened?' ?></label>
       <textarea class="input textarea" id="note-body" name="body" rows="3" maxlength="<?= DeviceController::NOTE_MAX ?>" required
                 placeholder="<?= e($category->noteExample()) ?>"><?= e($draft['body'] ?? '') ?></textarea>
     </div>
 
     <div class="note-form__footer">
-      <?php if ($category->key() === 'chromebook'): ?>
-      <div class="field">
-        <label class="field__label" for="note-status">Status after this note</label>
-        <select class="select" id="note-status" name="set_status">
-          <option value="">Keep current status</option>
-          <?php foreach ($category->statuses() as $status): ?>
-            <option value="<?= e($status) ?>"<?= ($draft['set_status'] ?? null) === $status ? ' selected' : '' ?>><?= e($category->statusLabel($status)) ?></option>
-          <?php endforeach ?>
-        </select>
-      </div>
-      <?php else: ?>
+      <?php if (!$plainNotes): ?>
       <label class="checkbox">
         <input type="checkbox" name="set_status" value="<?= e($other) ?>" data-set-status<?= ($draft['set_status'] ?? null) === $other ? ' checked' : '' ?>>
         <span>Also mark as <strong class="status-word status-word--<?= e($other) ?>"><?= e($category->statusLabel($other)) ?></strong></span>

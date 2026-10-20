@@ -45,15 +45,18 @@ $back = '/chromebooks?year=' . (int) $chromebook['academic_year'];
       <form class="chromebook-status-form" method="post" action="/devices/<?= $id ?>/status" data-busy-on-submit>
         <?= csrf_field() ?>
         <input type="hidden" name="return" value="<?= e(request_uri()) ?>">
-        <label class="visually-hidden" for="device-status">Change Chromebook status</label>
-        <select class="select" id="device-status" name="status" required>
-          <?php if (!$category->acceptsStatus($chromebook['status'])): ?>
-            <option value="" selected disabled>Choose status</option>
-          <?php endif ?>
+        <fieldset class="choice-group">
+          <legend class="visually-hidden">Change Chromebook status</legend>
+          <div class="choice-chips">
           <?php foreach ($category->statuses() as $status): ?>
-            <option value="<?= e($status) ?>"<?= $chromebook['status'] === $status ? ' selected' : '' ?>><?= e($category->statusLabel($status)) ?></option>
+            <?php $statusMeta = $category->statusMeta($status); ?>
+            <label class="choice-chip choice-chip--<?= e($statusMeta['tone']) ?>">
+              <input type="radio" name="status" value="<?= e($status) ?>" required<?= $chromebook['status'] === $status ? ' checked' : '' ?>>
+              <span><?= icon($statusMeta['icon'], 'icon--sm') ?><?= e($statusMeta['label']) ?></span>
+            </label>
           <?php endforeach ?>
-        </select>
+          </div>
+        </fieldset>
         <button class="btn btn--primary" type="submit">Save status</button>
       </form>
       <p class="status-card__since">
@@ -69,6 +72,16 @@ $back = '/chromebooks?year=' . (int) $chromebook['academic_year'];
 
     <div class="detail__notes">
       <?= partial('partials/notes-log', ['category' => $category, 'device' => $chromebook, 'notes' => $notes, 'noteCount' => $noteCount]) ?>
+      <section class="card" aria-labelledby="status-history-title">
+        <div class="card__header"><h2 class="card__title" id="status-history-title">History of changes</h2></div>
+        <?php if ($statusHistory === []): ?>
+          <p class="notes-placeholder">-</p>
+        <?php else: ?>
+          <ol class="notes-list">
+            <?php foreach ($statusHistory as $note): ?><?= partial('partials/note-entry', ['note' => $note]) ?><?php endforeach ?>
+          </ol>
+        <?php endif ?>
+      </section>
       <?= partial('Chromebooks::_google-details', $google) ?>
     </div>
 

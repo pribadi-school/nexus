@@ -51,9 +51,6 @@ $targetYear = $year ?? $years[0];
       <?php foreach ($category->statuses() as $status): ?>
         <option value="<?= e($status) ?>"<?= $filters['status'] === $status ? ' selected' : '' ?>><?= e($category->statusLabel($status)) ?> (<?= $counts[$status] ?>)</option>
       <?php endforeach ?>
-      <?php if ($counts['ok'] > 0): ?>
-        <option value="ok"<?= $filters['status'] === 'ok' ? ' selected' : '' ?>>OK (legacy) (<?= $counts['ok'] ?>)</option>
-      <?php endif ?>
     </select>
   </div>
   <button type="submit" class="btn btn--secondary filters__apply">Apply</button>

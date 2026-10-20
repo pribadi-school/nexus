@@ -262,6 +262,12 @@
 .status-card__since { margin-left: auto; font-size: var(--fs-ui); color: var(--color-muted-foreground); }
 .chromebook-status-form { display: flex; flex-wrap: wrap; gap: var(--space-2); flex: 1 1 280px; }
 .chromebook-status-form .select { flex: 1 1 150px; width: auto; }
+.chromebook-status-form > .choice-group { flex-basis: 100%; }
+.history-edit { margin-top: var(--space-2); font-size: var(--fs-ui); }
+.history-edit > summary { cursor: pointer; color: var(--color-action); width: fit-content; }
+.history-edit > summary:focus-visible { outline: 2px solid var(--color-action); outline-offset: 4px; }
+.history-edit form { display: grid; gap: var(--space-3); margin-top: var(--space-3); }
+.history-edit form > button { justify-self: start; }
 .chromebook-info-placeholder { padding: var(--space-4) var(--space-5); color: var(--color-muted-foreground); }
 .chromebook-info-placeholder p { margin: 0; }
 .notes-placeholder { margin: 0; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--color-border); color: var(--color-muted-foreground); }
@@ -334,6 +340,7 @@
 .choice-chip input:checked + span { border-color: currentColor; background: var(--color-action-tint); color: var(--color-action); }
 .choice-chip--problem input:checked + span { background: var(--color-problem-tint); color: var(--color-problem); }
 .choice-chip--success input:checked + span { background: var(--color-success-tint); color: var(--color-success); }
+.choice-chip--warning input:checked + span { background: var(--color-warning-tint); color: var(--color-warning); }
 
 /* -------------------------------------------------------------- forms --- */
 .form-card { padding: var(--space-4); max-width: 760px; }

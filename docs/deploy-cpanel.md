@@ -192,7 +192,7 @@ The manual equivalent is:
 
 ```bash
 cd /home/pribadisch/repositories/nexus
-git pull --ff-only origin main && /opt/alt/php82/usr/bin/php bin/publish-cpanel.php
+git pull --ff-only origin main && /opt/alt/php82/usr/bin/php bin/migrate.php && /opt/alt/php82/usr/bin/php bin/publish-cpanel.php
 ```
 
 No **Deploy HEAD Commit** step or `.cpanel.yml` is needed. Avoid editing tracked

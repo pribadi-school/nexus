@@ -59,11 +59,13 @@ final class ChromebookCategory extends Category
     public function statusLabel(string $status): string
     {
         return match ($status) {
-            Status::REPORTED => 'Reported',
+            Status::REPORTED => 'Problem',
             Status::PROBLEM => 'Problem',
-            Status::REPAIRED => 'Repaired',
+            Status::REPAIRED, Status::FIXED => 'Fixed',
+            Status::BORROWED => 'Borrowed',
             Status::REPLACED => 'Replaced',
-            Status::OK => 'OK (legacy)',
+            Status::BROKEN => 'Broken',
+            Status::OK, Status::UNMARKED => '-',
             default => $status,
         };
     }
@@ -73,9 +75,22 @@ final class ChromebookCategory extends Category
         return Status::CHROMEBOOK;
     }
 
+    public function statusMeta(string $status): array
+    {
+        [$tone, $icon] = match ($status) {
+            Status::PROBLEM => ['problem', 'triangle-alert'],
+            Status::FIXED => ['success', 'wrench'],
+            Status::BORROWED => ['action', 'user-round-check'],
+            Status::REPLACED => ['quiet', 'arrow-left-right'],
+            Status::BROKEN => ['warning', 'circle-alert'],
+            default => ['quiet', 'circle-check'],
+        };
+        return ['label' => $this->statusLabel($status), 'tone' => $tone, 'icon' => $icon];
+    }
+
     public function noteKinds(): array
     {
-        return [NoteKind::PROBLEM, NoteKind::FIXED, NoteKind::BORROWED, NoteKind::REPLACED, NoteKind::BROKEN];
+        return [NoteKind::NOTE];
     }
 
     public function noteExample(): string
