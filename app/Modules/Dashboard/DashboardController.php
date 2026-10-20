@@ -32,7 +32,7 @@ final class DashboardController
             'attention' => $devices->withProblems(10),
             'problemTotal' => array_sum(array_column($counts, 'problem')),
             'deviceTotal' => array_sum(array_column($counts, 'total')),
-            'feed' => (new NoteRepository())->recent(self::RECENT_ON_DASHBOARD),
+            'feed' => (new NoteRepository())->recent(self::RECENT_ON_DASHBOARD, null, (new DashboardActivityVisibility())->since()),
             'pendingMigrations' => Migrations::pending(),
         ], 'layouts/app', 'Dashboard'));
     }

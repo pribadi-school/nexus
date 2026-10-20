@@ -16,13 +16,19 @@ final class NoteRepository
     /**
      * Newest notes across all devices, for the dashboard feed. Pass the id of
      * the last note already shown as $beforeId to get the next page.
+     * The dashboard may supply a UTC cutoff; other callers retain full history.
      *
      * @return list<array<string, mixed>>
      */
-    public function recent(int $limit, ?int $beforeId = null): array
+    public function recent(int $limit, ?int $beforeId = null, ?string $since = null): array
     {
         $where = 'd.deleted_at IS NULL';
         $params = [];
+
+        if ($since !== null) {
+            $where .= ' AND n.created_at >= ?';
+            $params[] = $since;
+        }
 
         if ($beforeId !== null) {
             $cursor = db()->one('SELECT id, created_at FROM device_notes WHERE id = ?', [$beforeId]);

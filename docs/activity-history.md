@@ -1,4 +1,29 @@
-# Clear activity history while keeping StudyTouch 12B
+# Dashboard activity visibility and history maintenance
+
+## Hide older dashboard activity without changing history
+
+To hide dashboard entries older than the latest Grade 12B StudyTouch problem:
+
+```bash
+bash ~/repositories/nexus/update.sh
+/opt/alt/php82/usr/bin/php ~/repositories/nexus/bin/set-dashboard-activity.php --apply
+```
+
+Omit `--apply` to preview the cutoff and hidden count first. The command must
+find one active board in 12B / XII B / Grade 12B and an existing problem note or
+status change to problem. Otherwise nothing changes. It preserves the problem
+entry, entries at the same time, and all newer activity. The cutoff is saved once
+in `storage/private/dashboard-activity.json`; rerunning does not move it forward
+when a new problem is reported. No database rows or device records are changed.
+Device history and **All activity** remain complete. No SQL migration is needed.
+
+To show all dashboard activity again:
+
+```bash
+/opt/alt/php82/usr/bin/php ~/repositories/nexus/bin/set-dashboard-activity.php --reset --apply
+```
+
+## Clear history while keeping StudyTouch 12B
 
 This is a one-off CLI operation, not a database migration. It removes the
 existing `device_notes` entries for other devices. Device records, current
