@@ -58,12 +58,24 @@ final class ChromebookCategory extends Category
 
     public function statusLabel(string $status): string
     {
-        return $status === Status::PROBLEM ? 'Has problem' : 'OK';
+        return match ($status) {
+            Status::REPORTED => 'Reported',
+            Status::PROBLEM => 'Problem',
+            Status::REPAIRED => 'Repaired',
+            Status::REPLACED => 'Replaced',
+            Status::OK => 'OK (legacy)',
+            default => $status,
+        };
+    }
+
+    public function statuses(): array
+    {
+        return Status::CHROMEBOOK;
     }
 
     public function noteKinds(): array
     {
-        return [NoteKind::REPORT, NoteKind::PROBLEM, NoteKind::FIX];
+        return [NoteKind::PROBLEM, NoteKind::FIXED, NoteKind::BORROWED, NoteKind::REPLACED, NoteKind::BROKEN];
     }
 
     public function noteExample(): string

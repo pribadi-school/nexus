@@ -23,14 +23,14 @@ final class DeviceController
     }
 
     /**
-     * POST /devices/{id}/status  (status=ok|problem, return=/path)
+     * POST /devices/{id}/status  (category status, return=/path)
      * fetch(): JSON for the switch. Plain form: back to `return`.
      */
     public function status(Request $request): Response
     {
         [$device, $category] = $this->load($request);
         $status = (string) $request->input('status');
-        if (!Status::isValid($status)) {
+        if (!$category->acceptsStatus($status)) {
             throw new HttpException(422, 'Unknown status.');
         }
 
@@ -68,6 +68,7 @@ final class DeviceController
             !in_array($kind, $category->noteKinds(), true) => 'Choose what kind of note this is.',
             $body === '' => 'Write what happened before saving the note.',
             mb_strlen($body) > self::NOTE_MAX => 'That note is too long (' . self::NOTE_MAX . ' characters at most).',
+            $setStatus !== null && $setStatus !== '' && (!is_string($setStatus) || !$category->acceptsStatus($setStatus)) => 'Choose a valid status, or keep the current status.',
             default => null,
         };
         if ($error !== null) {
@@ -79,7 +80,7 @@ final class DeviceController
         $service = new DeviceService();
         $statusChanged = db()->transaction(function () use ($service, $category, $device, $id, $kind, $body, $setStatus): bool {
             $service->addNote($id, Auth::id(), $kind, $body);
-            if (is_string($setStatus) && Status::isValid($setStatus)) {
+            if (is_string($setStatus) && $category->acceptsStatus($setStatus)) {
                 return $service->changeStatus($category, $device, $setStatus, Auth::id());
             }
             return false;

@@ -21,7 +21,7 @@ if (is_array($draft) && ($draft['device'] ?? null) === $id) {
     $draft = null;
 }
 $kinds = $category->noteKinds();
-$selectedKind = in_array($draft['kind'] ?? null, $kinds, true) ? $draft['kind'] : NoteKind::REPORT;
+$selectedKind = in_array($draft['kind'] ?? null, $kinds, true) ? $draft['kind'] : $kinds[0];
 $isOk = $device['status'] !== Status::PROBLEM;
 $other = $isOk ? Status::PROBLEM : Status::OK;
 ?>
@@ -53,21 +53,37 @@ $other = $isOk ? Status::PROBLEM : Status::OK;
     </div>
 
     <div class="note-form__footer">
+      <?php if ($category->key() === 'chromebook'): ?>
+      <div class="field">
+        <label class="field__label" for="note-status">Status after this note</label>
+        <select class="select" id="note-status" name="set_status">
+          <option value="">Keep current status</option>
+          <?php foreach ($category->statuses() as $status): ?>
+            <option value="<?= e($status) ?>"<?= ($draft['set_status'] ?? null) === $status ? ' selected' : '' ?>><?= e($category->statusLabel($status)) ?></option>
+          <?php endforeach ?>
+        </select>
+      </div>
+      <?php else: ?>
       <label class="checkbox">
         <input type="checkbox" name="set_status" value="<?= e($other) ?>" data-set-status<?= ($draft['set_status'] ?? null) === $other ? ' checked' : '' ?>>
         <span>Also mark as <strong class="status-word status-word--<?= e($other) ?>"><?= e($category->statusLabel($other)) ?></strong></span>
       </label>
+      <?php endif ?>
       <button type="submit" class="btn btn--primary"><?= icon('plus', 'icon--sm') ?>Add note</button>
     </div>
   </form>
 
   <?php if ($notes === []): ?>
+    <?php if ($category->key() === 'chromebook'): ?>
+      <p class="notes-placeholder">-</p>
+    <?php else: ?>
     <?= partial('partials/empty-state', [
         'icon' => 'message-square-text',
         'title' => 'No notes yet',
         'text' => 'Reports, problems, fixes and status changes for this ' . $category->noun()[0] . ' will be listed here.',
         'compact' => true,
     ]) ?>
+    <?php endif ?>
   <?php else: ?>
     <ol class="notes-list">
       <?php foreach ($notes as $note): ?>

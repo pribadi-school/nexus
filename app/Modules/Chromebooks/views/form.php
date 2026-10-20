@@ -1,8 +1,7 @@
 <?php
 /**
  * Add / edit a Chromebook. Student and email are set here only when adding;
- * after that they change through "Assigned to" on the Chromebook's page, so
- * the history stays complete.
+ * later imports maintain the assignment history.
  *
  * @var \App\Modules\Chromebooks\ChromebookCategory $category
  * @var array<string, mixed>|null $chromebook  null when adding
@@ -11,8 +10,6 @@
  * @var list<int> $years  newest first
  * @var list<string> $models
  */
-use App\Devices\Status;
-
 $adding = $chromebook === null;
 $action = $adding ? '/chromebooks' : '/chromebooks/' . (int) $chromebook['id'];
 $cancel = $adding ? '/chromebooks?year=' . (int) $values['academic_year'] : '/chromebooks/' . (int) $chromebook['id'];
@@ -28,7 +25,7 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
     <p class="page-subtitle">
       <?= $adding
           ? 'Adding several Chromebooks? <a href="/chromebooks/import?year=' . (int) $values['academic_year'] . '">Import the list</a> instead.'
-          : 'Student, status and notes are changed on the Chromebook\'s page.' ?>
+          : 'Status and notes are changed on the Chromebook\'s page.' ?>
     </p>
   </div>
 </header>
@@ -94,17 +91,16 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
         <?= $error('student_email') ?>
       </div>
 
-      <fieldset class="choice-group field--full">
-        <legend class="field__label">Status</legend>
-        <div class="choice-chips">
-          <?php foreach ([Status::OK, Status::PROBLEM] as $status): ?>
-            <label class="choice-chip choice-chip--<?= $status === Status::OK ? 'success' : 'problem' ?>">
-              <input type="radio" name="status" value="<?= $status ?>"<?= ($values['status'] ?? Status::OK) === $status ? ' checked' : '' ?>>
-              <span><?= icon($status === Status::OK ? 'circle-check' : 'triangle-alert', 'icon--sm') ?><?= e($category->statusLabel($status)) ?></span>
-            </label>
+      <div class="field<?= $field('status') ? ' has-error' : '' ?>">
+        <label class="field__label" for="status">Status <span class="field__required">required</span></label>
+        <select class="select" id="status" name="status" required<?= $invalid('status') ?>>
+          <option value="">Choose status</option>
+          <?php foreach ($category->statuses() as $status): ?>
+            <option value="<?= e($status) ?>"<?= ($values['status'] ?? null) === $status ? ' selected' : '' ?>><?= e($category->statusLabel($status)) ?></option>
           <?php endforeach ?>
-        </div>
-      </fieldset>
+        </select>
+        <?= $error('status') ?>
+      </div>
     <?php endif ?>
   </div>
 

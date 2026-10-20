@@ -20,8 +20,8 @@ final class DeviceService
     public const DUPLICATE_SERIAL = 'duplicate_serial';
 
     /**
-     * Inserts the shared part of a new device and returns its id. If it starts
-     * with a problem, that is logged like any other status change.
+     * Inserts the shared part of a new device and returns its id. An initial
+     * workflow status is logged like any other status change.
      *
      * @param array{serial_number:?string, model:?string, status:string} $fields
      */
@@ -41,8 +41,8 @@ final class DeviceService
             'updated_at' => $now,
         ]));
 
-        if ($fields['status'] === Status::PROBLEM) {
-            $this->writeStatusNote($category, $id, null, Status::PROBLEM, $userId, $now);
+        if ($fields['status'] !== Status::OK) {
+            $this->writeStatusNote($category, $id, null, $fields['status'], $userId, $now);
         }
         return $id;
     }

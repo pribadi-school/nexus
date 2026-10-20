@@ -48,8 +48,12 @@ $targetYear = $year ?? $years[0];
     <label class="visually-hidden" for="filter-status">Status</label>
     <select class="select" id="filter-status" name="status">
       <option value="">All statuses</option>
-      <option value="ok"<?= $filters['status'] === 'ok' ? ' selected' : '' ?>>OK (<?= $counts['ok'] ?>)</option>
-      <option value="problem"<?= $filters['status'] === 'problem' ? ' selected' : '' ?>>Has problem (<?= $counts['problem'] ?>)</option>
+      <?php foreach ($category->statuses() as $status): ?>
+        <option value="<?= e($status) ?>"<?= $filters['status'] === $status ? ' selected' : '' ?>><?= e($category->statusLabel($status)) ?> (<?= $counts[$status] ?>)</option>
+      <?php endforeach ?>
+      <?php if ($counts['ok'] > 0): ?>
+        <option value="ok"<?= $filters['status'] === 'ok' ? ' selected' : '' ?>>OK (legacy) (<?= $counts['ok'] ?>)</option>
+      <?php endif ?>
     </select>
   </div>
   <button type="submit" class="btn btn--secondary filters__apply">Apply</button>

@@ -22,7 +22,7 @@ final class DeviceRepository
     {
         $counts = [];
         foreach (categories()->all() as $key => $_) {
-            $counts[$key] = ['total' => 0, 'ok' => 0, 'problem' => 0];
+            $counts[$key] = ['total' => 0] + array_fill_keys(Status::KNOWN, 0);
         }
 
         $rows = db()->all(
@@ -37,10 +37,8 @@ final class DeviceRepository
             }
             $n = (int) $row['n'];
             $counts[$key]['total'] += $n;
-            if ($row['status'] === Status::PROBLEM) {
-                $counts[$key]['problem'] += $n;
-            } else {
-                $counts[$key]['ok'] += $n;
+            if (Status::isValid($row['status'])) {
+                $counts[$key][$row['status']] += $n;
             }
         }
         return $counts;

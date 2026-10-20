@@ -47,22 +47,25 @@ final class NoteRepository
     }
 
     /**
-     * One device's notes log, newest first.
+     * One device's notes log, newest first. Manual-only views leave automatic
+     * status and assignment entries in storage and filter them before paging.
      *
      * @return list<array<string, mixed>>
      */
-    public function forDevice(int $deviceId, int $limit = 200): array
+    public function forDevice(int $deviceId, int $limit = 200, bool $manualOnly = false): array
     {
         $rows = db()->all(
-            self::SELECT . ' WHERE n.device_id = ? ORDER BY n.created_at DESC, n.id DESC LIMIT ' . max(1, $limit),
+            self::SELECT . ' WHERE n.device_id = ?' . ($manualOnly ? " AND n.kind NOT IN ('status', 'assignment')" : '')
+                . ' ORDER BY n.created_at DESC, n.id DESC LIMIT ' . max(1, $limit),
             [$deviceId],
         );
         return array_map([$this, 'hydrate'], $rows);
     }
 
-    public function countForDevice(int $deviceId): int
+    public function countForDevice(int $deviceId, bool $manualOnly = false): int
     {
-        return (int) db()->value('SELECT COUNT(*) FROM device_notes WHERE device_id = ?', [$deviceId]);
+        return (int) db()->value('SELECT COUNT(*) FROM device_notes WHERE device_id = ?'
+            . ($manualOnly ? " AND kind NOT IN ('status', 'assignment')" : ''), [$deviceId]);
     }
 
     /**

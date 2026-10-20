@@ -26,7 +26,7 @@ try {
     $make = static function (int $year, string $suffix) use ($controller, $token): int {
         $response = $controller->store(new Request('POST', '/chromebooks', [], [
             'academic_year' => (string) $year, 'asset_id' => $token . $suffix, 'serial_number' => $token . '-serial-' . $suffix,
-            'model' => 'School fixture', 'student_name' => 'Fixture school lab', 'student_email' => '', 'status' => 'ok'], []));
+            'model' => 'School fixture', 'student_name' => 'Fixture school lab', 'student_email' => '', 'status' => 'reported'], []));
         if ($response->status !== 303) throw new RuntimeException('Fixture create failed: ' . $response->body);
         return (int) basename($response->headers['Location']);
     };

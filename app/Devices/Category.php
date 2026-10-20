@@ -55,6 +55,17 @@ abstract class Category
         return $status === Status::PROBLEM ? 'Has problem' : 'Running well';
     }
 
+    /** @return list<string> Statuses offered for new records and status changes. */
+    public function statuses(): array
+    {
+        return Status::ALL;
+    }
+
+    public function acceptsStatus(string $status): bool
+    {
+        return in_array($status, $this->statuses(), true);
+    }
+
     /** "3 boards" */
     public function count(int $n): string
     {
@@ -114,8 +125,10 @@ abstract class Category
         array_push($params, $this->name(), $like);
         $clauses[] = '? LIKE ?';
         array_push($params, implode(' ', $this->noun()), $like);
-        $clauses[] = "(CASE WHEN d.status = 'problem' THEN ? ELSE ? END) LIKE ?";
-        array_push($params, $this->statusLabel(Status::PROBLEM), $this->statusLabel(Status::OK), $like);
+        foreach (array_unique([Status::OK, ...$this->statuses()]) as $status) {
+            $clauses[] = '(d.status = ? AND ? LIKE ?)';
+            array_push($params, $status, $this->statusLabel($status), $like);
+        }
         $clauses[] = 'EXISTS (
             SELECT 1 FROM device_notes sn LEFT JOIN users su ON su.id = sn.user_id
             WHERE sn.device_id = d.id AND (sn.body LIKE ? OR sn.kind LIKE ? OR su.name LIKE ?)

@@ -38,7 +38,7 @@ final class ChromebookRepository
                             LEFT JOIN users uc ON uc.id = d.created_by
                             LEFT JOIN device_notes n ON n.id = (
                                 SELECT n2.id FROM device_notes n2
-                                WHERE n2.device_id = d.id AND n2.kind <> 'status'
+                                WHERE n2.device_id = d.id AND n2.kind NOT IN ('status', 'assignment')
                                 ORDER BY n2.created_at DESC, n2.id DESC LIMIT 1
                             )
                             WHERE d.category = 'chromebook' AND d.deleted_at IS NULL";
@@ -104,19 +104,21 @@ final class ChromebookRepository
         return db()->one(self::SELECT . ' AND c.asset_id = ?', [$assetId]);
     }
 
-    /** @return array{total:int, ok:int, problem:int, unassigned:int} for one academic year, or every year when null */
+    /** Counts of each stored status for one academic year, or every year when null. */
     public function counts(?int $year): array
     {
         $row = db()->one(
             "SELECT COUNT(*) AS total, COALESCE(SUM(d.status = 'problem'), 0) AS problem,
+                    COALESCE(SUM(d.status = 'ok'), 0) AS ok,
+                    COALESCE(SUM(d.status = 'reported'), 0) AS reported,
+                    COALESCE(SUM(d.status = 'repaired'), 0) AS repaired,
+                    COALESCE(SUM(d.status = 'replaced'), 0) AS replaced,
                     COALESCE(SUM(c.student_name IS NULL), 0) AS unassigned
              FROM devices d JOIN chromebooks c ON c.device_id = d.id
              WHERE d.category = 'chromebook' AND d.deleted_at IS NULL" . ($year !== null ? ' AND c.academic_year = ?' : ''),
             $year !== null ? [$year] : [],
         );
-        $total = (int) ($row['total'] ?? 0);
-        $problem = (int) ($row['problem'] ?? 0);
-        return ['total' => $total, 'ok' => $total - $problem, 'problem' => $problem, 'unassigned' => (int) ($row['unassigned'] ?? 0)];
+        return array_map('intval', $row ?? ['total' => 0, 'ok' => 0, 'reported' => 0, 'problem' => 0, 'repaired' => 0, 'replaced' => 0, 'unassigned' => 0]);
     }
 
     /** @return array<int, array{total:int, problem:int}> per academic year, for the year filter */

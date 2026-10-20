@@ -465,6 +465,9 @@
 .status-word { font-weight: 600; }
 .status-word--problem { color: var(--color-problem); }
 .status-word--ok { color: var(--color-success); }
+.status-word--reported { color: var(--color-warning); }
+.status-word--repaired { color: var(--color-success); }
+.status-word--replaced { color: var(--color-action); }
 
 .feed__more {
   display: flex;

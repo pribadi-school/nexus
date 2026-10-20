@@ -58,7 +58,7 @@ $yearLabel = $category->yearLabel($year);
       <ul>
         <li><strong>ID</strong> (asset ID, e.g. <?= e($yearLabel) ?>-01) or <strong>Serial Number</strong>: at least one is needed. Rows are matched on asset ID, else on serial; new ones are added.</li>
         <li><strong>Nama</strong> / student name and <strong>Email</strong>: who has it. A new name is saved as a handover in the history. A registration number at the end of a name (REG-1140) is left out.</li>
-        <li><strong>Model</strong>, <strong>Status</strong> (OK or Has problem): optional. Other columns (No, Tanggal Instalasi) are ignored.</li>
+        <li><strong>Model</strong>, <strong>Status</strong> (Reported, Problem, Repaired or Replaced): optional. Legacy OK values are accepted; an empty status keeps the existing value. Other columns (No, Tanggal Instalasi) are ignored.</li>
       </ul>
       <p>Empty cells never clear anything, so a later file with serial numbers only fills them in. Nothing is saved until you confirm on the next step.</p>
       <p><a href="/chromebooks/import/example?year=<?= $year ?>" download><?= icon('download', 'icon--sm') ?> Download an example file</a></p>

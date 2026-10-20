@@ -81,10 +81,10 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
             <td>
               <a class="data-table__link<?= $c['student_name'] === null ? ' is-unassigned' : '' ?>" href="/chromebooks/<?= (int) $c['id'] ?>"><?= e($student($c)) ?></a>
               <?php if ($c['student_email']): ?><span class="data-table__sub"><?= e($c['student_email']) ?></span><?php endif ?>
-              <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
+              <?= partial('Chromebooks::_status', ['category' => $category, 'status' => $c['status']]) ?>
             </td>
             <td class="num"><?= e($c['serial_number'] ?? '–') ?></td>
-            <td class="data-table__note"><?= partial('partials/latest-note', ['device' => $c, 'href' => '/chromebooks/' . (int) $c['id']]) ?></td>
+            <td class="data-table__note"><?= partial('partials/latest-note', ['device' => $c, 'href' => '/chromebooks/' . (int) $c['id'], 'emptyLabel' => '-']) ?></td>
             <td class="data-table__muted">
               <time datetime="<?= e(iso_time($c['updated_at'])) ?>" title="<?= e(format_datetime($c['updated_at'])) ?><?= $c['updated_by_name'] ? ' by ' . e($c['updated_by_name']) : '' ?>"><?= e(time_ago($c['updated_at'])) ?></time>
             </td>
@@ -101,9 +101,9 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
         <a class="device-card__main" href="/chromebooks/<?= (int) $c['id'] ?>">
           <span class="device-card__title<?= $c['student_name'] === null ? ' is-unassigned' : '' ?>"><?= e($student($c)) ?></span>
           <span class="device-card__meta num"><?= e(implode(' · ', array_filter([$c['asset_id'], $c['serial_number'] ?? 'No serial yet']))) ?></span>
-          <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
+          <?= partial('Chromebooks::_status', ['category' => $category, 'status' => $c['status']]) ?>
           <span class="device-card__note-label">Latest note</span>
-          <?= partial('partials/latest-note', ['device' => $c]) ?>
+          <?= partial('partials/latest-note', ['device' => $c, 'emptyLabel' => '-']) ?>
         </a>
         <?= icon('chevron-right', 'device-card__chevron') ?>
       </li>

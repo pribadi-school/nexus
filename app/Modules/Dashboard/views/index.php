@@ -51,7 +51,11 @@ use App\Devices\Status;
         <span class="stat__label"><?= e($category->name()) ?></span>
         <span class="stat__value"><?= $s['total'] ?> <span class="stat__unit"><?= e($category->noun()[$s['total'] === 1 ? 0 : 1]) ?></span></span>
         <span class="stat__sub">
+          <?php if ($category->key() === 'chromebook'): ?>
+            <?= $s['reported'] ?> reported · <?= $s['problem'] ?> problem · <?= $s['repaired'] ?> repaired · <?= $s['replaced'] ?> replaced<?php if ($s['ok'] > 0): ?> · <?= $s['ok'] ?> legacy OK<?php endif ?>
+          <?php else: ?>
           <?= $s['ok'] ?> <?= e(strtolower($category->statusLabel(Status::OK)) === 'ok' ? 'OK' : 'running well') ?><?php if ($s['problem'] > 0): ?> · <span class="status-word status-word--problem"><?= $s['problem'] ?> <?= $s['problem'] === 1 ? 'has' : 'have' ?> a problem</span><?php endif ?>
+          <?php endif ?>
         </span>
       </a>
     <?php endforeach ?>

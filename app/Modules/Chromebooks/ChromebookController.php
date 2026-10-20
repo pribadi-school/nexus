@@ -168,8 +168,8 @@ final class ChromebookController
             'category' => $this->category,
             'chromebook' => $chromebook,
             'history' => $this->chromebooks->history($id),
-            'notes' => $notes->forDevice($id),
-            'noteCount' => $notes->countForDevice($id),
+            'notes' => $notes->forDevice($id, manualOnly: true),
+            'noteCount' => $notes->countForDevice($id, manualOnly: true),
             'google' => GoogleChromebookController::viewData($chromebook),
         ], 'layouts/app', $this->category->title($id) . ' · Chromebooks'));
     }
@@ -184,7 +184,7 @@ final class ChromebookController
             'model' => null,
             'student_name' => null,
             'student_email' => null,
-            'status' => Status::OK,
+            'status' => null,
         ], []);
     }
 
@@ -192,7 +192,7 @@ final class ChromebookController
     public function store(Request $request): Response
     {
         $v = new Validator($request->body, self::LABELS);
-        $data = $v->validate($this->rules() + $this->assignRules() + ['status' => ['required', 'in:ok,problem']]);
+        $data = $v->validate($this->rules() + $this->assignRules() + ['status' => ['required', 'in:' . implode(',', $this->category->statuses())]]);
         if ($v->fails()) {
             return $this->form(null, $data, $v->errors());
         }
@@ -272,7 +272,7 @@ final class ChromebookController
     {
         return [
             'year' => $this->optionalYear($request->query('year')),
-            'status' => in_array($request->query('status'), Status::ALL, true) ? $request->query('status') : null,
+            'status' => in_array($request->query('status'), [Status::OK, ...$this->category->statuses()], true) ? $request->query('status') : null,
             'q' => $request->query('q') !== null ? mb_substr((string) $request->query('q'), 0, 100) : null,
         ];
     }

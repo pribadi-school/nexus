@@ -2,7 +2,6 @@
 /**
  * @var \App\Modules\Chromebooks\ChromebookCategory $category
  * @var array<string, mixed> $chromebook
- * @var list<array<string, mixed>> $history  newest first
  * @var list<array<string, mixed>> $notes
  * @var int $noteCount
  */
@@ -13,7 +12,6 @@ $problem = $chromebook['status'] === Status::PROBLEM;
 $label = $chromebook['asset_id'] ?? $chromebook['serial_number'] ?? '#' . $id;
 $title = $chromebook['student_name'] ?? 'Chromebook ' . $label;
 $back = '/chromebooks?year=' . (int) $chromebook['academic_year'];
-$day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? '';
 ?>
 <a class="back-link" href="<?= e($back) ?>"><?= icon('chevron-left', 'icon--sm') ?>Chromebooks <?= e($category->yearLabel((int) $chromebook['academic_year'])) ?></a>
 
@@ -43,7 +41,21 @@ $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? 
 <div class="detail detail--with-assign">
     <section class="card status-card detail__status<?= $problem ? ' is-problem' : '' ?>" aria-labelledby="status-title" data-device-row="<?= $id ?>">
       <h2 class="status-card__title" id="status-title">Status</h2>
-      <?= partial('partials/status-toggle', ['category' => $category, 'device' => $chromebook, 'title' => $label, 'return' => request_uri(), 'large' => true, 'instant' => false]) ?>
+      <?= partial('Chromebooks::_status', ['category' => $category, 'status' => $chromebook['status']]) ?>
+      <form class="chromebook-status-form" method="post" action="/devices/<?= $id ?>/status" data-busy-on-submit>
+        <?= csrf_field() ?>
+        <input type="hidden" name="return" value="<?= e(request_uri()) ?>">
+        <label class="visually-hidden" for="device-status">Change Chromebook status</label>
+        <select class="select" id="device-status" name="status" required>
+          <?php if (!$category->acceptsStatus($chromebook['status'])): ?>
+            <option value="" selected disabled>Choose status</option>
+          <?php endif ?>
+          <?php foreach ($category->statuses() as $status): ?>
+            <option value="<?= e($status) ?>"<?= $chromebook['status'] === $status ? ' selected' : '' ?>><?= e($category->statusLabel($status)) ?></option>
+          <?php endforeach ?>
+        </select>
+        <button class="btn btn--primary" type="submit">Save status</button>
+      </form>
       <p class="status-card__since">
         <?php if ($chromebook['status_changed_at']): ?>
           Since <time datetime="<?= e(iso_time($chromebook['status_changed_at'])) ?>" title="<?= e(format_datetime($chromebook['status_changed_at'])) ?>"><?= e(time_ago($chromebook['status_changed_at'])) ?></time>
@@ -51,44 +63,8 @@ $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? 
       </p>
     </section>
 
-    <section class="card detail__assign" id="assign" aria-labelledby="assign-title">
-      <div class="card__header"><h2 class="card__title" id="assign-title">Assigned to</h2></div>
-      <form class="assign-form" method="post" action="/chromebooks/<?= $id ?>/assign" data-busy-on-submit>
-        <?= csrf_field() ?>
-        <div class="field">
-          <label class="field__label" for="student_name">Student</label>
-          <input class="input" id="student_name" name="student_name" type="text" maxlength="120" autocomplete="off"
-                 value="<?= e($chromebook['student_name'] ?? '') ?>" placeholder="Full name">
-        </div>
-        <div class="field">
-          <label class="field__label" for="student_email">Email</label>
-          <input class="input" id="student_email" name="student_email" type="email" maxlength="160" autocomplete="off" spellcheck="false"
-                 value="<?= e($chromebook['student_email'] ?? '') ?>" placeholder="name@pribadidepok.sch.id">
-        </div>
-        <p class="field__hint assign-form__hint">Change the name and save to give it to another student. Empty the name to mark it as returned. The change is kept in the history below.</p>
-        <div class="assign-form__actions">
-          <button type="submit" class="btn btn--primary"><?= icon('arrow-left-right', 'icon--sm') ?>Save assignment</button>
-        </div>
-      </form>
-
-      <h3 class="history__title">History</h3>
-      <?php if ($history === []): ?>
-        <p class="history__empty">Never assigned yet.</p>
-      <?php else: ?>
-        <ol class="history">
-          <?php foreach ($history as $h): ?>
-            <li class="history__item<?= $h['ended_at'] === null ? ' is-current' : '' ?>">
-              <span class="history__who"><?= e($h['student_name']) ?><?= $h['class_name'] ? ' · ' . e($h['class_name']) : '' ?></span>
-              <span class="history__when">
-                <time datetime="<?= e(iso_time($h['assigned_at'])) ?>"><?= e($day($h['assigned_at'])) ?></time>
-                –
-                <?php if ($h['ended_at'] === null): ?>now<?php else: ?><time datetime="<?= e(iso_time($h['ended_at'])) ?>"><?= e($day($h['ended_at'])) ?></time><?php endif ?>
-                <?= $h['assigned_by_name'] ? ' · by ' . e($h['assigned_by_name']) : '' ?>
-              </span>
-            </li>
-          <?php endforeach ?>
-        </ol>
-      <?php endif ?>
+    <section class="card detail__assign chromebook-info-placeholder" aria-label="Additional information">
+      <p>-</p>
     </section>
 
     <div class="detail__notes">
