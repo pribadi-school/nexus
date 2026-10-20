@@ -45,7 +45,4 @@ $meta = is_array($note['meta']) ? $note['meta'] : [];
   <?php if (!empty($note['edited_at'])): ?>
     <p class="note__author">Edited <?= e(time_ago($note['edited_at'])) ?><?= !empty($note['editor_name']) ? ' by ' . e($note['editor_name']) : '' ?></p>
   <?php endif ?>
-  <?php if (!$showDevice && $category?->key() === 'chromebook' && $note['kind'] !== NoteKind::ASSIGNMENT): ?>
-    <?= partial('partials/history-edit', ['note' => $note, 'category' => $category]) ?>
-  <?php endif ?>
 </li>

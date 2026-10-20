@@ -204,14 +204,28 @@ final class ChromebookRepository
         });
     }
 
-    /**
-     * Gives the Chromebook to another student (null = handed back). A new
-     * student closes the open history row, opens a new one and writes an
-     * assignment note; a new email for the same student is just saved.
-     * Returns false when nothing changed.
-     *
-     * @param array<string, mixed> $chromebook the current row (from find())
-     */
+    /** Saves the complete detail page, with notes and status history, in one transaction. */
+    public function save(ChromebookCategory $category, array $chromebook, array $data, ?int $userId): bool
+    {
+        return db()->transaction(function () use ($category, $chromebook, $data, $userId): bool {
+            $changed = false;
+            foreach (['academic_year', 'asset_id', 'serial_number', 'model'] as $field) {
+                if ($chromebook[$field] !== $data[$field]) {
+                    $this->update($chromebook, $data, $userId);
+                    $changed = true;
+                    break;
+                }
+            }
+            $assigned = $this->assign($chromebook, $data['student_name'], $data['student_email'], $userId);
+            $service = new DeviceService();
+            $statusChanged = $service->changeStatus($category, $chromebook, $data['status'], $userId);
+            $note = trim(str_replace("\r\n", "\n", (string) ($data['note'] ?? '')));
+            if ($note !== '') $service->addNote((int) $chromebook['id'], $userId, NoteKind::NOTE, $note);
+            return $changed || $assigned || $statusChanged || $note !== '';
+        });
+    }
+
+    /** Updates student details, preserving the assignment trail. */
     public function assign(array $chromebook, ?string $student, ?string $email, ?int $userId): bool
     {
         $id = (int) $chromebook['id'];

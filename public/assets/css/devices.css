@@ -263,11 +263,6 @@
 .chromebook-status-form { display: flex; flex-wrap: wrap; gap: var(--space-2); flex: 1 1 280px; }
 .chromebook-status-form .select { flex: 1 1 150px; width: auto; }
 .chromebook-status-form > .choice-group { flex-basis: 100%; }
-.history-edit { margin-top: var(--space-2); font-size: var(--fs-ui); }
-.history-edit > summary { cursor: pointer; color: var(--color-action); width: fit-content; }
-.history-edit > summary:focus-visible { outline: 2px solid var(--color-action); outline-offset: 4px; }
-.history-edit form { display: grid; gap: var(--space-3); margin-top: var(--space-3); }
-.history-edit form > button { justify-self: start; }
 .detail__assign .assign-form { grid-template-columns: minmax(0, 1fr); }
 .notes-placeholder { margin: 0; padding: var(--space-4) var(--space-5); border-top: 1px solid var(--color-border); color: var(--color-muted-foreground); }
 .device-card .chromebook-status { align-self: flex-start; }
@@ -283,6 +278,9 @@
 }
 .details dt { font-size: var(--fs-ui); color: var(--color-muted-foreground); }
 .details dd { color: var(--color-foreground); overflow-wrap: anywhere; }
+.device-details-fields { display: grid; gap: var(--space-3); padding: 0 var(--space-4) var(--space-4); }
+.chromebook-timestamps { padding-bottom: var(--space-4); }
+@media (min-width: 768px) { .device-details-fields { padding: 0 var(--space-5) var(--space-5); } }
 
 /* ---------------------------------------------------------- notes log --- */
 .note-form {
@@ -479,6 +477,7 @@
     grid-template-areas: 'status notes' 'assign notes' 'info notes';
   }
   .detail__assign { grid-area: assign; }
+  .detail--with-assign.chromebook-detail { grid-template-areas: 'assign notes' 'status notes' 'info notes'; }
 }
 .assign-form {
   display: grid;

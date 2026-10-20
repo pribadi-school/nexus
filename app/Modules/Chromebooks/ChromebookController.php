@@ -161,18 +161,27 @@ final class ChromebookController
     public function show(Request $request): Response
     {
         $chromebook = $this->chromebook($request);
+        return $this->detail($chromebook);
+    }
+
+    private function detail(array $chromebook, array $values = [], array $errors = []): Response
+    {
         $notes = new NoteRepository();
         $id = (int) $chromebook['id'];
 
         return Response::html(View::render('Chromebooks::show', [
             'category' => $this->category,
             'chromebook' => $chromebook,
+            'values' => $values + $chromebook + ['note' => null],
+            'errors' => $errors,
+            'years' => $this->category->years(),
+            'models' => $this->chromebooks->models(),
             'history' => $this->chromebooks->history($id),
             'notes' => $notes->forDevice($id, manualOnly: true),
             'noteCount' => $notes->countForDevice($id, manualOnly: true),
             'statusHistory' => $notes->statusHistory($id),
             'google' => GoogleChromebookController::viewData($chromebook),
-        ], 'layouts/app', $this->category->title($id) . ' · Chromebooks'));
+        ], 'layouts/app', $this->category->title($id) . ' · Chromebooks'), $errors === [] ? 200 : 422);
     }
 
     /** GET /chromebooks/new?year= */
@@ -215,27 +224,31 @@ final class ChromebookController
     public function edit(Request $request): Response
     {
         $chromebook = $this->chromebook($request);
-        return $this->form($chromebook, $chromebook, []);
+        return Response::redirect($this->category->detailPath((int) $chromebook['id']));
     }
 
     /** POST /chromebooks/{id} */
     public function update(Request $request): Response
     {
         $chromebook = $this->chromebook($request);
-        $v = new Validator($request->body, self::LABELS);
-        $data = $v->validate($this->rules());
+        $input = $request->body + array_intersect_key($chromebook, array_flip(['student_name', 'student_email', 'status']));
+        $v = new Validator($input, self::LABELS + ['note' => 'Note']);
+        $rules = $this->rules() + $this->assignRules() + ['note' => ['max:' . \App\Devices\DeviceController::NOTE_MAX]];
+        if (array_key_exists('status', $request->body)) $rules['status'] = ['required', 'in:' . implode(',', $this->category->statuses())];
+        $data = $v->validate($rules);
+        $data['status'] = $data['status'] ?? $chromebook['status'];
         if ($v->fails()) {
-            return $this->form($chromebook, $data + $chromebook, $v->errors());
+            return $this->detail($chromebook, $data, $v->errors());
         }
         $data['academic_year'] = (int) $data['academic_year'];
 
         try {
-            $this->chromebooks->update($chromebook, $data, Auth::id());
+            $changed = $this->chromebooks->save($this->category, $chromebook, $data, Auth::id());
         } catch (DeviceServiceError $e) {
-            return $this->form($chromebook, $data + $chromebook, [$e->field => $this->takenMessage($e)]);
+            return $this->detail($chromebook, $data, [$e->field => $this->takenMessage($e)]);
         }
 
-        Session::flash('success', 'Changes saved.');
+        Session::flash($changed ? 'success' : 'info', $changed ? 'Changes saved.' : 'No changes to save.');
         return Response::redirect($this->category->detailPath((int) $chromebook['id']));
     }
 

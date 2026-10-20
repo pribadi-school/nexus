@@ -42,7 +42,7 @@ try {
     $check(str_contains($create->body, '<option value="0" selected>School</option>') && str_contains($create->body, 'e.g. School-01'), 'Add form preselects School and uses a readable example');
     $showRequest = new Request('GET', '/chromebooks/' . $school, [], [], []); $showRequest->params['id'] = (string) $school;
     $show = $controller->show($showRequest);
-    $check(str_contains($show->body, '<dt>Year / category</dt><dd>School</dd>') && !str_contains($show->body, 'Academic year 0'), 'detail page never exposes the storage sentinel');
+    $check(str_contains($show->body, '<option value="0" selected>School</option>') && !str_contains($show->body, 'Academic year 0'), 'inline detail editor uses the School label');
     $export = $controller->export(new Request('GET', '/chromebooks/export', ['year' => '0', 'q' => $token], [], []));
     $check(str_contains($export->headers['Content-Disposition'], 'chromebooks-school-') && str_contains($export->body, $token . 'A') && !str_contains($export->body, $token . 'B'), 'CSV export respects School and its filename');
     $example = $controller->example(new Request('GET', '/chromebooks/import/example', ['year' => '0'], [], []));
@@ -65,7 +65,7 @@ try {
     $invalid = $controller->store(new Request('POST', '/chromebooks', [], ['academic_year' => '-1', 'status' => 'ok'], []));
     $check($invalid->status === 422, 'invalid categories are rejected');
     $edit = new Request('GET', '/chromebooks/' . $school . '/edit', [], [], []); $edit->params['id'] = (string) $school;
-    $check(str_contains($controller->edit($edit)->body, '<option value="0" selected>School</option>'), 'Edit keeps the School option selected');
+    $check($controller->edit($edit)->headers['Location'] === '/chromebooks/' . $school, 'legacy Edit link opens the unified detail page');
 } finally { if ($pdo->inTransaction()) $pdo->rollBack(); }
 $check(db()->all('SELECT * FROM chromebooks ORDER BY device_id') === $before, 'all existing Chromebook data remains unchanged');
 echo "Passed $checks School category checks. Fixtures rolled back.\n";
