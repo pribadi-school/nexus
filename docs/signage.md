@@ -10,6 +10,11 @@ See [Android TV installation and automatic startup](android-tv.md).
 ## Set up a display
 
 1. Open **Signage → Content**. Upload a video or image, or add a website URL.
+   The upload popup accepts multiple MP4/MOV videos and PNG/JPG images together,
+   by dropping files or choosing them. Each file has the displayed upload limit.
+   Files upload one at a time with a byte-based percentage, then a saving state
+   until the server confirms success. Successful files appear immediately;
+   retrying a partial batch sends only the remaining files.
 2. Open **Screens** and add a screen. Each screen gets its own playlist.
 3. Open the screen: its playlist is on the left and the content library on the
    right. Drag library content into the playlist, drag entries to reorder them,

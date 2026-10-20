@@ -13,11 +13,11 @@ $limit = round((int) $uploadLimitBytes / 1048576, 1);
 <header class="page-header"><div><h1 class="page-title"><?= $adding ? 'Add content' : 'Edit content' ?></h1><p class="page-subtitle">Upload a video or image, or add a website to use in playlists.</p></div></header>
 <?= partial('Signage::_tabs', ['tab' => 'content']) ?>
 <?php endif ?>
-<form class="<?= $inDialog ? 'signage-content-dialog__form' : 'card form-card' ?>" method="post" enctype="multipart/form-data" action="<?= e($base) ?>" data-signage-content-form data-upload-limit-bytes="<?= (int) $uploadLimitBytes ?>"<?= !$inDialog ? ' data-busy-on-submit' : '' ?> novalidate>
+<form class="<?= $inDialog ? 'signage-content-dialog__form' : 'card form-card' ?>" method="post" enctype="multipart/form-data" action="<?= e($base) ?>" data-signage-content-form data-upload-limit-bytes="<?= (int) $uploadLimitBytes ?>"<?= $adding ? ' data-content-adding' : '' ?><?= !$inDialog ? ' data-busy-on-submit' : '' ?> novalidate>
   <?= csrf_field() ?>
-  <?php if ($inDialog): ?><p class="notice notice--error" role="alert" data-content-error hidden></p><?php endif ?>
+  <p class="notice notice--error" role="alert" data-content-error hidden></p>
   <?php if ($errors !== []): ?><div class="notice notice--error" role="alert"><?= icon('circle-alert') ?><div>Check the highlighted <?= count($errors) === 1 ? 'field' : 'fields' ?>. If an upload failed, select the file again.</div></div><?php endif ?>
-  <div class="form-grid">
+  <fieldset class="signage-upload-fields" data-upload-controls><div class="form-grid">
     <div class="field field--full<?= $field('type') ? ' has-error' : '' ?>">
       <label class="field__label" for="<?= $prefix ?>type">Content type</label>
       <?php if (!$adding): ?><input type="hidden" name="type" value="<?= e($item['type']) ?>"><?php endif ?>
@@ -29,17 +29,25 @@ $limit = round((int) $uploadLimitBytes / 1048576, 1);
     </div>
     <div class="field field--full<?= $field('file') ? ' has-error' : '' ?>" data-content-fields="video image">
       <label class="field__label" for="<?= $prefix ?>file" data-file-label><?= !$adding ? 'Replace file' : 'Upload file' ?></label>
-      <input class="input signage-file" type="file" id="<?= $prefix ?>file" name="file" accept="video/mp4,video/quicktime,.mp4,.mov,image/png,image/jpeg,.png,.jpg,.jpeg"<?= $invalid('file') ?>><?= $error('file') ?>
+      <div class="signage-upload-drop" data-upload-drop>
+        <input class="input signage-file" type="file" id="<?= $prefix ?>file" name="file" accept="video/mp4,video/quicktime,.mp4,.mov,image/png,image/jpeg,.png,.jpg,.jpeg"<?= $invalid('file') ?>>
+        <span class="field__hint" data-upload-drop-hint hidden>Drop files here</span>
+      </div><?= $error('file') ?>
       <?php if (!$adding && $item['type'] !== 'website'): ?><p class="field__hint">Current file: <?= e($item['original_filename']) ?>. Leave this blank to keep it.</p><?php endif ?>
       <p class="field__hint">Up to <?= e($limit) ?> MB</p>
-      <p class="field__hint" data-upload-feedback aria-live="polite"></p>
+      <ul class="signage-upload-queue" aria-label="Selected files" data-upload-queue hidden></ul>
     </div>
     <div class="field field--full<?= $field('source_url') ? ' has-error' : '' ?>" data-content-fields="website">
       <label class="field__label" for="<?= $prefix ?>source_url">Website address</label>
       <input class="input" id="<?= $prefix ?>source_url" name="source_url" type="url" value="<?= e($values['source_url'] ?? '') ?>" maxlength="2048" placeholder="https://" autocomplete="url"<?= $invalid('source_url') ?>><?= $error('source_url') ?>
       <p class="field__hint">Use a public HTTPS page that allows display inside another website. Pages that block embedding or require a sign-in may appear blank. Set its display time in the playlist.</p>
     </div>
+  </div></fieldset>
+  <div class="signage-upload-progress" data-upload-progress hidden>
+    <div><span data-upload-progress-status>Uploading</span><strong data-upload-percentage>0%</strong></div>
+    <progress max="100" value="0" aria-label="Upload progress" data-upload-meter></progress>
   </div>
+  <p class="field__hint" data-upload-feedback aria-live="polite"></p>
   <div class="form-actions"><?php if ($inDialog): ?><button class="btn btn--secondary" type="button" data-content-cancel>Cancel</button><?php else: ?><a class="btn btn--secondary" href="/signage/content">Cancel</a><?php endif ?><button class="btn btn--primary" type="submit"><?= $adding ? 'Add content' : 'Save changes' ?></button></div>
 </form>
 <?php if (!$adding): ?>

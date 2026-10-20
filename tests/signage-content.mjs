@@ -3,16 +3,18 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
 class Element {
-  constructor() { this.events = {}; this.dataset = {}; this.attrs = {}; this.value = ''; this.id = ''; this.files = []; this.maxLength = 160; }
+  constructor() { this.events = {}; this.dataset = {}; this.attrs = {}; this.files = []; this.children = []; this.value = ''; this.textContent = ''; this.hidden = false; }
   addEventListener(name, action) { (this.events[name] ??= []).push(action); }
   emit(name, event = {}) { return Promise.all((this.events[name] ?? []).map(action => action(event))); }
   setAttribute(key, value) { this.attrs[key] = value; }
+  hasAttribute(key) { return key in this.attrs; }
   removeAttribute(key) { delete this.attrs[key]; }
-  closest() { return group; }
-  after(error) { errors.push(error); }
-  remove() { errors.splice(errors.indexOf(this), 1); }
-  focus() {}
-  classList = {add() {}, remove() {}};
+  replaceChildren(...nodes) { this.children = nodes; }
+  append(...nodes) { this.children.push(...nodes); }
+  after(node) { this.afterNode = node; }
+  closest() { return null; }
+  contains() { return false; }
+  classList = {add() {}, remove() {}, toggle() {}};
 }
 class Dialog extends Element {
   open = false;
@@ -20,71 +22,116 @@ class Dialog extends Element {
   close() { this.open = false; this.emit('close'); }
   querySelectorAll() { return []; }
 }
-const group = new Element(); const errors = [];
-const file = new Element(); const type = new Element(); type.value = 'video';
-file.id = 'content-dialog-file';
-const website = new Element(); const feedback = new Element(); const label = new Element();
-const errorNotice = new Element(); const button = new Element(); const form = new Element(); const dialog = new Dialog();
-form.dataset.uploadLimitBytes = String(250 * 1048576);
-const fields = {file, source_url: website};
-form.action = 'http://localhost/signage/content';
-form.elements = {namedItem: key => fields[key]};
-let valid = true;
-form.reportValidity = () => valid;
-form.reset = () => { file.files = []; type.value = 'video'; };
-form.querySelector = selector => ({'[data-content-type]': type, '[name="file"]': file, '[data-upload-feedback]': feedback,
-  '[name="source_url"]': website, '[data-file-label]': label, '[data-content-error]': errorNotice, '[type="submit"]': button,
-  '[aria-invalid="true"]': file}[selector] ?? null);
-form.querySelectorAll = selector => selector === '[data-upload-field-error]' ? [...errors] : selector === '[aria-invalid]' ? Object.values(fields) : [];
-const handlers = {}; const requests = []; const added = []; const notices = [];
-const document = {
-  querySelector: selector => selector === '[data-content-dialog]' ? dialog : selector === '[data-signage-content-form]' ? form : null,
-  addEventListener(name, action) { (handlers[name] ??= []).push(action); },
-  dispatchEvent(event) { if (event.type === 'signage:content-added') added.push(event.detail); for (const action of handlers[event.type] ?? []) action(event); },
-  createElement: () => new Element(),
-};
-const source = readFileSync(new URL('../public/assets/js/signage-content.js', import.meta.url), 'utf8').replace(/^import .*;\r?\n/gm, '').replace('export function', 'function');
-vm.runInNewContext(source + '\ninitContentForms();', {
-  HTMLElement: Element, HTMLDialogElement: Dialog, AbortController, URL,
-  CustomEvent: class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
-  FormData: class { values = {}; set(key, value) { this.values[key] = value; } }, window: {addEventListener() {}}, document,
-  csrfToken: () => 'current-session-token',
-  setBusy(target, busy) { target.disabled = busy; }, toast: text => notices.push(text),
-  fetch(url, options) { return new Promise(resolve => requests.push({url, options, resolve})); },
-});
+const source = ['signage-upload.js', 'signage-content.js'].map(file => readFileSync(new URL(`../public/assets/js/${file}`, import.meta.url), 'utf8')
+  .replace(/^import .*;\r?\n/gm, '').replaceAll('export function', 'function')).join('\n');
+function harness(inDialog = true) {
+  const type = new Element(); type.value = 'video';
+  const file = new Element(), form = new Element(), dialog = new Dialog(), feedback = new Element(), error = new Element();
+  const queue = new Element(), controls = new Element(), meter = new Element(), percentage = new Element(), progress = new Element(), progressStatus = new Element();
+  const button = new Element(); button.textContent = 'Add content';
+  const nodes = {'[data-content-type]':type, '[name="file"]':file, '[data-upload-feedback]':feedback, '[name="source_url"]':new Element(),
+    '[data-file-label]':new Element(), '[data-content-error]':error, '[type="submit"]':button, '[data-upload-controls]':controls,
+    '[data-upload-drop]':new Element(), '[data-upload-queue]':queue, '[data-upload-progress]':progress, '[data-upload-meter]':meter,
+    '[data-upload-percentage]':percentage, '[data-upload-progress-status]':progressStatus, '[data-upload-drop-hint]':new Element()};
+  form.dataset.uploadLimitBytes = String(250 * 1048576); form.attrs['data-content-adding'] = ''; form.action = 'http://localhost/signage/content';
+  form.querySelector = selector => nodes[selector] ?? null; form.querySelectorAll = () => [];
+  form.elements = {namedItem: name => nodes[`[name="${name}"]`]};
+  let valid = true;
+  form.reportValidity = () => valid; form.reset = () => { file.files = []; type.value = 'video'; };
+  const requests = [], added = [], notices = [], handlers = {};
+  class XHR {
+    upload = {}; headers = {}; status = 0;
+    open(method, url) { this.method = method; this.url = url; }
+    setRequestHeader(key, value) { this.headers[key] = value; }
+    send(body) { this.body = {...body.values}; requests.push(this); }
+    abort() { this.aborted = true; this.onabort(); }
+    progress(ratio) { this.upload.onprogress({lengthComputable: ratio !== null, loaded: ratio, total: 1}); }
+    uploaded() { this.upload.onload(); }
+    reply(status = 201, data = {id: requests.length, name: 'Fixture'}) {
+      this.status = status; this.responseText = typeof data === 'string' ? data : JSON.stringify(data); this.onload();
+    }
+  }
+  const context = {
+    HTMLElement:Element, HTMLDialogElement:Dialog, XMLHttpRequest:XHR, AbortController, DOMException, URL, Event,
+    CustomEvent:class { constructor(type, options) { this.type = type; this.detail = options.detail; } },
+    FormData:class { values = {_csrf:'old-token'}; set(key, value) { this.values[key] = value; } },
+    window:{addEventListener() {}}, location:{assign(url) { this.assigned = url; }}, csrfToken:() => 'current-token',
+    setBusy(target, busy) { target.disabled = busy; }, toast: message => notices.push(message),
+    document:{querySelector: selector => selector === '[data-content-dialog]' ? (inDialog ? dialog : null) : selector === '[data-signage-content-form]' ? form : null,
+      addEventListener(name, action) { (handlers[name] ??= []).push(action); },
+      dispatchEvent(event) { if (event.type === 'signage:content-added') added.push(event.detail); (handlers[event.type] ?? []).forEach(action => action(event)); },
+      createElement: () => new Element()},
+  };
+  vm.runInNewContext(source + '\nvar cleanup = initContentForms();', context);
+  const choose = async files => { file.files = files; await file.emit('change'); };
+  const submit = () => form.emit('submit', {preventDefault() {}});
+  return {type, file, form, dialog, queue, controls, meter, percentage, progress, progressStatus, button, feedback, error, requests, added, notices, handlers, choose, submit,
+    context, invalid: () => { valid = false; }, valid: () => { valid = true; }, cleanup: context.cleanup,
+    state: index => queue.children[index].children[0].children[1].textContent,
+    remove: index => queue.children[index].children[1].emit('click')};
+}
+const settle = () => new Promise(resolve => setImmediate(resolve));
+const media = (name, size = 100, lastModified = 1) => ({name, size, lastModified});
+
+const h = harness();
 let prevented = false;
-handlers.click[0]({target: {closest: () => ({})}, button: 0, preventDefault() { prevented = true; }});
-assert.equal(prevented, true); assert.equal(dialog.open, true); assert.equal(requests.length, 0, 'opening the popup needs no page request');
-valid = false;
-await form.emit('submit', {preventDefault() {}});
-assert.equal(requests.length, 0, 'invalid forms do not upload');
-valid = true;
-const oversized = [{name: 'too-large.mp4', size: 250 * 1048576 + 1}]; file.files = oversized;
-await form.emit('submit', {preventDefault() {}});
-assert.equal(requests.length, 0, 'a file over 250 MB is rejected before uploading');
-assert.match(errorNotice.textContent, /250 MB/);
-assert.equal(file.files, oversized, 'size validation preserves the selection');
-const selection = [{name: 'clip.mov', size: 250 * 1048576}]; file.files = selection;
-let submission = form.emit('submit', {preventDefault() {}});
-assert.equal(requests.length, 1, 'a file at the 250 MB limit may upload');
-assert.equal(requests.at(-1).options.headers['X-CSRF-Token'], 'current-session-token');
-assert.equal(requests.at(-1).options.body.values._csrf, 'current-session-token', 'cached form token is replaced');
-let cancelled = false;
-await dialog.emit('cancel', {preventDefault() { cancelled = true; }});
-assert.equal(cancelled, true, 'Escape cannot interrupt an active upload');
-requests.at(-1).resolve({ok: false, status: 422, json: async () => ({error: 'Invalid file', errors: {file: 'Choose a supported file'}})});
-await submission;
-assert.equal(dialog.open, true); assert.equal(file.files, selection, 'validation preserves the selected file');
-assert.equal(errorNotice.hidden, false); assert.equal(file.attrs['aria-invalid'], 'true');
-submission = form.emit('submit', {preventDefault() {}});
-requests.at(-1).resolve({ok: false, status: 413, json: async () => { throw new Error('Proxy HTML, not JSON'); }});
-await submission;
-assert.match(errorNotice.textContent, /upload limit/);
-assert.equal(file.files, selection, 'a host size rejection preserves the selected file');
-assert.equal(form.inert, false); assert.equal(button.disabled, false);
-submission = form.emit('submit', {preventDefault() {}});
-requests.at(-1).resolve({ok: true, status: 201, json: async () => ({id: 42, name: 'Clip', editor_html: '<li>Clip</li>'})});
-await submission;
-assert.equal(dialog.open, false); assert.equal(added[0].id, 42); assert.equal(notices.length, 1);
-assert.equal(form.inert, false); assert.equal(button.disabled, false);
-console.log('Passed popup upload, 250 MB boundaries, current CSRF token, server limit errors and file-preservation checks.');
+h.handlers.click[0]({target:{closest:() => ({})},button:0,preventDefault() { prevented = true; }});
+assert.equal(prevented, true); assert.equal(h.dialog.open, true); assert.equal(h.requests.length, 0, 'popup opens without a request');
+assert.equal(h.file.multiple, true);
+await h.choose([media('first.mp4'), media('second.png')]);
+h.invalid(); await h.submit(); assert.equal(h.requests.length, 0); h.valid();
+const batch = h.submit();
+assert.equal(h.requests.length, 1, 'files upload sequentially');
+assert.equal(h.controls.disabled, true);
+assert.equal(h.requests[0].body.type, 'video'); assert.equal(h.requests[0].body.file.name, 'first.mp4');
+assert.equal(h.requests[0].headers['X-CSRF-Token'], 'current-token'); assert.equal(h.requests[0].body._csrf, 'current-token');
+h.requests[0].progress(.5);
+assert.equal(h.percentage.textContent, '25%', 'total percentage is weighted by file bytes');
+assert.match(h.state(0), /^50%/);
+h.requests[0].uploaded(); assert.match(h.state(0), /Saving/); assert.equal(h.dialog.open, true, 'sending bytes is not server success');
+let cancelled = false; await h.dialog.emit('cancel', {preventDefault() { cancelled = true; }}); assert.equal(cancelled, true);
+h.requests[0].reply(); await settle();
+assert.equal(h.requests.length, 2); assert.equal(h.requests[1].body.type, 'image', 'mixed drops infer each content type');
+assert.equal(h.requests[1].body.file.name, 'second.png'); assert.equal(h.added.length, 1, 'each successful file updates the library immediately');
+h.requests[1].progress(.5); assert.equal(h.percentage.textContent, '75%');
+h.requests[1].uploaded(); assert.equal(h.percentage.textContent, '99%', 'completion waits for server acknowledgement');
+h.requests[1].reply(); await batch;
+assert.equal(h.percentage.textContent, '100%'); assert.equal(h.added.length, 2); assert.equal(h.dialog.open, false); assert.equal(h.controls.disabled, false);
+
+const retry = harness(); retry.dialog.showModal();
+await retry.dialog.emit('drop', {dataTransfer:{types:['Files'],files:[media('one.mov'),media('two.jpg')]},preventDefault() {}});
+const partial = retry.submit(); retry.requests[0].reply(); await settle();
+retry.requests[1].reply(422, {error:'Invalid image',errors:{file:'Invalid image'}}); await partial;
+assert.equal(retry.dialog.open, true); assert.equal(retry.queue.children.length, 2); assert.equal(retry.state(0), 'Added'); assert.equal(retry.state(1), 'Invalid image');
+const again = retry.submit(); assert.equal(retry.requests.length, 3); assert.equal(retry.requests[2].body.file.name, 'two.jpg', 'retry never resends acknowledged successful files');
+retry.requests[2].reply(); await again; assert.equal(retry.added.length, 2);
+
+const limits = harness();
+await limits.choose([media('oversized.mp4',250 * 1048576 + 1),media('bad.exe')]);
+await limits.submit(); assert.equal(limits.requests.length, 0); assert.match(limits.state(0), /250 MB/); assert.match(limits.state(1), /MP4/);
+await limits.remove(1); await limits.remove(0);
+await limits.choose([media('exact.mp4',250 * 1048576)]);
+const exact = limits.submit(); assert.equal(limits.requests.length, 1, 'the per-file size boundary is inclusive');
+limits.requests[0].reply(413, '<html>proxy size limit</html>'); await exact;
+assert.match(limits.error.textContent, /upload limit/); assert.equal(limits.queue.children.length, 1); assert.equal(limits.controls.disabled, false);
+
+const auth = harness(); await auth.choose([media('one.mp4'),media('two.mp4')]);
+const expired = auth.submit(); auth.requests[0].reply(419,{error:'Form expired'}); await expired;
+assert.equal(auth.requests.length, 1, 'an expired session stops the rest of the batch');
+const aborted = auth.submit(); auth.cleanup(); await aborted; assert.equal(auth.requests.at(-1).aborted, true);
+
+const plain = harness(false); await plain.choose([media('one.png'), media('one.png')]);
+assert.equal(plain.queue.children.length, 1, 'duplicate selections are not queued twice');
+const direct = plain.submit(); plain.requests[0].progress(null); assert.equal(plain.percentage.textContent, 'Uploading…', 'unknown transfer length stays indeterminate');
+plain.requests[0].reply(); await direct; assert.equal(plain.context.location.assigned, '/signage', 'regular Add page returns to the library');
+
+const website = harness(); website.type.value = 'website';
+const url = website.submit(); assert.equal(website.progress.hidden, true); website.requests[0].reply(); await url; assert.equal(website.added.length, 1);
+const invalidUrl = harness(); invalidUrl.type.value = 'website';
+const invalidWebsite = invalidUrl.submit(); invalidUrl.requests[0].reply(422,{error:'Check the highlighted fields.',errors:{source_url:'Use an HTTPS website address.'}}); await invalidWebsite;
+const urlInput = invalidUrl.form.elements.namedItem('source_url');
+assert.equal(urlInput.attrs['aria-invalid'], 'true'); assert.equal(urlInput.afterNode.textContent, 'Use an HTTPS website address.');
+const unconfirmed = harness(); await unconfirmed.choose([media('one.png')]);
+const unexpected = unconfirmed.submit(); unconfirmed.requests[0].reply(200,{}); await unexpected;
+assert.equal(unconfirmed.added.length,0); assert.match(unconfirmed.error.textContent,/did not confirm/);
+console.log('Passed multi-file picking/drop, mixed types, byte progress, size boundaries, partial retry, session/abort handling and standalone-page checks.');

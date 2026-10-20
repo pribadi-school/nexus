@@ -1,4 +1,4 @@
-import { initContentForms } from './signage-content.js?v=20261019-upload-limit';
+import { initContentForms } from './signage-content.js?v=20261020-batch-upload';
 import { initContentActions } from './signage-content-actions.js?v=20261019-playlists';
 import { toast } from './toast.js';
 
@@ -114,6 +114,7 @@ function loadThumbnail(card) {
 }
 
 function processThumbnails() {
+  if (document.querySelector('[data-uploading="true"]')) return;
   while (!disposed && loadingThumbnails < 1 && thumbnailQueue.length) {
     const card = thumbnailQueue.shift();
     loadingThumbnails += 1;
@@ -128,6 +129,7 @@ function scheduleThumbnails() {
   clearTimeout(thumbnailStartTimer);
   thumbnailStartTimer = setTimeout(processThumbnails, 180);
 }
+document.addEventListener('signage:uploads-finished', scheduleThumbnails, {signal});
 
 const thumbnailCards = document.querySelectorAll('[data-signage-thumbnail]');
 document.addEventListener('signage:preview-added', event => {
