@@ -7,10 +7,11 @@ const videos = [];
 const listeners = new Map();
 const durations = [];
 let cards = [];
+let busy = false;
 const makeCard = url => {
   const nodes = new Map();
   for (const name of ['image', 'fallback', 'message', 'duration', 'orientation']) nodes.set(`[data-thumbnail-${name}]`, {hidden: name === 'image' || name === 'duration', textContent: ''});
-  return {dataset: {videoSrc: url}, querySelector: selector => nodes.get(selector)};
+  return {isConnected: true, dataset: {videoSrc: url}, querySelector: selector => nodes.get(selector)};
 };
 const context = {
   AbortController, Map, Set, Number, Math, Promise,
@@ -18,7 +19,7 @@ const context = {
   setTimeout(action, delay) { timers.set(++timerId, {action, delay}); return timerId; }, clearTimeout(id) { timers.delete(id); },
   window: {}, navigator: {}, initContentForms: () => () => {}, initContentActions: () => () => {}, toast() {},
   document: {
-    querySelectorAll: selector => selector === '[data-signage-thumbnail]' ? cards : [], querySelector: () => null,
+    querySelectorAll: selector => selector === '[data-signage-thumbnail]' ? cards : [], querySelector: selector => busy && selector.includes('[data-saving=') ? {} : null,
     addEventListener(type, handler, {signal}) {
       if (!listeners.has(type)) listeners.set(type, new Set());
       listeners.get(type).add(handler);
@@ -79,5 +80,30 @@ cleanup();
 cleanup = init(); start();
 assert.equal(videos.length, 4, 'cancelled transfers do not poison the preview cache');
 capture(videos[3]); await settle(); cleanup();
+cards = [makeCard('/media/11?v=slow-preview')];
+cleanup = init(); start();
+const interrupted = videos.at(-1), initialTransfers = videos.length;
+busy = true;
+for (const handler of listeners.get('signage:action-start')) handler();
+await settle();
+assert.equal(interrupted.released, true, 'a save/delete cancels optional preview traffic');
+assert.equal(cards[0].dataset.thumbnailState, 'pending', 'cancelled previews are deferred rather than marked as broken');
+assert.equal(videos.length, initialTransfers, 'preview does not restart during a save');
+busy = false;
+for (const handler of listeners.get('signage:action-finished')) handler();
+start();
+assert.equal(videos.length, initialTransfers + 1, 'preview resumes after the action settles');
+capture(videos.at(-1)); await settle(); cleanup();
+cards = [makeCard('/media/12?v=deleted')];
+cleanup = init(); start();
+busy = true;
+for (const handler of listeners.get('signage:action-start')) handler();
+await settle();
+cards[0].isConnected = false; busy = false;
+const beforeResume = videos.length;
+for (const handler of listeners.get('signage:action-finished')) handler();
+start();
+assert.equal(videos.length, beforeResume, 'deleted cards never restart a deferred preview');
+cleanup();
 assert.equal(timers.size, 0);
-console.log('Passed thumbnail reuse, metadata restoration, file replacement, failure retry and navigation cleanup checks.');
+console.log('Passed thumbnail reuse, deferred previews during saves, metadata restoration, replacement and cleanup checks.');

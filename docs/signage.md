@@ -40,6 +40,13 @@ Dragging and editing inside a screen is a draft until **Save changes**.
 If another tab changes the same playlist, saving is refused so it cannot
 silently overwrite those changes.
 
+Saving TV selections and deleting content pause optional video previews and
+have a 12-second browser deadline, including the response body. These JSON
+actions release the PHP session lock before database/file work, so another tab
+does not have to wait on the same login session. A connection failure can happen
+after a change was saved: the menu keeps the draft and never repeats a write
+automatically. Refresh the library to check its current state before retrying.
+
 Existing screen assignments stay in place. An older shared playlist is copied
 when its screen is opened or edited, keeping item order and website timing.
 Each new screen starts with its own empty playlist. There is no separate

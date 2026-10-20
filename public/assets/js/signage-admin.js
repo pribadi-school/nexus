@@ -1,5 +1,5 @@
 import { initContentForms } from './signage-content.js?v=20261020-batch-upload';
-import { initContentActions } from './signage-content-actions.js?v=20261019-playlists';
+import { initContentActions } from './signage-content-actions.js?v=20261020-actions';
 import { toast } from './toast.js';
 
 // Keep previews across in-place page switches; logout/full reload clears them.
@@ -61,7 +61,7 @@ function loadThumbnail(card) {
     const message = card.querySelector('[data-thumbnail-message]');
     let completed = false;
     let target = 0;
-    const finish = (success) => {
+    const finish = (success, deferred = false) => {
       if (completed) return;
       completed = true;
       pendingThumbnails.delete(finish);
@@ -69,9 +69,10 @@ function loadThumbnail(card) {
       video.onloadedmetadata = video.onseeked = video.onloadeddata = video.onerror = null;
       video.removeAttribute('src');
       video.load();
-      card.dataset.thumbnailState = success ? 'ready' : 'unavailable';
-      if (!success) message.textContent = 'Preview unavailable';
-      if (!disposed && !Number(card.dataset.videoDuration)) {
+      card.dataset.thumbnailState = success ? 'ready' : deferred ? 'pending' : 'unavailable';
+      if (deferred && !disposed) thumbnailQueue.unshift(card);
+      if (!success && !deferred) message.textContent = 'Preview unavailable';
+      if (!disposed && !deferred && !Number(card.dataset.videoDuration)) {
         document.dispatchEvent(new CustomEvent('signage:duration', {detail: {url: card.dataset.videoSrc, seconds: null}}));
       }
       resolve();
@@ -114,9 +115,10 @@ function loadThumbnail(card) {
 }
 
 function processThumbnails() {
-  if (document.querySelector('[data-uploading="true"]')) return;
+  if (document.querySelector('[data-uploading="true"], [data-saving="true"]')) return;
   while (!disposed && loadingThumbnails < 1 && thumbnailQueue.length) {
     const card = thumbnailQueue.shift();
+    if (!card.isConnected) continue;
     loadingThumbnails += 1;
     loadThumbnail(card).finally(() => {
       loadingThumbnails -= 1;
@@ -130,6 +132,12 @@ function scheduleThumbnails() {
   thumbnailStartTimer = setTimeout(processThumbnails, 180);
 }
 document.addEventListener('signage:uploads-finished', scheduleThumbnails, {signal});
+document.addEventListener('signage:action-start', () => {
+  clearTimeout(thumbnailStartTimer);
+  // Give saves/deletes priority over optional video-preview transfers.
+  pendingThumbnails.forEach(finish => finish(false, true));
+}, {signal});
+document.addEventListener('signage:action-finished', scheduleThumbnails, {signal});
 
 const thumbnailCards = document.querySelectorAll('[data-signage-thumbnail]');
 document.addEventListener('signage:preview-added', event => {

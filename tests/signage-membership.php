@@ -13,6 +13,26 @@ $check = static function (bool $ok, string $label) use (&$checks): void {
     if (!$ok) throw new RuntimeException('Failed: ' . $label);
     $checks++;
 };
+// A separate disposable session proves AJAX actions do not block other tabs,
+// while the persisted login and CSRF data remain available to the next request.
+session_name('nexus_action_test');
+session_save_path(BASE_PATH . '/.dev');
+$withSession = static function (callable $action) use ($check) {
+    session_id(bin2hex(random_bytes(16)));
+    session_start();
+    $_SESSION = ['_csrf' => 'fixture-token', 'auth.user_id' => 123];
+    try {
+        $response = $action();
+        $check(session_status() === PHP_SESSION_NONE, 'JSON action releases its session lock');
+        session_start();
+        $check(($_SESSION['_csrf'] ?? null) === 'fixture-token' && ($_SESSION['auth.user_id'] ?? null) === 123,
+            'releasing the lock preserves persisted authentication and CSRF data');
+        return $response;
+    } finally {
+        if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+        session_destroy();
+    }
+};
 $pdo = db()->pdo();
 $pdo->beginTransaction();
 try {
@@ -57,10 +77,18 @@ try {
     $repo->addContentToScreens($content, [$second]);
     $request = new Request('POST', '/', [], ['membership_mode' => 'sync', 'original_screen_ids' => [(string) $second]], ['HTTP_X_REQUESTED_WITH' => 'fetch']);
     $request->params['id'] = (string) $content;
-    $response = (new SignageController())->addContentToScreens($request);
+    $response = $withSession(static fn () => (new SignageController())->addContentToScreens($request));
     $body = json_decode($response->body, true, 512, JSON_THROW_ON_ERROR);
     $check($response->status === 200 && $body['screen_ids'] === [$legacySecond] && $body['used_count'] === 1
         && str_contains($body['message'], 'Removed from 1 TV'), 'empty checked selection removes just the original TV and returns accurate usage');
     $check($repo->contentItem($content) !== null, 'playlist removal keeps the library content');
+    $unused = $repo->createContent(['name' => 'Disposable delete fixture', 'type' => 'website', 'source_url' => 'https://example.com/unused']);
+    $delete = new Request('POST', '/', [], [], ['HTTP_X_REQUESTED_WITH' => 'fetch']);
+    $delete->params['id'] = (string) $unused;
+    $response = $withSession(static fn () => (new SignageController())->deleteContent($delete));
+    $check($response->status === 200 && $repo->contentItem($unused) === null, 'JSON deletion still works after releasing the lock');
+    $delete->params['id'] = (string) $other;
+    $response = $withSession(static fn () => (new SignageController())->deleteContent($delete));
+    $check($response->status === 422 && $repo->contentItem($other) !== null, 'rejected deletion keeps content and releases the lock');
     echo "Playlist membership checks: $checks passed.\n";
 } finally { $pdo->rollBack(); }

@@ -221,6 +221,8 @@ final class SignageController
 
     public function deleteContent(Request $request): Response
     {
+        // JSON actions do not write session data; release the lock before waiting on storage/SQL.
+        if ($request->isFetch() && session_status() === PHP_SESSION_ACTIVE) session_write_close();
         $item = $this->contentItem($request);
         try {
             $deleted = $this->signage->deleteContent((int) $item['id']);
@@ -244,6 +246,7 @@ final class SignageController
 
     public function addContentToScreens(Request $request): Response
     {
+        if ($request->isFetch() && session_status() === PHP_SESSION_ACTIVE) session_write_close();
         try {
             $sync = $request->input('membership_mode') === 'sync';
             $targets = SignageValidation::screenTargets($request->body['screen_ids'] ?? ($sync ? [] : null), $sync);
