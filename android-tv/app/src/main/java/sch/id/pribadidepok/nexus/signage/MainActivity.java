@@ -1,14 +1,13 @@
 package sch.id.pribadidepok.nexus.signage;
 
 import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.StateListDrawable;
@@ -22,6 +21,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.ViewGroup;
 import android.view.View;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
@@ -38,6 +39,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ImageView;
+import android.widget.GridLayout;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
@@ -61,10 +63,14 @@ public final class MainActivity extends Activity {
     private final Handler ui = new Handler(Looper.getMainLooper());
     private final ScheduledExecutorService network = Executors.newSingleThreadScheduledExecutor();
     private final ExecutorService downloader = Executors.newSingleThreadExecutor();
+    private final ExecutorService imageDecoder = Executors.newSingleThreadExecutor();
     private SharedPreferences settings;
     private MediaCache cache;
     private FrameLayout stage, media;
     private LinearLayout message, controls;
+    private GridLayout controlButtons;
+    private ScrollView setupForm;
+    private Fullscreen fullscreen;
     private TextView headline, explanation, status;
     private ExoPlayer player;
     private WebView website;
@@ -78,12 +84,15 @@ public final class MainActivity extends Activity {
     private volatile int current = -1;
     private int failures;
     private long playbackGeneration;
-    private Runnable advance, hideControls;
+    private Runnable advance, hideControls, touchControls;
+    private float touchX, touchY;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        fullscreen = new Fullscreen(getWindow());
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         settings = getSharedPreferences("nexus", MODE_PRIVATE);
+        applyOrientation();
         cache = new MediaCache(this);
         createStage();
         if (token().isEmpty()) setup("Connect this TV to Nexus."); else loadSaved();
@@ -116,18 +125,28 @@ public final class MainActivity extends Activity {
         stage = new FrameLayout(this); stage.setBackgroundColor(navy()); setContentView(stage);
         media = new FrameLayout(this); stage.addView(media, new FrameLayout.LayoutParams(-1, -1));
         message = new LinearLayout(this); message.setOrientation(LinearLayout.VERTICAL); message.setGravity(Gravity.CENTER);
-        message.setPadding(dp(60), dp(32), dp(60), dp(32)); message.setBackgroundColor(navy());
+        message.setPadding(dp(24), dp(32), dp(24), dp(32)); message.setBackgroundColor(navy());
         headline = text("Nexus Signage", 36, true); headline.setGravity(Gravity.CENTER); message.addView(headline);
         explanation = text("", 22, false); explanation.setTextColor(muted()); explanation.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams copy = new LinearLayout.LayoutParams(-1, -2); copy.topMargin = dp(20); message.addView(explanation, copy);
         stage.addView(message, new FrameLayout.LayoutParams(-1, -1));
         controls = new LinearLayout(this); controls.setOrientation(LinearLayout.VERTICAL); controls.setPadding(dp(32), dp(20), dp(32), dp(20)); controls.setBackgroundColor(navy());
         status = text("", 18, false); status.setTextColor(muted()); controls.addView(status);
-        LinearLayout row = new LinearLayout(this); row.setGravity(Gravity.CENTER_VERTICAL); row.setPadding(0, dp(12), 0, 0);
+        controlButtons = new GridLayout(this); controlButtons.setPadding(0, dp(12), 0, 0);
+        controlButtons.setColumnCount(controlColumns(getResources().getDisplayMetrics().widthPixels));
         for (Button control : new Button[]{button("Resume", () -> controls.setVisibility(View.GONE)), button("Next", () -> play(current + 1)), button("Sync now", () -> schedule(0)), button("Startup", this::startup), button("Settings", this::options)}) {
-            LinearLayout.LayoutParams layout = new LinearLayout.LayoutParams(-2, -2); layout.setMarginEnd(dp(12)); row.addView(control, layout);
+            GridLayout.LayoutParams layout = new GridLayout.LayoutParams();
+            layout.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f); layout.width = 0;
+            layout.setMargins(dp(4), dp(4), dp(4), dp(4)); control.setMinimumWidth(0);
+            controlButtons.addView(control, layout);
         }
-        controls.addView(row); FrameLayout.LayoutParams bottom = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM); stage.addView(controls, bottom); controls.setVisibility(View.GONE);
+        controls.addView(controlButtons); FrameLayout.LayoutParams bottom = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM); stage.addView(controls, bottom); controls.setVisibility(View.GONE);
+        stage.addOnLayoutChangeListener((view, left, top, right, bottomEdge, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (right - left == oldRight - oldLeft && bottomEdge - top == oldBottom - oldTop) return;
+            int columns = controlColumns(right - left);
+            if (controlButtons.getColumnCount() != columns) controlButtons.setColumnCount(columns);
+            layoutMedia();
+        });
         stage.setFocusable(true); stage.setFocusableInTouchMode(true);
     }
     private String base() { return settings.getString("server", DEFAULT_SERVER); }
@@ -141,20 +160,23 @@ public final class MainActivity extends Activity {
     private void note(String detail) { status.setText(detail); }
     private void setup(String detail) {
         releaseMedia(); active = null; current = -1; pairingCode = null; controls.setVisibility(View.GONE); message.setVisibility(View.GONE);
+        if (setupForm != null) stage.removeView(setupForm);
         ScrollView scroll = new ScrollView(this); LinearLayout form = new LinearLayout(this); form.setOrientation(LinearLayout.VERTICAL);
-        form.setPadding(dp(64), dp(36), dp(64), dp(36)); form.setGravity(Gravity.CENTER_VERTICAL); form.setBackgroundColor(navy());
+        setupForm = scroll;
+        form.setPadding(dp(24), dp(36), dp(24), dp(36)); form.setGravity(Gravity.CENTER_VERTICAL); form.setBackgroundColor(navy());
         form.addView(text("Nexus Signage", 36, true)); TextView intro = text(detail, 22, false); intro.setTextColor(muted()); intro.setPadding(0, dp(16), 0, dp(16)); form.addView(intro);
         form.addView(text("Nexus server address", 20, false)); EditText server = new EditText(this); server.setText(base()); server.setSingleLine(true); server.setTextSize(22); server.setTextColor(Color.WHITE); server.setSelectAllOnFocus(true); server.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI); form.addView(server, new LinearLayout.LayoutParams(-1, dp(64)));
-        TextView help = text("Use your school's HTTPS address. For a local test, use the computer's LAN IP; localhost refers to this TV.", 18, false); help.setTextColor(muted()); help.setPadding(0, dp(12), 0, dp(20)); form.addView(help);
+        TextView help = text("After pairing, touch and hold the screen to open controls, or press OK/Menu on a remote.", 18, false); help.setTextColor(muted()); help.setPadding(0, dp(12), 0, dp(20)); form.addView(help);
         Button connect = button("Get pairing code", () -> {
             try {
                 String value = UrlPolicy.server(server.getText().toString());
                 settings.edit().putString("server", value).putString("device_key", randomKey()).remove("token").putBoolean("paused", false).apply();
-                epoch++; stage.removeView(scroll); show("Connecting to Nexus", "Requesting a pairing code…");
+                epoch++; stage.removeView(scroll); setupForm = null; show("Connecting to Nexus", "Requesting a pairing code…");
                 long attempt = epoch; network.execute(() -> startPairing(attempt));
             } catch (IllegalArgumentException exception) { intro.setText(exception.getMessage()); server.requestFocus(); }
         });
         form.addView(connect); Button boot = button("Set up automatic startup", this::startup); LinearLayout.LayoutParams bootLayout = new LinearLayout.LayoutParams(-1, -2); bootLayout.topMargin = dp(16); form.addView(boot, bootLayout);
+        form.addView(button("Settings", this::options));
         scroll.addView(form); stage.addView(scroll, new FrameLayout.LayoutParams(-1, -1)); server.requestFocus();
     }
     private void startPairing(long attempt) {
@@ -209,6 +231,7 @@ public final class MainActivity extends Activity {
         if (active == null && !token().isEmpty()) show("Waiting for a connection", "Connect this TV to Nexus to download its first playlist. " + reason);
     }
     private void accept(JSONObject data, long attempt) {
+        if (!foreground || attempt != epoch) return;
         if (active != null && data.optString("revision").equals(active.optString("revision"))) {
             note(data.optJSONObject("screen").optString("name", "Nexus Signage") + " · Connected");
             if (player == null && website == null && imageBitmap == null && !imageLoading) play(current < 0 ? 0 : current); return;
@@ -221,7 +244,7 @@ public final class MainActivity extends Activity {
             try {
                 JSONObject prepared = cache.prepare(new NexusApi(server), data, () -> !foreground || attempt != epoch || !remoteEnabled || !revision.equals(wantedRevision), detail -> ui.post(() -> { if (attempt == epoch) { note(detail); if (active == null) show("Downloading your playlist", detail); } }));
                 ui.post(() -> {
-                    if (attempt != epoch || !remoteEnabled || !revision.equals(wantedRevision)) return;
+                    if (!foreground || attempt != epoch || !remoteEnabled || !revision.equals(wantedRevision)) return;
                     try { cache.save(prepared); } catch (java.io.IOException error) { disconnected(error.getMessage()); return; }
                     releaseMedia(); active = prepared; current = -1; failures = 0; note(prepared.optJSONObject("screen").optString("name", "Nexus Signage") + " · Playlist downloaded");
                     play(0); downloader.execute(() -> { if (attempt == epoch) cache.prune(server, prepared); });
@@ -235,7 +258,7 @@ public final class MainActivity extends Activity {
         remoteEnabled = !settings.getBoolean("paused", false);
         active = cache.read(base());
         if (!remoteEnabled) show("Screen paused", "Resume this screen from Nexus.");
-        else if (active != null) play(0);
+        else if (active != null && foreground) play(0);
         else show("Preparing this screen", "Connecting to Nexus and downloading its playlist…");
     }
     private JSONObject currentItem() {
@@ -248,7 +271,11 @@ public final class MainActivity extends Activity {
         if (advance != null) ui.removeCallbacks(advance);
         advance = null;
         if (player != null) { player.release(); player = null; }
-        if (website != null) { website.stopLoading(); website.loadUrl("about:blank"); website.destroy(); website = null; }
+        if (website != null) {
+            website.stopLoading(); website.loadUrl("about:blank");
+            if (website.getParent() instanceof ViewGroup) ((ViewGroup) website.getParent()).removeView(website);
+            website.destroy(); website = null;
+        }
         media.removeAllViews();
         if (imageBitmap != null) { imageBitmap.recycle(); imageBitmap = null; }
     }
@@ -271,12 +298,7 @@ public final class MainActivity extends Activity {
         }
         if (item == null || ("website".equals(item.optString("type")) && !connected())) { show("Website content needs internet", "Reconnect this TV. Downloaded MP4 videos can play offline."); return; }
         long generation = playbackGeneration; JSONObject screen = active.optJSONObject("screen");
-        media.setRotation("portrait".equals(screen.optString("orientation")) ? 90 : 0);
-        media.post(() -> {
-            if (generation != playbackGeneration) return;
-            boolean portrait = "portrait".equals(screen.optString("orientation"));
-            FrameLayout.LayoutParams layout = new FrameLayout.LayoutParams(portrait ? stage.getHeight() : -1, portrait ? stage.getWidth() : -1, Gravity.CENTER); media.setLayoutParams(layout);
-        });
+        layoutMedia();
         message.setVisibility(View.GONE);
         if ("video".equals(item.optString("type"))) {
             java.io.File local = cache.media(base(), item);
@@ -302,20 +324,11 @@ public final class MainActivity extends Activity {
             java.io.File local = cache.media(base(), item);
             String imageName = item.optString("name");
             long imageDuration = Math.max(5, Math.min(86400, item.optInt("duration_seconds", 30))) * 1000L;
-            int targetWidth = Math.max(1, getResources().getDisplayMetrics().widthPixels);
-            int targetHeight = Math.max(1, getResources().getDisplayMetrics().heightPixels);
-            downloader.execute(() -> {
-                Bitmap bitmap = null;
-                try {
-                    BitmapFactory.Options options = new BitmapFactory.Options(); options.inJustDecodeBounds = true;
-                    BitmapFactory.decodeFile(local.getPath(), options);
-                    // Bound image allocations to approximately the TV resolution.
-                    options.inSampleSize = 1;
-                    while (options.outWidth / options.inSampleSize > targetWidth * 2 || options.outHeight / options.inSampleSize > targetHeight * 2) options.inSampleSize *= 2;
-                    options.inJustDecodeBounds = false;
-                    bitmap = BitmapFactory.decodeFile(local.getPath(), options);
-                } catch (RuntimeException | OutOfMemoryError ignored) { /* Report through the normal item failure path. */ }
-                Bitmap decoded = bitmap;
+            DisplayLayout.Size output = displayLayout();
+            int targetWidth = output.width, targetHeight = output.height;
+            long bitmapBudget = Math.min(32L * 1024 * 1024, Runtime.getRuntime().maxMemory() / 8);
+            imageDecoder.execute(() -> {
+                Bitmap decoded = ImageLoader.load(local, targetWidth, targetHeight, bitmapBudget);
                 ui.post(() -> {
                     if (generation != playbackGeneration || !foreground) { if (decoded != null) decoded.recycle(); return; }
                     imageLoading = false;
@@ -363,25 +376,82 @@ public final class MainActivity extends Activity {
         downloader.execute(cache::clear); setup("This TV's player link was revoked or its screen was deleted. Pair it again to continue.");
     }
     private void startup() {
-        new AlertDialog.Builder(this).setTitle("Run automatically when the TV starts")
-            .setMessage(Startup.isHome(this) ? "Nexus is the default Home app. Android will open it at startup and return to playback after standby. Use System settings to change the default later."
-                : "Choose Nexus Signage as the TV's default Home app for reliable startup. This is a one-time setup. Some TV manufacturers require an administrator or ADB to change the Home app.")
+        new FullscreenDialogBuilder(this).setTitle("Open Nexus at power-on")
+            .setMessage(KioskAdmin.isOwner(this) ? "This is a managed Nexus display. Nexus is set as its Home app and can lock playback in the foreground. Use Settings to pause the kiosk lock for maintenance."
+                : Startup.isHome(this) ? "Nexus is the default Home app. Android will open it at startup and return to playback after standby. Use System settings to change the default later."
+                : "Select Nexus Signage as Home, then choose Always if asked. After this one-time setup, Nexus opens at power-on. The display must be set to start Android rather than another input. IT can provision managed kiosk mode for stronger locking.")
             .setPositiveButton(Startup.isHome(this) ? "Open Home settings" : "Choose Nexus as Home", (dialog, which) -> {
-                try { Startup.configure(this); } catch (RuntimeException exception) { show("TV startup settings", "This TV does not expose Home-app selection. Ask your IT administrator to set Nexus Signage as the default launcher using ADB; see the Nexus Android TV setup guide."); }
+                try { Startup.configure(this); enterKiosk(); } catch (RuntimeException exception) { show("TV startup settings", "This TV does not expose Home-app selection. Ask your IT administrator to set Nexus Signage as the default launcher using ADB; see the Nexus Android TV setup guide."); }
             }).setNegativeButton("Cancel", null).show();
     }
     private void options() {
-        new AlertDialog.Builder(this).setTitle("Nexus Signage settings")
-            .setItems(new String[]{"Automatic startup", "Change server / pair again", "System settings"}, (dialog, which) -> {
+        new FullscreenDialogBuilder(this).setTitle("Nexus Signage settings")
+            .setItems(new String[]{"Automatic startup", "Display orientation", "Display information", "Change server / pair again", "System settings", settings.getBoolean("kiosk", true) ? "Pause managed kiosk lock" : "Resume managed kiosk lock"}, (dialog, which) -> {
                 if (which == 0) startup();
-                else if (which == 1) new AlertDialog.Builder(this).setTitle("Disconnect this TV?").setMessage("This clears its player key and downloaded playlist. You will need to pair it again.").setPositiveButton("Disconnect", (d, w) -> revoke()).setNegativeButton("Cancel", null).show();
-                else { try { startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS)); } catch (RuntimeException ignored) {} }
+                else if (which == 1) orientationOptions();
+                else if (which == 2) displayInformation();
+                else if (which == 3) new FullscreenDialogBuilder(this).setTitle("Disconnect this TV?").setMessage("This clears its player key and downloaded playlist. You will need to pair it again.").setPositiveButton("Disconnect", (d, w) -> revoke()).setNegativeButton("Cancel", null).show();
+                else if (which == 4) { try { startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS)); } catch (RuntimeException ignored) {} }
+                else if (KioskAdmin.isOwner(this)) {
+                    boolean enabled = !settings.getBoolean("kiosk", true); settings.edit().putBoolean("kiosk", enabled).apply();
+                    if (enabled) enterKiosk(); else stopLockTask();
+                } else new FullscreenDialogBuilder(this).setTitle("Managed kiosk setup").setMessage("The Home setting provides automatic startup. Locking out other apps requires one-time device-owner setup by your IT administrator. See the included T960X setup guide.").setPositiveButton("OK", null).show();
             }).setNegativeButton("Close", null).show();
     }
     private void revealControls() {
-        controls.setVisibility(View.VISIBLE); ((LinearLayout) controls.getChildAt(1)).getChildAt(0).requestFocus();
+        controls.setVisibility(View.VISIBLE); controlButtons.getChildAt(0).requestFocus();
         if (hideControls != null) ui.removeCallbacks(hideControls);
         hideControls = () -> { controls.setVisibility(View.GONE); stage.requestFocus(); }; ui.postDelayed(hideControls, 15000);
+    }
+    private int controlColumns(int pixels) { return Math.max(1, Math.min(5, Math.max(1, pixels - dp(64)) / dp(150))); }
+    private DisplayLayout.Size displayLayout() {
+        JSONObject screen = active == null ? null : active.optJSONObject("screen");
+        int width = stage.getWidth() > 0 ? stage.getWidth() : getResources().getDisplayMetrics().widthPixels;
+        int height = stage.getHeight() > 0 ? stage.getHeight() : getResources().getDisplayMetrics().heightPixels;
+        return DisplayLayout.fit(width, height, screen == null ? "landscape" : screen.optString("orientation"));
+    }
+    private void layoutMedia() {
+        if (stage.getWidth() <= 0 || stage.getHeight() <= 0) return;
+        DisplayLayout.Size output = displayLayout();
+        media.setRotation(output.rotationDegrees);
+        FrameLayout.LayoutParams previous = (FrameLayout.LayoutParams) media.getLayoutParams();
+        if (previous.width != output.width || previous.height != output.height) media.setLayoutParams(new FrameLayout.LayoutParams(output.width, output.height, Gravity.CENTER));
+    }
+    private void applyOrientation() {
+        String orientation = settings.getString("orientation", "native");
+        setRequestedOrientation("portrait".equals(orientation) ? ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            : "landscape".equals(orientation) ? ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE : ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
+    }
+    private void orientationOptions() {
+        String value = settings.getString("orientation", "native");
+        int selected = "portrait".equals(value) ? 1 : "landscape".equals(value) ? 2 : 0;
+        new FullscreenDialogBuilder(this).setTitle("Display orientation").setSingleChoiceItems(new String[]{"Automatic (native screen)", "Portrait", "Landscape"}, selected, (dialog, which) -> {
+            settings.edit().putString("orientation", which == 1 ? "portrait" : which == 2 ? "landscape" : "native").apply();
+            dialog.dismiss(); applyOrientation();
+        }).setNegativeButton("Close", null).show();
+    }
+    private void displayInformation() {
+        new FullscreenDialogBuilder(this).setTitle("Display information").setMessage(Build.MANUFACTURER + " " + Build.MODEL
+            + "\nAndroid " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + ")"
+            + "\nPlayer " + getString(R.string.player_version)
+            + "\nApp output: " + stage.getWidth() + " × " + stage.getHeight()
+            + "\nDefault Home: " + (Startup.isHome(this) ? "Nexus" : "Not selected")
+            + "\nManaged kiosk: " + (KioskAdmin.isOwner(this) ? "Available" : "Not provisioned")
+            + (lastError.isEmpty() ? "" : "\nLast playback error: " + lastError)).setPositiveButton("OK", null).show();
+    }
+    private void enterKiosk() {
+        try { if (KioskAdmin.configure(this) && settings.getBoolean("kiosk", true)) startLockTask(); }
+        catch (RuntimeException exception) { note("Choose Nexus as Home in Startup. Managed kiosk is not available on this firmware."); }
+    }
+    @Override public boolean dispatchTouchEvent(MotionEvent event) {
+        if (event.getActionMasked() == MotionEvent.ACTION_DOWN && !token().isEmpty() && controls.getVisibility() != View.VISIBLE) {
+            touchX = event.getX(); touchY = event.getY();
+            touchControls = this::revealControls; ui.postDelayed(touchControls, 1000);
+        } else if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_CANCEL
+                || (event.getActionMasked() == MotionEvent.ACTION_MOVE && (Math.abs(event.getX() - touchX) > dp(16) || Math.abs(event.getY() - touchY) > dp(16)))) {
+            if (touchControls != null) ui.removeCallbacks(touchControls); touchControls = null;
+        }
+        return super.dispatchTouchEvent(event);
     }
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
         if (event.getAction() == KeyEvent.ACTION_DOWN && !token().isEmpty()) {
@@ -400,10 +470,12 @@ public final class MainActivity extends Activity {
     }
     @Override protected void onResume() {
         super.onResume(); foreground = true;
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        enterKiosk();
+        fullscreen.start();
         if (!token().isEmpty() && active != null && player == null && website == null && imageBitmap == null && !imageLoading && remoteEnabled) play(current < 0 ? 0 : current);
         schedule(0);
     }
-    @Override protected void onPause() { foreground = false; synchronized (this) { if (pollTask != null) pollTask.cancel(false); } releaseMedia(); super.onPause(); }
-    @Override protected void onDestroy() { foreground = false; epoch++; ui.removeCallbacksAndMessages(null); network.shutdownNow(); downloader.shutdownNow(); releaseMedia(); super.onDestroy(); }
+    @Override public void onWindowFocusChanged(boolean hasFocus) { super.onWindowFocusChanged(hasFocus); if (hasFocus && fullscreen != null) fullscreen.focusReturned(); }
+    @Override protected void onPause() { foreground = false; fullscreen.stop(); if (touchControls != null) ui.removeCallbacks(touchControls); synchronized (this) { if (pollTask != null) pollTask.cancel(false); } releaseMedia(); super.onPause(); }
+    @Override protected void onDestroy() { foreground = false; epoch++; ui.removeCallbacksAndMessages(null); network.shutdownNow(); downloader.shutdownNow(); imageDecoder.shutdownNow(); releaseMedia(); super.onDestroy(); }
 }

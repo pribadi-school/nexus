@@ -23,7 +23,7 @@ final class NexusApi {
         connection.setConnectTimeout(10000);
         connection.setReadTimeout(20000);
         connection.setInstanceFollowRedirects(false);
-        connection.setRequestProperty("User-Agent", "NexusSignageTV/1.0");
+        connection.setRequestProperty("User-Agent", "NexusSignageTV/1.3.0");
         connection.setRequestProperty("Accept-Encoding", "identity");
         return connection;
     }

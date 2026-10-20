@@ -97,7 +97,15 @@ completely separate from the school's WordPress site. UI language: English.
    connectivity. The companion `android-tv/` app pairs by a six-digit code,
    downloads complete MP4 playlists for offline playback, and supports
    one-time default Home configuration for TV startup (see `docs/android-tv.md`).
-   It does not use the AbleSign API. Migration 007 adds expiring device-secret
+   Android player 1.3.0 supports API25 (the school's T960X Android 7.1.2 native
+   portrait panel), bounded/EXIF-aware image decoding on its own executor,
+   native portrait without double rotation, touch-and-hold controls and wrapped
+   buttons. `Fullscreen` restores immersive playback and menus after focus/resume;
+   normal Android may still show transient edge-swipe bars. Home selection enables
+   automatic boot startup; optional explicit device-owner provisioning of
+   `.KioskAdmin` enables persistent Home and lock task mode, with a maintenance
+   pause in Settings. See `docs/t960x-setup.md`. No OS/security bypass or launcher
+   deletion is used. It does not use the AbleSign API. Migration 007 adds expiring device-secret
    pairing requests and hashed-IP start throttling; only its two public POST
    APIs omit CSRF. The signed-in pairing approval form still requires CSRF.
    Migration 006 adds four signage tables without seeds. `config/signage.php`

@@ -22,6 +22,26 @@ live polling or streaming updates continue without a manual refresh or periodic
 playlist reload. A website that does not update itself will still need its own
 refresh mechanism. Mixed playlists continue using each website's display time.
 
+Version **1.3.0** supports Android **7.1/API25** and native portrait displays,
+including the school's T960X Android 7.1.2 standing panel. The app follows
+Android's native orientation instead of forcing landscape. Native portrait is
+not rotated again when the Nexus screen is set to Portrait. The existing
+rotation for physically upright landscape TVs remains available. Hold a finger
+still for one second to open controls on touch displays. Controls wrap to fit
+narrow screens. **Settings → Display orientation** offers native, portrait and
+landscape output; **Display information** shows actual app output dimensions.
+Images are sampled to a screen/heap budget and JPEG EXIF orientation is honored.
+Image decoding runs separately from downloads so playlist updates do not queue
+image playback behind a large transfer. See [T960X quick setup](t960x-setup.md).
+
+Immersive fullscreen hides both Android system bars and lays playback across
+the full window. It is reapplied after resume, focus changes and persistent
+system-bar visibility changes; player menus apply the same flags before they
+open. Recovery callbacks are event-driven and stop when the app is paused.
+Android can briefly expose transient bars after an edge swipe, and external
+Settings/keyboards retain their system navigation. Device-owner kiosk mode
+provides the stronger navigation lock.
+
 ## Installation and pairing
 
 1. Deploy Nexus, then import `007_signage_pairing.sql` after migration 006.
@@ -29,7 +49,7 @@ refresh mechanism. Mixed playlists continue using each website's display time.
 2. Add content and a screen in Nexus → Signage. Open the screen to arrange
    its own playlist, then save changes.
 3. Install `dist/nexus-signage-tv.apk` on the TV using USB or your usual Android
-   installation method. The minimum version is Android 8.0 (API 26).
+   installation method. The minimum version is Android 7.1 (API 25).
 4. Open **Nexus Signage**, enter the Nexus server address, and request a code.
 5. In the web app, open **Signage → Pair Android TV**, enter the six-digit code,
    and choose the screen. Codes expire after ten minutes.
@@ -49,7 +69,7 @@ Select **Startup → Choose Nexus as Home**, then choose Nexus Signage as the
 default Home app. Android itself then launches Nexus as its home screen when
 the TV boots. Playback resumes when the app returns from standby. This setup
 uses standard Android Home-app selection; it does not require accessibility,
-overlay, or device-administrator permissions.
+overlay, or device-administrator permissions for ordinary default-Home startup.
 
 Some TV manufacturers hide or restrict Home-app selection. The Startup dialog
 explains this rather than pretending a boot receiver guarantees launch on
@@ -76,6 +96,16 @@ startup path. Installation, initial pairing and startup selection are one-time
 steps. An APK cannot bypass Android's initial stopped-app state, a deliberate
 Force stop, manufacturer restrictions, or a TV configured to power on to a
 different input. Test a full power-off/on and standby cycle on each TV model.
+
+Version 1.3.0 also includes an optional device-owner component, `.KioskAdmin`,
+for a fully managed school display. Explicit IT provisioning grants ownership;
+installing the APK alone does not. When provisioned, Nexus sets a persistent
+preferred Home activity, allowlists itself and enters lock task mode on resume.
+It does not disable the original launcher. Hold the screen → **Settings → Pause
+managed kiosk lock** before opening System settings for maintenance; Settings
+is also available before pairing. The kiosk pause choice is saved. See the
+[T960X guide](t960x-setup.md) for provisioning and recovery, and Android's
+[dedicated-device guide](https://developer.android.com/work/dpc/dedicated-devices/cookbook).
 
 ## Offline playback and updates
 

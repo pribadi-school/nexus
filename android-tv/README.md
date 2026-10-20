@@ -12,6 +12,12 @@ Version 1.2.1 fixes website sizing: a desktop viewport scales to fit the screen
 regardless of Android display density. Single-website playlists remain open for
 the website's live updates; mixed playlists retain configured display times.
 
+Version 1.3.0 adds Android 7.1/API25 support for the school's T960X standing
+display. Native portrait output stays upright. Touch-and-hold opens controls,
+controls wrap on narrow screens, and image decoding has a heap budget and JPEG
+orientation support. Default Home startup and optional device-owner kiosk
+locking are included. See the [T960X quick setup](../docs/t960x-setup.md).
+
 ## Build on Windows
 
 Install JDK 17 and the Android SDK packages `platforms;android-36`,
@@ -46,7 +52,7 @@ sh gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
 
 ## Install and pair
 
-Install the APK on an Android TV with Android 8.0 or newer. For a device
+Install the APK on an Android display with Android 7.1 or newer. For a device
 already connected through Android Debug Bridge:
 
 ```sh
