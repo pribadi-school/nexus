@@ -97,6 +97,33 @@ abstract class Category
         return '%' . addcslashes($query, '%_\\') . '%';
     }
 
+    /**
+     * Shared dashboard search: visible device details plus the entire notes log.
+     * $fields contains trusted SQL expressions supplied by category code only.
+     *
+     * @param list<string> $fields
+     * @return array{0:string, 1:list<string>}
+     */
+    protected function searchMatch(string $query, array $fields): array
+    {
+        $like = self::likePattern($query);
+        $fields = array_merge(['d.model', 'd.serial_number', 'd.status'], $fields);
+        $clauses = array_map(static fn (string $field): string => "$field LIKE ?", $fields);
+        $params = array_fill(0, count($fields), $like);
+        $clauses[] = '? LIKE ?';
+        array_push($params, $this->name(), $like);
+        $clauses[] = '? LIKE ?';
+        array_push($params, implode(' ', $this->noun()), $like);
+        $clauses[] = "(CASE WHEN d.status = 'problem' THEN ? ELSE ? END) LIKE ?";
+        array_push($params, $this->statusLabel(Status::PROBLEM), $this->statusLabel(Status::OK), $like);
+        $clauses[] = 'EXISTS (
+            SELECT 1 FROM device_notes sn LEFT JOIN users su ON su.id = sn.user_id
+            WHERE sn.device_id = d.id AND (sn.body LIKE ? OR sn.kind LIKE ? OR su.name LIKE ?)
+        )';
+        array_push($params, $like, $like, $like);
+        return ['(' . implode(' OR ', $clauses) . ')', $params];
+    }
+
     /** "Classroom 7B", for headings, toasts and confirmations about one device. */
     public function title(int $deviceId): string
     {

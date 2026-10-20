@@ -48,6 +48,7 @@ use App\Devices\Status;
           <th scope="col">Room</th>
           <th scope="col">Model</th>
           <th scope="col">Firmware</th>
+          <th scope="col">Latest note</th>
           <th scope="col">Last updated</th>
         </tr>
       </thead>
@@ -56,10 +57,11 @@ use App\Devices\Status;
           <tr class="<?= $problem ? 'is-problem' : '' ?>" data-device-row="<?= (int) $board['id'] ?>">
             <th scope="row">
               <a class="data-table__link" href="/studytouch/<?= (int) $board['id'] ?>"><?= e($board['room_name']) ?></a>
-              <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category, 'note' => $board['latest_note'], 'noteAt' => $board['latest_note_at']]) ?><?php endif ?>
+              <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
             </th>
             <td><?= e($board['model'] ?? '–') ?></td>
             <td class="num"><?= e($board['firmware_version'] ?? '–') ?></td>
+            <td class="data-table__note"><?= partial('partials/latest-note', ['device' => $board, 'href' => '/studytouch/' . (int) $board['id']]) ?></td>
             <td class="data-table__muted">
               <time datetime="<?= e(iso_time($board['updated_at'])) ?>" title="<?= e(format_datetime($board['updated_at'])) ?><?= $board['updated_by_name'] ? ' by ' . e($board['updated_by_name']) : '' ?>"><?= e(time_ago($board['updated_at'])) ?></time>
             </td>
@@ -76,7 +78,9 @@ use App\Devices\Status;
         <a class="device-card__main" href="/studytouch/<?= (int) $board['id'] ?>">
           <span class="device-card__title"><?= e($board['room_name']) ?></span>
           <span class="device-card__meta"><?= e($board['model'] ?? 'No model yet') ?></span>
-          <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category, 'note' => $board['latest_note'], 'noteAt' => $board['latest_note_at']]) ?><?php endif ?>
+          <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
+          <span class="device-card__note-label">Latest note</span>
+          <?= partial('partials/latest-note', ['device' => $board]) ?>
           <span class="device-card__meta">
             <?= $board['firmware_version'] ? 'Firmware ' . e($board['firmware_version']) . ' · ' : '' ?>Updated <?= e(time_ago($board['updated_at'])) ?>
           </span>

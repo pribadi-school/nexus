@@ -70,6 +70,7 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
           <th scope="col">Asset ID</th>
           <th scope="col">Student</th>
           <th scope="col">Serial number</th>
+          <th scope="col">Latest note</th>
           <th scope="col">Last updated</th>
         </tr>
       </thead>
@@ -83,6 +84,7 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
               <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
             </td>
             <td class="num"><?= e($c['serial_number'] ?? '–') ?></td>
+            <td class="data-table__note"><?= partial('partials/latest-note', ['device' => $c, 'href' => '/chromebooks/' . (int) $c['id']]) ?></td>
             <td class="data-table__muted">
               <time datetime="<?= e(iso_time($c['updated_at'])) ?>" title="<?= e(format_datetime($c['updated_at'])) ?><?= $c['updated_by_name'] ? ' by ' . e($c['updated_by_name']) : '' ?>"><?= e(time_ago($c['updated_at'])) ?></time>
             </td>
@@ -100,6 +102,8 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
           <span class="device-card__title<?= $c['student_name'] === null ? ' is-unassigned' : '' ?>"><?= e($student($c)) ?></span>
           <span class="device-card__meta num"><?= e(implode(' · ', array_filter([$c['asset_id'], $c['serial_number'] ?? 'No serial yet']))) ?></span>
           <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
+          <span class="device-card__note-label">Latest note</span>
+          <?= partial('partials/latest-note', ['device' => $c]) ?>
         </a>
         <?= icon('chevron-right', 'device-card__chevron') ?>
       </li>

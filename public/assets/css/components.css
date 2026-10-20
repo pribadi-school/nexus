@@ -408,6 +408,9 @@
 .search-result__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .search-result__title { font-weight: 600; color: var(--color-foreground); }
 .search-result__context { font-size: var(--fs-caption); color: var(--color-muted-foreground); }
+.search-result__note { display: flex; flex-direction: column; gap: var(--space-1); margin-top: var(--space-2); }
+.search-result__excerpt { font-size: var(--fs-ui); overflow-wrap: anywhere; white-space: pre-line; }
+.search-result__excerpt mark { background: var(--color-action-tint); color: var(--color-foreground); font-weight: 600; }
 
 /* ===================================================== notes / feed === */
 /* One entry markup (views/partials/note-entry.php) serves the dashboard

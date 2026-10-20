@@ -73,14 +73,23 @@ final class ChromebookCategory extends Category
 
     public function searchIds(string $query, int $limit): array
     {
+        [$match, $params] = $this->searchMatch($query, [
+            'c.asset_id', 'c.student_name', 'c.student_email',
+            "CASE WHEN c.academic_year = 0 THEN 'School' ELSE CONCAT('Academic year ', c.academic_year) END",
+        ]);
         $like = self::likePattern($query);
+        $match = "($match OR EXISTS (
+            SELECT 1 FROM chromebook_assignments a WHERE a.device_id = d.id
+            AND (a.student_name LIKE ? OR a.class_name LIKE ?)
+        ))";
+        array_push($params, $like, $like);
         return array_map('intval', array_column(db()->all(
             "SELECT d.id FROM devices d
              JOIN chromebooks c ON c.device_id = d.id
              WHERE d.category = 'chromebook' AND d.deleted_at IS NULL
-               AND (c.asset_id LIKE ? OR d.serial_number LIKE ? OR c.student_name LIKE ? OR c.student_email LIKE ?)
+               AND $match
              ORDER BY c.academic_year DESC, c.asset_id LIMIT " . max(1, $limit),
-            [$like, $like, $like, $like],
+            $params,
         ), 'id'));
     }
 

@@ -17,12 +17,18 @@ final class CctvRepository
     private const SELECT = "SELECT d.id, d.model, d.status, d.status_changed_at,
                                    d.updated_at, d.created_at, d.last_checked_at,
                                    c.label, c.sd_card_gb, c.location_id, l.name AS location_name,
-                                   uu.name AS updated_by_name, uc.name AS created_by_name
+                                   uu.name AS updated_by_name, uc.name AS created_by_name,
+                                   n.body AS latest_note, n.created_at AS latest_note_at
                             FROM devices d
                             JOIN cctv_cameras c ON c.device_id = d.id
                             LEFT JOIN cctv_locations l ON l.id = c.location_id
                             LEFT JOIN users uu ON uu.id = d.updated_by
                             LEFT JOIN users uc ON uc.id = d.created_by
+                            LEFT JOIN device_notes n ON n.id = (
+                                SELECT n2.id FROM device_notes n2
+                                WHERE n2.device_id = d.id AND n2.kind <> 'status'
+                                ORDER BY n2.created_at DESC, n2.id DESC LIMIT 1
+                            )
                             WHERE d.category = 'cctv' AND d.deleted_at IS NULL";
 
     /**

@@ -49,6 +49,7 @@ $sd = static fn (array $camera): string => $camera['sd_card_gb'] !== null ? (int
           <th scope="col">Location</th>
           <th scope="col">Type</th>
           <th scope="col">SD card</th>
+          <th scope="col">Latest note</th>
         </tr>
       </thead>
       <tbody>
@@ -61,6 +62,7 @@ $sd = static fn (array $camera): string => $camera['sd_card_gb'] !== null ? (int
             <td><?= e($camera['location_name'] ?? 'Not assigned') ?></td>
             <td><?= e($camera['model'] ?? '–') ?></td>
             <td class="num nowrap"><?= $sd($camera) ?></td>
+            <td class="data-table__note"><?= partial('partials/latest-note', ['device' => $camera, 'href' => '/cctv/' . (int) $camera['id']]) ?></td>
           </tr>
         <?php endforeach ?>
       </tbody>
@@ -76,6 +78,8 @@ $sd = static fn (array $camera): string => $camera['sd_card_gb'] !== null ? (int
           <span class="device-card__meta"><?= e($camera['location_name'] ?? 'Not assigned') ?></span>
           <span class="device-card__meta"><?= e(implode(' · ', array_filter([$camera['model'], $camera['sd_card_gb'] !== null ? $sd($camera) . ' SD card' : null]))) ?></span>
           <?php if ($problem): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
+          <span class="device-card__note-label">Latest note</span>
+          <?= partial('partials/latest-note', ['device' => $camera]) ?>
         </a>
         <?= icon('chevron-right', 'device-card__chevron') ?>
       </li>

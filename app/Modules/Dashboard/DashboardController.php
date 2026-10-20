@@ -40,7 +40,7 @@ final class DashboardController
     /** GET /search?q= : devices of every category matching the dashboard search. */
     public function search(Request $request): Response
     {
-        $query = mb_substr((string) $request->query('q', ''), 0, 100);
+        $query = mb_substr(trim((string) $request->query('q', '')), 0, 100);
         $results = $query === '' ? [] : (new DeviceRepository())->search($query);
 
         return Response::html(View::render('Dashboard::search', [

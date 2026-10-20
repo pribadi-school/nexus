@@ -79,6 +79,11 @@ final class DeviceRepository
      */
     public function search(string $query, int $perCategory = 100): array
     {
+        $query = trim($query);
+        if ($query === '') {
+            return [];
+        }
+        $like = '%' . addcslashes($query, '%_\\') . '%';
         $rows = [];
         foreach (categories()->all() as $key => $category) {
             $ids = $category->searchIds($query, $perCategory);
@@ -86,9 +91,18 @@ final class DeviceRepository
                 continue;
             }
             $found = db()->all(
-                'SELECT id AS device_id, category, status FROM devices
-                 WHERE deleted_at IS NULL AND id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
-                $ids,
+                'SELECT d.id AS device_id, d.category, d.status,
+                        n.id AS matching_note_id, n.body AS matching_note, n.kind AS matching_note_kind,
+                        n.created_at AS matching_note_at, u.name AS matching_note_author
+                 FROM devices d
+                 LEFT JOIN device_notes n ON n.id = (
+                     SELECT sn.id FROM device_notes sn LEFT JOIN users su ON su.id = sn.user_id
+                     WHERE sn.device_id = d.id AND (sn.body LIKE ? OR sn.kind LIKE ? OR su.name LIKE ?)
+                     ORDER BY sn.created_at DESC, sn.id DESC LIMIT 1
+                 )
+                 LEFT JOIN users u ON u.id = n.user_id
+                 WHERE d.deleted_at IS NULL AND d.id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
+                [$like, $like, $like, ...$ids],
             );
             // Keep the category's own order (best matches first).
             $order = array_flip($ids);

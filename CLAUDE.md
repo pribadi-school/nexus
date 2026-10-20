@@ -12,7 +12,10 @@ completely separate from the school's WordPress site. UI language: English.
    System" under the logo + Sign out at the bottom; desktop page bar with
    breadcrumb + refresh; bottom nav on phones), sign-in, Dashboard laid out
    like the other Pribadi apps (search across all devices at `/search`
-   via `Category::searchIds`, stat strip per category + "Needs attention",
+   via `Category::searchIds` and shared `Category::searchMatch`: device details,
+   status labels, full note bodies/kinds/authors and previous Chromebook assignments,
+   with matching note excerpts (independent of the recent-activity cutoff),
+   stat strip per category + "Needs attention",
    problem alert, problem table, compact recent activity)
    and sample data.
 2. **Done: StudyTouch** (`app/Modules/StudyTouch`): list (table ≥900px,
@@ -121,6 +124,13 @@ completely separate from the school's WordPress site. UI language: English.
   (owner decision, Oct 2026): a problem row is red with
   `partials/problem-flag.php` ("Has problem" chip + latest note if given)
   under the device name; status is changed on the device page.
+- All three device lists have a **Latest note** column and matching mobile
+  card field using `partials/latest-note.php`: newest note except automatic
+  `status` lines, ordered by `created_at DESC, id DESC`, shown for OK and problem
+  devices. Notes link to the device's notes log, with two-line previews and dates.
+  Repositories select these with an indexed correlated join, never per-row queries.
+  `tests/device-search-notes.php` covers historical search, escaping, soft deletion,
+  latest-note ordering and both list presentations with rollback fixtures.
 - `views/partials/notes-log.php`: add-note form (placeholder from `Category::noteExample()`, kinds from
   `Category::noteKinds()`, "Also mark as …" checkbox) + entries
   (`partials/note-entry.php`, also used by the dashboard feed).

@@ -17,7 +17,7 @@ final class StudyTouchRepository
                                    n.body AS latest_note, n.created_at AS latest_note_at
                             FROM devices d
                             -- Latest note a person wrote (not the automatic status lines),
-                            -- shown under the status of boards with a problem.
+                            -- shown for every board in the Latest note column.
                             LEFT JOIN device_notes n ON n.id = (
                                 SELECT n2.id FROM device_notes n2
                                 WHERE n2.device_id = d.id AND n2.kind <> 'status'

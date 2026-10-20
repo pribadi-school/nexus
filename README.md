@@ -25,6 +25,12 @@ The list filter and imports support the same option. Existing Chromebooks
 keep their year until you edit them; changing category preserves assignment
 history. No database migration is required for this option.
 
+Dashboard search covers device details, status, note authors, the full notes
+and problem history, and past Chromebook assignments. Matching notes appear
+as highlighted excerpts, including older notes on devices that are now OK.
+StudyTouch, CCTV and Chromebook lists show the latest non-status note and
+its date on desktop and mobile. No database migration is required.
+
 ## More
 
 - Project guide and conventions: [CLAUDE.md](CLAUDE.md)

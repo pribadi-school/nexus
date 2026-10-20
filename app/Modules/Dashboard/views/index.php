@@ -40,7 +40,7 @@ use App\Devices\Status;
       <?= icon('search', 'icon--sm') ?>
       <label class="visually-hidden" for="dash-q">Search all devices</label>
       <input class="input" id="dash-q" type="search" name="q" autocomplete="off" enterkeyhint="search"
-             placeholder="Search a room, camera spot, asset ID or student…">
+             placeholder="Search devices, people, notes or problems…">
     </div>
     <button type="submit" class="btn btn--secondary">Search<?= icon('arrow-right', 'icon--sm') ?></button>
   </form>

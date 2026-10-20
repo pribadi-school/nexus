@@ -44,15 +44,15 @@ final class CctvCategory extends Category
 
     public function searchIds(string $query, int $limit): array
     {
-        $like = self::likePattern($query);
+        [$match, $params] = $this->searchMatch($query, ['c.label', 'l.name', "CONCAT(c.sd_card_gb, ' GB')"]);
         return array_map('intval', array_column(db()->all(
             "SELECT d.id FROM devices d
              JOIN cctv_cameras c ON c.device_id = d.id
              LEFT JOIN cctv_locations l ON l.id = c.location_id
              WHERE d.category = 'cctv' AND d.deleted_at IS NULL
-               AND (c.label LIKE ? OR d.model LIKE ? OR l.name LIKE ?)
+               AND $match
              ORDER BY d.id LIMIT " . max(1, $limit),
-            [$like, $like, $like],
+            $params,
         ), 'id'));
     }
 

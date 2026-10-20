@@ -50,15 +50,15 @@ final class StudyTouchCategory extends Category
 
     public function searchIds(string $query, int $limit): array
     {
-        $like = self::likePattern($query);
+        [$match, $params] = $this->searchMatch($query, ['r.name', 'b.firmware_version']);
         return array_map('intval', array_column(db()->all(
             "SELECT d.id FROM devices d
              JOIN studytouch_boards b ON b.device_id = d.id
              JOIN rooms r ON r.id = b.room_id
              WHERE d.category = 'studytouch' AND d.deleted_at IS NULL
-               AND (r.name LIKE ? OR d.model LIKE ? OR b.firmware_version LIKE ?)
+               AND $match
              ORDER BY r.sort_order, r.name LIMIT " . max(1, $limit),
-            [$like, $like, $like],
+            $params,
         ), 'id'));
     }
 

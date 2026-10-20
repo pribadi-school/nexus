@@ -15,7 +15,7 @@ foreach ($results as $row) {
 <header class="page-header">
   <div>
     <h1 class="page-title">Search</h1>
-    <p class="page-subtitle">Rooms, camera spots, asset IDs, serial numbers, students and emails.</p>
+    <p class="page-subtitle">Search device details, people and the full notes and problem history.</p>
   </div>
 </header>
 
@@ -24,14 +24,14 @@ foreach ($results as $row) {
     <?= icon('search', 'icon--sm') ?>
     <label class="visually-hidden" for="search-q">Search all devices</label>
     <input class="input" id="search-q" type="search" name="q" value="<?= e($query) ?>" autocomplete="off" enterkeyhint="search"
-           placeholder="Search a room, camera spot, asset ID or student…"<?= $query === '' ? ' autofocus' : '' ?>>
+           placeholder="Search devices, people, notes or problems…"<?= $query === '' ? ' autofocus' : '' ?>>
   </div>
   <button type="submit" class="btn btn--secondary">Search<?= icon('arrow-right', 'icon--sm') ?></button>
 </form>
 
 <?php if ($query === ''): ?>
   <section class="card">
-    <?= partial('partials/empty-state', ['icon' => 'search', 'title' => 'Find any device', 'text' => 'Type part of a room name, camera spot, asset ID, serial number or student name.', 'compact' => true]) ?>
+    <?= partial('partials/empty-state', ['icon' => 'search', 'title' => 'Find any device', 'text' => 'Search names, rooms, locations, models, asset IDs, serial numbers, years, people, emails, notes or problems.', 'compact' => true]) ?>
   </section>
 <?php elseif ($results === []): ?>
   <section class="card">
@@ -49,10 +49,11 @@ foreach ($results as $row) {
         <ul class="search-results">
           <?php foreach ($rows as $row): $problem = $row['status'] === Status::PROBLEM; ?>
             <li class="search-result<?= $problem ? ' is-problem' : '' ?>">
-              <a href="<?= e($row['url']) ?>">
+              <a href="<?= e($row['url']) ?><?= $row['matching_note_id'] !== null ? '#notes' : '' ?>">
                 <span class="search-result__text">
                   <span class="search-result__title"><?= e($row['title']) ?></span>
                   <span class="search-result__context"><?= e($row['context']) ?></span>
+                  <?php if ($row['matching_note_id'] !== null): ?><?= partial('Dashboard::_matching-note', ['row' => $row, 'query' => $query]) ?><?php endif ?>
                   <?php if ($problem && $category !== null): ?><?= partial('partials/problem-flag', ['category' => $category]) ?><?php endif ?>
                 </span>
                 <?= icon('chevron-right', 'icon--sm device-card__chevron') ?>
