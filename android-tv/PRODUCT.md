@@ -28,6 +28,8 @@ manufacturer restrictions may require administrator setup.
 - Android 7.1 or newer, TV remote or touch navigation, English interface.
 - Native portrait and landscape display coordinates, including 4K output.
 - Optional device-owner provisioning enables persistent Home and lock task mode.
+- Android 7–9 can enable Wi-Fi at startup with a visible opt-out and bounded retry;
+  newer Android versions retain manual system Wi-Fi controls.
 - Code pairing approved in the signed-in Nexus web app.
 - Retain the last fully downloaded playlist during connectivity loss.
 - Websites need connectivity; original videos use the cPanel hosting plan.

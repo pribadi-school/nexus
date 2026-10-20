@@ -18,6 +18,12 @@ controls wrap on narrow screens, and image decoding has a heap budget and JPEG
 orientation support. Default Home startup and optional device-owner kiosk
 locking are included. See the [T960X quick setup](../docs/t960x-setup.md).
 
+Version 1.3.1 turns Wi-Fi on at Nexus startup on Android 7–9 by default.
+**Settings → Wi-Fi startup** can disable it or retry the bounded startup check.
+It preserves Android's saved networks, pairing and downloaded media, respects
+airplane mode and manual OFF changes, and never scans or stores Wi-Fi passwords.
+Android 10+ uses System settings for Wi-Fi control instead.
+
 ## Build on Windows
 
 Install JDK 17 and the Android SDK packages `platforms;android-36`,

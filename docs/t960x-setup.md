@@ -1,4 +1,4 @@
-# T960X vertical display — Nexus 1.3.0
+# T960X vertical display — Nexus 1.3.1
 
 Built for the supplied **T960X, Android 7.1.2 (API25), 2 GB, native portrait**
 display. Supports video, image and website playlists and 4K display coordinates.
@@ -6,7 +6,7 @@ Physical playback and power-on still need checking on the display itself.
 
 ## Install once
 
-1. Copy **nexus-signage-t960x-portrait-1.3.0.apk** to a USB drive and install it
+1. Copy **nexus-signage-t960x-portrait-1.3.1.apk** to a USB drive and install it
    on the display. Allow installation from that USB/file manager if Android asks.
 2. Open **Nexus Signage** once. Keep the server address
    **https://nexus.pribadidepok.sch.id**, then choose **Get pairing code**.
@@ -23,6 +23,27 @@ Physical playback and power-on still need checking on the display itself.
 Installing alone cannot select Home silently or start an app never opened.
 Default Home is Android's supported automatic startup method. Keep the old
 launcher installed so IT can restore it through Android settings if needed.
+
+## Updating from 1.3.0 — automatic Wi-Fi startup
+
+Install **1.3.1 over the existing app** and choose Update. Do not uninstall first:
+the update uses the same app/signing key and preserves pairing, Home selection,
+downloaded media and settings.
+
+On this Android 7.1.2 display, **Turn Wi-Fi on when Nexus starts** is enabled by
+default. Nexus makes a bounded startup attempt and lets Android reconnect to
+the network already saved on the TV. It never requests or changes the password.
+To see the result: hold the display for one second → **Settings → Wi-Fi startup**.
+The status updates while Android turns Wi-Fi on. Use **Retry startup** if needed;
+uncheck the option to stop future automatic requests. Airplane mode is respected.
+Turning the radio on is separate from connecting to the school network/internet.
+
+After updating, do one full power-off/on test with Nexus still selected as Home.
+Allow up to one minute for its startup check. Confirm Wi-Fi reconnects and the
+Nexus screen reports online. If Android rejects the request or the radio stays
+off, photograph the Wi-Fi startup status. Firmware/driver faults can still
+require vendor support; this APK cannot repair the physical Wi-Fi module.
+The feature runs only on Android 7–9; Android 10+ uses System settings instead.
 
 ## Content and display
 
@@ -64,7 +85,7 @@ Ordinary installation does not grant that control.
 With a computer already authorized for this display's USB debugging:
 
 ```sh
-adb install -r nexus-signage-t960x-portrait-1.3.0.apk
+adb install -r nexus-signage-t960x-portrait-1.3.1.apk
 adb shell dpm set-device-owner sch.id.pribadidepok.nexus.signage/.KioskAdmin
 adb shell am start -n sch.id.pribadidepok.nexus.signage/.MainActivity
 ```

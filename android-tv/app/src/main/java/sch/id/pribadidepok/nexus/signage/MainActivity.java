@@ -40,6 +40,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ImageView;
 import android.widget.GridLayout;
+import android.widget.CheckBox;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
@@ -71,6 +72,8 @@ public final class MainActivity extends Activity {
     private GridLayout controlButtons;
     private ScrollView setupForm;
     private Fullscreen fullscreen;
+    private WifiStartup wifiStartup;
+    private TextView wifiStatus;
     private TextView headline, explanation, status;
     private ExoPlayer player;
     private WebView website;
@@ -95,7 +98,9 @@ public final class MainActivity extends Activity {
         applyOrientation();
         cache = new MediaCache(this);
         createStage();
+        wifiStartup = new WifiStartup(this, detail -> { if (wifiStatus != null) wifiStatus.setText(detail); });
         if (token().isEmpty()) setup("Connect this TV to Nexus."); else loadSaved();
+        wifiStartup.start();
     }
 
     private int navy() { return getColor(R.color.nexus_navy); }
@@ -386,17 +391,41 @@ public final class MainActivity extends Activity {
     }
     private void options() {
         new FullscreenDialogBuilder(this).setTitle("Nexus Signage settings")
-            .setItems(new String[]{"Automatic startup", "Display orientation", "Display information", "Change server / pair again", "System settings", settings.getBoolean("kiosk", true) ? "Pause managed kiosk lock" : "Resume managed kiosk lock"}, (dialog, which) -> {
+            .setItems(new String[]{"Automatic startup", "Display orientation", "Display information", "Change server / pair again", "System settings", settings.getBoolean("kiosk", true) ? "Pause managed kiosk lock" : "Resume managed kiosk lock", "Wi-Fi startup"}, (dialog, which) -> {
                 if (which == 0) startup();
                 else if (which == 1) orientationOptions();
                 else if (which == 2) displayInformation();
                 else if (which == 3) new FullscreenDialogBuilder(this).setTitle("Disconnect this TV?").setMessage("This clears its player key and downloaded playlist. You will need to pair it again.").setPositiveButton("Disconnect", (d, w) -> revoke()).setNegativeButton("Cancel", null).show();
                 else if (which == 4) { try { startActivity(new Intent(android.provider.Settings.ACTION_SETTINGS)); } catch (RuntimeException ignored) {} }
+                else if (which == 6) wifiOptions();
                 else if (KioskAdmin.isOwner(this)) {
                     boolean enabled = !settings.getBoolean("kiosk", true); settings.edit().putBoolean("kiosk", enabled).apply();
                     if (enabled) enterKiosk(); else stopLockTask();
                 } else new FullscreenDialogBuilder(this).setTitle("Managed kiosk setup").setMessage("The Home setting provides automatic startup. Locking out other apps requires one-time device-owner setup by your IT administrator. See the included T960X setup guide.").setPositiveButton("OK", null).show();
             }).setNegativeButton("Close", null).show();
+    }
+    private void wifiOptions() {
+        LinearLayout layout = new LinearLayout(this); layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(dp(24), dp(12), dp(24), dp(12));
+        CheckBox enabled = new CheckBox(this); enabled.setText("Turn Wi-Fi on when Nexus starts");
+        enabled.setChecked(WifiStartup.supported() && wifiStartup.enabled()); enabled.setEnabled(WifiStartup.supported());
+        layout.addView(enabled);
+        TextView help = new TextView(this); help.setTextSize(16); help.setPadding(0, dp(12), 0, dp(12));
+        help.setText(WifiStartup.supported()
+            ? "Android reconnects to its saved network. Nexus does not change your network or password. Airplane mode is respected."
+            : "This Android version requires Wi-Fi to be enabled in System settings.");
+        layout.addView(help);
+        TextView state = new TextView(this); state.setTextSize(16); state.setText(wifiStartup.status());
+        wifiStatus = state; layout.addView(state);
+        enabled.setOnCheckedChangeListener((button, checked) -> wifiStartup.enabled(checked));
+        ScrollView scroll = new ScrollView(this); scroll.addView(layout);
+        android.app.AlertDialog dialog = new FullscreenDialogBuilder(this).setTitle("Wi-Fi startup").setView(scroll)
+            .setPositiveButton("Close", null).setNeutralButton("Retry startup", (d, which) -> wifiStartup.retry()).show();
+        // Keep the status view only while its dialog is actually visible.
+        dialog.setOnCancelListener(ignored -> { if (wifiStatus == state) wifiStatus = null; });
+        dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> { if (wifiStatus == state) wifiStatus = null; dialog.dismiss(); });
+        dialog.getButton(android.app.AlertDialog.BUTTON_NEUTRAL).setEnabled(WifiStartup.supported());
+        dialog.getButton(android.app.AlertDialog.BUTTON_NEUTRAL).setOnClickListener(view -> wifiStartup.retry());
     }
     private void revealControls() {
         controls.setVisibility(View.VISIBLE); controlButtons.getChildAt(0).requestFocus();
@@ -437,6 +466,7 @@ public final class MainActivity extends Activity {
             + "\nApp output: " + stage.getWidth() + " × " + stage.getHeight()
             + "\nDefault Home: " + (Startup.isHome(this) ? "Nexus" : "Not selected")
             + "\nManaged kiosk: " + (KioskAdmin.isOwner(this) ? "Available" : "Not provisioned")
+            + "\nWi-Fi startup: " + (!WifiStartup.supported() ? "Not available on this Android version" : wifiStartup.enabled() ? "On" : "Off") + "\n" + wifiStartup.status()
             + (lastError.isEmpty() ? "" : "\nLast playback error: " + lastError)).setPositiveButton("OK", null).show();
     }
     private void enterKiosk() {
@@ -476,6 +506,6 @@ public final class MainActivity extends Activity {
         schedule(0);
     }
     @Override public void onWindowFocusChanged(boolean hasFocus) { super.onWindowFocusChanged(hasFocus); if (hasFocus && fullscreen != null) fullscreen.focusReturned(); }
-    @Override protected void onPause() { foreground = false; fullscreen.stop(); if (touchControls != null) ui.removeCallbacks(touchControls); synchronized (this) { if (pollTask != null) pollTask.cancel(false); } releaseMedia(); super.onPause(); }
+    @Override protected void onPause() { foreground = false; fullscreen.stop(); wifiStartup.stop(); if (touchControls != null) ui.removeCallbacks(touchControls); synchronized (this) { if (pollTask != null) pollTask.cancel(false); } releaseMedia(); super.onPause(); }
     @Override protected void onDestroy() { foreground = false; epoch++; ui.removeCallbacksAndMessages(null); network.shutdownNow(); downloader.shutdownNow(); imageDecoder.shutdownNow(); releaseMedia(); super.onDestroy(); }
 }

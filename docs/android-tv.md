@@ -42,6 +42,21 @@ Android can briefly expose transient bars after an edge swipe, and external
 Settings/keyboards retain their system navigation. Device-owner kiosk mode
 provides the stronger navigation lock.
 
+Version **1.3.1** adds **Settings → Wi-Fi startup**. It is on by default on Android
+7–9 and runs once when the activity is created (including Home-app startup after
+boot), independently of pairing. It requests the Wi-Fi radio be enabled, then
+checks the actual radio state; this does not imply internet or authentication
+succeeded. Android handles auto-connection to existing saved networks. There are
+at most three enable requests and a one-minute startup window. Already enabled
+or enabling radios, airplane mode, permission denial and vendor failures are
+handled without crashing playback. Leaving the app cancels pending checks;
+returning from Settings does not repeatedly override manual Wi-Fi OFF changes.
+The settings dialog has live status and an explicit Retry startup button.
+No saved network, credential, DHCP, sleep or hotspot setting is modified. On
+Android 10+ the feature is unavailable and no Wi-Fi toggle request is made.
+The manifest adds only normal Wi-Fi state/read-control permissions and declares
+Wi-Fi hardware optional. See [Android's Wi-Fi API](https://developer.android.com/reference/android/net/wifi/WifiManager#setWifiEnabled(boolean)).
+
 ## Installation and pairing
 
 1. Deploy Nexus, then import `007_signage_pairing.sql` after migration 006.
