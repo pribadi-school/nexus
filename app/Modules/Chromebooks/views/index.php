@@ -14,7 +14,7 @@ $targetYear = $year ?? $years[0];
   <div>
     <h1 class="page-title">Chromebooks</h1>
     <p class="page-subtitle">
-      <?= $year !== null ? 'Academic year ' . $year : 'All years' ?> · <?= e($category->count($counts['total'])) ?>
+      <?= $year !== null ? e($category->yearHeading($year)) : 'All years' ?> · <?= e($category->count($counts['total'])) ?>
       <?php if ($counts['problem'] > 0): ?>
         · <span class="status-word status-word--problem"><?= $counts['problem'] ?> <?= $counts['problem'] === 1 ? 'has a problem' : 'have a problem' ?></span>
       <?php endif ?>
@@ -36,11 +36,11 @@ $targetYear = $year ?? $years[0];
            placeholder="Search asset ID, serial, student" autocomplete="off" enterkeyhint="search">
   </div>
   <div class="filters__field">
-    <label class="visually-hidden" for="filter-year">Academic year</label>
+    <label class="visually-hidden" for="filter-year">Year / category</label>
     <select class="select" id="filter-year" name="year">
       <option value="">All years</option>
       <?php foreach ($years as $y): $n = $yearCounts[$y] ?? ['total' => 0, 'problem' => 0]; ?>
-        <option value="<?= $y ?>"<?= $y === $year ? ' selected' : '' ?>><?= $y ?> (<?= $n['total'] ?>)</option>
+        <option value="<?= $y ?>"<?= $y === $year ? ' selected' : '' ?>><?= e($category->yearLabel($y)) ?> (<?= $n['total'] ?>)</option>
       <?php endforeach ?>
     </select>
   </div>

@@ -15,13 +15,14 @@ foreach ($plan['rows'] ?? [] as $row) {
 }
 $labels = ['add' => 'New', 'update' => 'Update', 'same' => 'No change', 'error' => 'Skipped'];
 $tones = ['add' => 'success', 'update' => 'action', 'same' => 'neutral', 'error' => 'problem'];
+$yearLabel = $category->yearLabel($year);
 ?>
-<a class="back-link" href="/chromebooks?year=<?= $year ?>"><?= icon('chevron-left', 'icon--sm') ?>Chromebooks <?= $year ?></a>
+<a class="back-link" href="/chromebooks?year=<?= $year ?>"><?= icon('chevron-left', 'icon--sm') ?>Chromebooks <?= e($yearLabel) ?></a>
 
 <header class="page-header">
   <div>
     <h1 class="page-title">Import Chromebooks</h1>
-    <p class="page-subtitle"><?= $plan === null ? 'Step 1 of 2: choose the year and the file' : "Step 2 of 2: check and import into $year" ?></p>
+    <p class="page-subtitle"><?= $plan === null ? 'Step 1 of 2: choose the year or School, and the file' : 'Step 2 of 2: check and import into ' . e($yearLabel) ?></p>
   </div>
 </header>
 
@@ -36,13 +37,13 @@ $tones = ['add' => 'success', 'update' => 'action', 'same' => 'neutral', 'error'
     <?= csrf_field() ?>
     <div class="form-grid">
       <div class="field">
-        <label class="field__label" for="academic_year">Academic year</label>
+        <label class="field__label" for="academic_year">Year / category</label>
         <select class="select" id="academic_year" name="academic_year">
           <?php foreach ($years as $y): ?>
-            <option value="<?= $y ?>"<?= $y === $year ? ' selected' : '' ?>><?= $y ?></option>
+            <option value="<?= $y ?>"<?= $y === $year ? ' selected' : '' ?>><?= e($category->yearLabel($y)) ?></option>
           <?php endforeach ?>
         </select>
-        <p class="field__hint">Every Chromebook in the file goes into this year's list.</p>
+        <p class="field__hint">Every Chromebook in the file goes into the selected year or School category.</p>
       </div>
       <div class="field">
         <label class="field__label" for="file">File</label>
@@ -53,14 +54,14 @@ $tones = ['add' => 'success', 'update' => 'action', 'same' => 'neutral', 'error'
     </div>
 
     <div class="import-help">
-      <p>The yearly list can be imported as it is. One of the first rows names the columns:</p>
+      <p>The list can be imported as it is. One of the first rows names the columns:</p>
       <ul>
-        <li><strong>ID</strong> (asset ID, e.g. <?= $year ?>-01) or <strong>Serial Number</strong>: at least one is needed. Rows are matched on asset ID, else on serial; new ones are added.</li>
+        <li><strong>ID</strong> (asset ID, e.g. <?= e($yearLabel) ?>-01) or <strong>Serial Number</strong>: at least one is needed. Rows are matched on asset ID, else on serial; new ones are added.</li>
         <li><strong>Nama</strong> / student name and <strong>Email</strong>: who has it. A new name is saved as a handover in the history. A registration number at the end of a name (REG-1140) is left out.</li>
         <li><strong>Model</strong>, <strong>Status</strong> (OK or Has problem): optional. Other columns (No, Tanggal Instalasi) are ignored.</li>
       </ul>
       <p>Empty cells never clear anything, so a later file with serial numbers only fills them in. Nothing is saved until you confirm on the next step.</p>
-      <p><a href="/chromebooks/import/example" download><?= icon('download', 'icon--sm') ?> Download an example file</a></p>
+      <p><a href="/chromebooks/import/example?year=<?= $year ?>" download><?= icon('download', 'icon--sm') ?> Download an example file</a></p>
     </div>
 
     <div class="form-actions">
@@ -70,7 +71,7 @@ $tones = ['add' => 'success', 'update' => 'action', 'same' => 'neutral', 'error'
   </form>
 <?php else: ?>
   <section class="card import-summary">
-    <p class="import-summary__file"><?= icon('upload', 'icon--sm') ?><?= e($plan['file']) ?> · <?= count($plan['rows']) ?> rows · into <?= $year ?></p>
+    <p class="import-summary__file"><?= icon('upload', 'icon--sm') ?><?= e($plan['file']) ?> · <?= count($plan['rows']) ?> rows · into <?= e($yearLabel) ?></p>
     <ul class="import-summary__counts">
       <?php foreach ($tally as $action => $n): if ($n === 0) continue; ?>
         <li class="import-tag import-tag--<?= $tones[$action] ?>"><?= $n ?> <?= e(strtolower($labels[$action])) ?></li>

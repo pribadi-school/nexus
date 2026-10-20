@@ -19,6 +19,12 @@ powershell -ExecutionPolicy Bypass -File bin\dev.ps1
 Then open http://localhost:8000. The first run creates a local database with
 sample data and a local `.env`; the sign-in password is `APP_PASSWORD` in that file.
 
+Chromebooks can be grouped under an academic year or **School**. Choose
+**School** in **Add/Edit → Year / category** for school-owned or lab devices.
+The list filter and imports support the same option. Existing Chromebooks
+keep their year until you edit them; changing category preserves assignment
+history. No database migration is required for this option.
+
 ## More
 
 - Project guide and conventions: [CLAUDE.md](CLAUDE.md)

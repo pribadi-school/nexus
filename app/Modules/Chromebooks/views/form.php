@@ -27,7 +27,7 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
     <h1 class="page-title"><?= $adding ? 'Add a Chromebook' : 'Edit Chromebook' ?></h1>
     <p class="page-subtitle">
       <?= $adding
-          ? 'Adding a whole year? <a href="/chromebooks/import?year=' . (int) $values['academic_year'] . '">Import the list</a> instead.'
+          ? 'Adding several Chromebooks? <a href="/chromebooks/import?year=' . (int) $values['academic_year'] . '">Import the list</a> instead.'
           : 'Student, status and notes are changed on the Chromebook\'s page.' ?>
     </p>
   </div>
@@ -45,20 +45,20 @@ $error = static fn (string $name): string => $field($name) ? '<p class="field__e
 
   <div class="form-grid">
     <div class="field<?= $field('academic_year') ? ' has-error' : '' ?>">
-      <label class="field__label" for="academic_year">Academic year <span class="field__required">required</span></label>
+      <label class="field__label" for="academic_year">Year / category <span class="field__required">required</span></label>
       <select class="select" id="academic_year" name="academic_year" required<?= $invalid('academic_year') ?>>
         <?php foreach ($years as $y): ?>
-          <option value="<?= $y ?>"<?= (int) ($values['academic_year'] ?? 0) === $y ? ' selected' : '' ?>><?= $y ?></option>
+          <option value="<?= $y ?>"<?= (int) ($values['academic_year'] ?? $years[0]) === $y ? ' selected' : '' ?>><?= e($category->yearLabel($y)) ?></option>
         <?php endforeach ?>
       </select>
       <?= $error('academic_year') ?>
-      <p class="field__hint">The batch it was handed out in.</p>
+      <p class="field__hint">Choose its academic year, or School for school-owned devices.</p>
     </div>
 
     <div class="field<?= $field('asset_id') ? ' has-error' : '' ?>">
       <label class="field__label" for="asset_id">Asset ID</label>
       <input class="input num" id="asset_id" name="asset_id" type="text" maxlength="20" autocomplete="off" spellcheck="false"
-             value="<?= e($values['asset_id'] ?? '') ?>" placeholder="e.g. <?= (int) ($values['academic_year'] ?? $years[0]) ?>-01"<?= $invalid('asset_id') ?>>
+             value="<?= e($values['asset_id'] ?? '') ?>" placeholder="e.g. <?= e($category->yearLabel((int) ($values['academic_year'] ?? $years[0]))) ?>-01"<?= $invalid('asset_id') ?>>
       <?= $error('asset_id') ?>
     </div>
 

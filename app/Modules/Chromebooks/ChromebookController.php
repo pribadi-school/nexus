@@ -19,7 +19,7 @@ use App\Devices\Status;
 final class ChromebookController
 {
     private const LABELS = [
-        'academic_year' => 'Academic year',
+        'academic_year' => 'Year / category',
         'asset_id' => 'Asset ID',
         'serial_number' => 'Serial number',
         'model' => 'Model',
@@ -69,7 +69,7 @@ final class ChromebookController
 
         $data['years'] = $this->category->years();
         $data['yearCounts'] = $this->chromebooks->yearCounts();
-        return Response::html(View::render('Chromebooks::index', $data, 'layouts/app', 'Chromebooks' . ($filters['year'] !== null ? ' ' . $filters['year'] : '')));
+        return Response::html(View::render('Chromebooks::index', $data, 'layouts/app', 'Chromebooks' . ($filters['year'] !== null ? ' ' . $this->category->yearLabel($filters['year']) : '')));
     }
 
     /** GET /chromebooks/export?year=&status=&q= : the filtered list as CSV */
@@ -77,7 +77,7 @@ final class ChromebookController
     {
         $filters = $this->filters($request);
         $rows = $this->chromebooks->search($filters, 1, null)['rows'];
-        $name = 'chromebooks-' . ($filters['year'] ?? 'all-years') . '-' . (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Jakarta')))->format('Y-m-d') . '.csv';
+        $name = 'chromebooks-' . ($filters['year'] !== null ? strtolower($this->category->yearLabel($filters['year'])) : 'all-years') . '-' . (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Jakarta')))->format('Y-m-d') . '.csv';
         return new Response(ChromebookCsv::export($rows, $this->category), 200, [
             'Content-Type' => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="' . $name . '"',
@@ -88,7 +88,7 @@ final class ChromebookController
     /** GET /chromebooks/import/example : a small file showing the columns */
     public function example(Request $request): Response
     {
-        $year = $this->category->years()[0];
+        $year = $this->category->yearLabel($this->year($request->query('year')));
         $body = "\xEF\xBB\xBF" . implode(',', ChromebookCsv::COLUMNS) . "\r\n"
             . "$year-01,NXJAESN0015199901,Example Student,example@pribadidepok.sch.id,Acer Chromebook 311,OK\r\n"
             . "$year-02,,Another Student,,,OK\r\n";

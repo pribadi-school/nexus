@@ -15,7 +15,7 @@ $title = $chromebook['student_name'] ?? 'Chromebook ' . $label;
 $back = '/chromebooks?year=' . (int) $chromebook['academic_year'];
 $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? '';
 ?>
-<a class="back-link" href="<?= e($back) ?>"><?= icon('chevron-left', 'icon--sm') ?>Chromebooks <?= (int) $chromebook['academic_year'] ?></a>
+<a class="back-link" href="<?= e($back) ?>"><?= icon('chevron-left', 'icon--sm') ?>Chromebooks <?= e($category->yearLabel((int) $chromebook['academic_year'])) ?></a>
 
 <header class="page-header">
   <div>
@@ -23,7 +23,7 @@ $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? 
     <p class="page-subtitle">
       <?= e(implode(' · ', array_filter([
           $chromebook['student_name'] !== null ? $chromebook['asset_id'] : 'Not assigned',
-          'Academic year ' . $chromebook['academic_year'],
+          $category->yearHeading((int) $chromebook['academic_year']),
           $chromebook['model'],
       ]))) ?>
     </p>
@@ -100,7 +100,7 @@ $day = static fn (string $utc): string => local_time($utc)?->format('j M Y') ?? 
       <div class="card__header"><h2 class="card__title" id="details-title">Details</h2></div>
       <dl class="details">
         <div><dt>Asset ID</dt><dd class="num"><?= e($chromebook['asset_id'] ?? '–') ?></dd></div>
-        <div><dt>Academic year</dt><dd><?= (int) $chromebook['academic_year'] ?></dd></div>
+        <div><dt>Year / category</dt><dd><?= e($category->yearLabel((int) $chromebook['academic_year'])) ?></dd></div>
         <div><dt>Serial number</dt><dd class="num"><?= e($chromebook['serial_number'] ?? 'Not recorded yet') ?></dd></div>
         <div><dt>Model</dt><dd><?= e($chromebook['model'] ?? '–') ?></dd></div>
         <div>

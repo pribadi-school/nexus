@@ -278,7 +278,8 @@ final class ChromebookCsv
                 $byAsset !== null && $bySerial !== null && $byAsset['id'] !== $bySerial['id']
                     => "Serial is already on Chromebook {$bySerial['asset_id']}.",
                 $existing !== null && (int) $existing['academic_year'] !== $year
-                    => "This Chromebook is in the {$existing['academic_year']} list, not $year.",
+                    => 'This Chromebook is in the ' . ChromebookCategory::yearLabel((int) $existing['academic_year'])
+                        . ' list, not ' . ChromebookCategory::yearLabel($year) . '.',
                 $byAsset === null && $bySerial !== null && $bySerial['asset_id'] !== null && $row['asset_id'] !== null
                     => "Serial is already on Chromebook {$bySerial['asset_id']}.",
                 default => null,

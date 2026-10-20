@@ -32,10 +32,10 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
   <section class="card">
     <?= partial('partials/empty-state', [
         'icon' => 'laptop',
-        'title' => $year !== null ? "No Chromebooks for $year yet" : 'No Chromebooks yet',
-        'text' => "Import a year's list (Excel or CSV, with asset ID, serial number, student and email), or add them one by one.",
+        'title' => $year !== null ? 'No Chromebooks for ' . $category->yearLabel($year) . ' yet' : 'No Chromebooks yet',
+        'text' => 'Import a list (Excel or CSV, with asset ID, serial number, student and email), or add them one by one.',
         'actionHref' => "/chromebooks/import?year=$importYear",
-        'actionLabel' => "Import the $importYear list",
+        'actionLabel' => 'Import the ' . $category->yearLabel($importYear) . ' list',
     ]) ?>
   </section>
 <?php elseif ($chromebooks === []): ?>

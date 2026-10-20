@@ -10,13 +10,26 @@ use App\Devices\NoteKind;
 use App\Devices\Status;
 
 /**
- * Student Chromebooks, one batch per academic year (asset IDs like 2026-05),
+ * Student Chromebooks by academic year and school-owned Chromebooks,
  * with assignment history. Detail tables: chromebooks, chromebook_assignments.
  */
 final class ChromebookCategory extends Category
 {
-    /** The first batch; the page always shows a tab for every year from here to now. */
+    /** Numeric academic batches start here; School is a separate option. */
     public const FIRST_YEAR = 2024;
+
+    /** School-owned devices have no academic batch; zero is reserved in the existing year column. */
+    public const SCHOOL_YEAR = 0;
+
+    public static function yearLabel(int $year): string
+    {
+        return $year === self::SCHOOL_YEAR ? 'School' : (string) $year;
+    }
+
+    public static function yearHeading(int $year): string
+    {
+        return $year === self::SCHOOL_YEAR ? 'School' : 'Academic year ' . $year;
+    }
 
     public function key(): string
     {
@@ -115,11 +128,11 @@ final class ChromebookCategory extends Category
         return $out;
     }
 
-    /** @return list<int> Every academic year from the first batch to now (or the latest batch, if later), newest first. */
+    /** @return list<int> Academic years newest first, followed by the School category. */
     public function years(): array
     {
         $now = (int) (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Jakarta')))->format('Y');
         $latest = (int) db()->value('SELECT MAX(academic_year) FROM chromebooks');
-        return range(max($now, $latest), self::FIRST_YEAR);
+        return [...range(max($now, $latest), self::FIRST_YEAR), self::SCHOOL_YEAR];
     }
 }

@@ -36,8 +36,12 @@ completely separate from the school's WordPress site. UI language: English.
    (`POST /cctv/{id}/checked` → `DeviceService::markChecked`) is on the
    detail page only. The 55 real cameras come from migration 004.
 4. **Done: Chromebooks** (`app/Modules/Chromebooks`), organised by
-   **academic year**: each Chromebook belongs to one yearly batch
-   (`chromebooks.academic_year`) and has an asset ID like `2026-05`
+   **academic year or School**. `chromebooks.academic_year = 0` is reserved
+   for the **School** category for school-owned
+   or lab devices; always display it through `ChromebookCategory::yearLabel`,
+   never as year 0. School is available in Add/Edit, year filtering and imports;
+   existing records are moved only by an explicit edit. Each Chromebook has
+   an asset ID like `2026-05`
    (unique among non-deleted, checked in `ChromebookRepository`), a serial
    (optional; the 2026 list has none yet), a student and their school
    email. No classes (dropped in migration 003). The list shows every
