@@ -68,7 +68,7 @@ try {
         $registeredRoutes, static fn (array $route): bool => $route['method'] === 'POST' && !$route['csrf'],
     )));
     sort($exempt);
-    $check($exempt === ['/signage/api/pairing/poll', '/signage/api/pairing/start'], 'only device-secret pairing APIs are exempt from session CSRF');
+    $check($exempt === ['/signage/api/pairing/poll', '/signage/api/pairing/start', '/signage/api/tv-agent/poll', '/signage/api/tv-agent/result'], 'only token-checked device APIs (pairing and the TV helper) are exempt from session CSRF');
     $httpError(419, fn () => $router->dispatch($request('/login', ['name' => 'Test', 'password' => 'invalid'])), 'existing login POST retains CSRF protection');
     $httpError(419, fn () => $router->dispatch($request('/signage/screens', ['name' => 'Test'])), 'existing signage screen POST retains CSRF protection');
     $deviceKey = bin2hex(random_bytes(32));

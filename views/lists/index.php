@@ -66,7 +66,7 @@ $last = count($items) - 1;
               </form>
 
               <details class="rename">
-                <summary class="btn btn--secondary btn--sm"><?= icon('pencil', 'icon--sm') ?>Rename</summary>
+                <summary class="btn btn--secondary btn--sm"><?= icon('pencil', 'icon--sm') ?><span class="rename__label">Rename</span></summary>
                 <form class="inline-form rename__form" method="post" action="<?= e($list->path . '/' . $id) ?>" data-busy-on-submit>
                   <?= csrf_field() ?>
                   <label class="visually-hidden" for="rename-<?= $id ?>">New name for <?= e($item['name']) ?></label>

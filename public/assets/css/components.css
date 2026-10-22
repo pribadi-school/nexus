@@ -491,3 +491,38 @@
 .stack { display: flex; flex-direction: column; gap: var(--space-4); }
 @media (min-width: 768px) { .stack { gap: var(--space-5); } }
 .auth-form { display: flex; flex-direction: column; gap: var(--space-4); }
+
+/* ---------------------------------------------- pull to refresh (touch) --- */
+/* The browser's own pull-to-refresh is switched off on touch screens; the
+   spinner below replaces it (public/assets/js/pull-refresh.js). */
+@media (pointer: coarse) {
+  html, body { overscroll-behavior-y: contain; }
+}
+.ptr {
+  position: fixed;
+  top: calc(var(--topbar-height) + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 25; /* under the top bar, so the spinner slides out from beneath it */
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-action);
+  opacity: var(--ptr-o, 0);
+  transform: translateY(calc(var(--ptr-y, 0px) / 2 - 20px)); /* centred in the gap the page opens */
+  pointer-events: none;
+}
+.ptr.is-animating { transition: transform 200ms var(--ease-standard), opacity 200ms var(--ease-standard); }
+.ptr .icon { transform: rotate(var(--ptr-r, 0deg)); }
+.ptr.is-refreshing .icon { animation: ptr-spin 800ms linear infinite; }
+#main.is-animating { transition: transform 200ms var(--ease-standard); }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+@media (min-width: 1024px) { .ptr { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ptr.is-animating, #main.is-animating { transition: none; }
+  .ptr.is-refreshing .icon { animation-duration: 1.6s; }
+}

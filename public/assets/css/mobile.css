@@ -1,0 +1,93 @@
+/* Phone and touch polish: native-app feel. Loaded last. Three layers:
+   - touch screens (pointer: coarse): 44px tap targets, pressed feedback;
+   - phones (<640px): equal-width actions and choices, even tab bars, rows that
+     keep their buttons on one line, symmetrical gutters;
+   - notched phones: side safe areas. */
+
+/* ------------------------------------------------- touch screens --- */
+@media (pointer: coarse) {
+  html { scroll-padding-top: calc(var(--topbar-height) + var(--space-3)); }
+  a, button, summary, label, .btn, .icon-btn, .choice-chip, .bottom-nav__link {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+  }
+  .btn, .icon-btn, .bottom-nav__link, .choice-chip, summary { user-select: none; }
+
+  /* Every tap target is at least 44px; small things grow an invisible hit area. */
+  .back-link { min-height: var(--touch-target); margin-top: calc(-1 * var(--space-3)); }
+  main details > summary { min-height: var(--touch-target); display: flex; align-items: center; }
+  .mini-feed__item { position: relative; }
+  .mini-feed__device::after { content: ''; position: absolute; inset: 0; }   /* the whole row opens the device */
+  .signage-content-card { position: relative; }
+  .signage-content-card__name::after { content: ''; position: absolute; inset: 0; }
+  .signage-content-card__heading .icon-btn { position: relative; z-index: 1; }
+  .signage-editor-item__actions > .icon-btn { position: relative; }
+  .signage-editor-item__actions > .icon-btn::after { content: ''; position: absolute; inset: -4px -6px; }
+
+  /* Pressed feedback: colour only, like the hover states. */
+  .btn--primary:active { background: var(--color-action-hover); }
+  .btn--secondary:active, .btn--ghost:active, .icon-btn:active, .menu-item:active { background: var(--color-surface-muted); }
+  .btn--danger:active { background: var(--color-destructive-hover); }
+  .bottom-nav__link:active { background: var(--color-surface-page); }
+  .choice-chip:active span { background: var(--color-surface-muted); }
+  .device-card__main:active, .signage-content-card:active, .signage-schedule:active { background: var(--color-surface-page); }
+}
+
+/* ------------------------------------------------------- phones --- */
+@media (max-width: 639px) {
+  /* Page header: title first, then the actions sharing the full width. */
+  .page-header { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: var(--space-3); margin-bottom: var(--space-4); }
+  .page-actions { gap: var(--space-2); }
+  .page-actions .btn { flex: 1 1 calc(50% - var(--space-1)); }
+  /* A header whose only action is a status chip keeps it beside the title. */
+  .page-header:has(> .page-actions > .chip:only-child) { flex-direction: row; align-items: center; justify-content: space-between; }
+
+  /* Choices form an even grid instead of a ragged 3-2-1 wrap. */
+  .choice-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .choice-chip span { display: flex; width: 100%; justify-content: center; }
+
+  /* Tab bars: equal columns with centred labels, like a segmented control. */
+  .signage-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; }
+  .signage-tabs__link { justify-content: center; padding-inline: var(--space-1); }
+
+  /* Forms inside cards: fields and their buttons use the full width. */
+  .signage-playlist-source__form .btn, .signage-playlist-new .btn { flex: 1 1 100%; }
+  .signage-screen-photo__upload .btn { width: 100%; }
+  /* Seven weekday buttons fill one even row. */
+  .signage-schedule-form__days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--space-1); }
+  .signage-day span { min-width: 0; padding: 0; font-size: var(--fs-ui); }
+
+  /* Editable lists (rooms, locations): the name, then reorder / rename / delete on one line. */
+  .lookup-item { flex-wrap: nowrap; gap: var(--space-1); padding-right: var(--space-2); }
+  .lookup-item__text { flex: 1 1 0; }
+  .lookup-item__actions { flex: none; }
+  .rename__label { display: none; }
+  .rename summary.btn { width: var(--touch-target); min-width: var(--touch-target); padding: 0; }
+
+  /* Dashboard search: the button becomes a compact icon. */
+  .dash-search .btn { min-width: var(--touch-target); padding-inline: var(--space-3); }
+  .dash-search .btn__label { display: none; }
+}
+
+/* --------------------------------------------- notched phones --- */
+@media (max-width: 1023px) {
+  .main {
+    padding-left: max(var(--space-4), env(safe-area-inset-left));
+    padding-right: max(var(--space-4), env(safe-area-inset-right));
+  }
+  .topbar {
+    padding-left: max(var(--space-4), env(safe-area-inset-left));
+    padding-right: max(var(--space-4), env(safe-area-inset-right));
+  }
+  .bottom-nav {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+/* Very narrow phones (320-360px): all five bottom-nav labels fit in full. */
+@media (max-width: 360px) {
+  .bottom-nav__label { font-size: 0.6875rem; letter-spacing: -0.02em; }
+  .bottom-nav { grid-auto-columns: minmax(max-content, 1fr); }
+  .bottom-nav__link { padding-inline: 2px; }
+}

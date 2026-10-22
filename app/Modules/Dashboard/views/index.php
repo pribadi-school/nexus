@@ -41,9 +41,9 @@ use App\Devices\Status;
       <?= icon('search', 'icon--sm') ?>
       <label class="visually-hidden" for="dash-q">Search all devices</label>
       <input class="input" id="dash-q" type="search" name="q" autocomplete="off" enterkeyhint="search"
-             placeholder="Search devices, people, notes or problems…">
+             placeholder="Search everything">
     </div>
-    <button type="submit" class="btn btn--secondary">Search<?= icon('arrow-right', 'icon--sm') ?></button>
+    <button type="submit" class="btn btn--secondary" aria-label="Search"><span class="btn__label">Search</span><?= icon('arrow-right', 'icon--sm') ?></button>
   </form>
 
   <section class="card stat-strip" aria-label="Devices by category">

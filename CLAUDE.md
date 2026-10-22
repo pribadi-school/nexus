@@ -350,6 +350,13 @@ deployed yet.
 - Flat app style: no shadows (except `--shadow-e4` on menus/dialogs), no
   gradients, 8px buttons, 12px cards, no icon tiles, 150ms colour-only
   transitions, ≥44px touch targets, 16px inputs on phones.
+- **Phones** (`public/assets/css/mobile.css`, loaded last): 44px tap targets on touch screens
+  (small links grow an invisible hit area or become stretched links), equal-width page actions and
+  choice chips, tab bars as even segments, symmetrical 16px gutters, side safe areas, and nav labels
+  that fit at 320px. Touch screens also get pull-to-refresh (`pull-refresh.js`: a spinner that follows
+  the finger; it reuses the page bar Refresh link, so navigation.js refetches in place; it never starts
+  in forms, menus, the playlist editor or over unsaved changes). Audit by measuring each page at
+  320 and 375px for overflow, small targets, <16px inputs and uneven gutters.
 - Status always shows a word: "Running well" / "Has problem" (Chromebooks:
   "OK" / "Has problem"). Problem rows: `problem-tint` + 3px red left border.
   Meter "running well" uses `--color-success-track` (light green); solid green
