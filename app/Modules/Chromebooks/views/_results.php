@@ -57,6 +57,7 @@ $student = static fn (array $c): string => $c['student_name'] ?? 'Not assigned';
       <?php else: ?>
         <?= e($category->count($counts['total'])) ?>, newest year first
       <?php endif ?>
+      <?php if ($filters['searching'] ?? false): ?> · searching all years and statuses<?php endif ?>
       <?php if ($filtered): ?> · <a href="<?= e($clearUrl) ?>" data-clear-filters>Clear filters</a><?php endif ?>
     </p>
     <a class="btn btn--ghost btn--sm" href="<?= e($exportUrl) ?>" download><?= icon('download', 'icon--sm') ?>Export CSV<?= $filtered ? ' (' . $matching . ')' : '' ?></a>

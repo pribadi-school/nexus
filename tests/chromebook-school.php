@@ -36,14 +36,17 @@ try {
     $check(array_column($repo->search($filters)['rows'], 'id') === [$school], 'School filter never becomes All years');
     $check($repo->search(array_replace($filters, ['year' => null]))['total'] === 2, 'All years includes school-owned and student devices');
     $check($repo->counts(0)['total'] === $schoolBefore + 1 && $repo->yearCounts()[0]['total'] === $schoolBefore + 1, 'School counts remain separate from numeric years');
-    $page = $controller->index(new Request('GET', '/chromebooks', ['year' => '0', 'q' => $token], [], []));
+    $page = $controller->index(new Request('GET', '/chromebooks', ['year' => '0'], [], []));
     $check(str_contains($page->body, '<option value="0" selected>School') && str_contains($page->body, 'Chromebooks School'), 'School filter, heading and breadcrumb render the human label');
+    // A search looks through every year and status, ignoring the picked ones.
+    $searched = $controller->index(new Request('GET', '/chromebooks', ['year' => '0', 'status' => 'problem', 'q' => $token], [], []));
+    $check(substr_count($searched->body, 'data-device-row="' . $school . '"') >= 1 && substr_count($searched->body, 'data-device-row="' . $student . '"') >= 1 && str_contains($searched->body, 'searching all years and statuses'), 'search ignores the picked year and status');
     $create = $controller->create(new Request('GET', '/chromebooks/new', ['year' => '0'], [], []));
     $check(str_contains($create->body, '<option value="0" selected>School</option>') && str_contains($create->body, 'e.g. School-01'), 'Add form preselects School and uses a readable example');
     $showRequest = new Request('GET', '/chromebooks/' . $school, [], [], []); $showRequest->params['id'] = (string) $school;
     $show = $controller->show($showRequest);
     $check(str_contains($show->body, '<option value="0" selected>School</option>') && !str_contains($show->body, 'Academic year 0'), 'inline detail editor uses the School label');
-    $export = $controller->export(new Request('GET', '/chromebooks/export', ['year' => '0', 'q' => $token], [], []));
+    $export = $controller->export(new Request('GET', '/chromebooks/export', ['year' => '0'], [], []));
     $check(str_contains($export->headers['Content-Disposition'], 'chromebooks-school-') && str_contains($export->body, $token . 'A') && !str_contains($export->body, $token . 'B'), 'CSV export respects School and its filename');
     $example = $controller->example(new Request('GET', '/chromebooks/import/example', ['year' => '0'], [], []));
     $check(str_contains($example->body, 'School-01'), 'School example CSV uses school asset IDs');

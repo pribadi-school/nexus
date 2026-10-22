@@ -3,7 +3,7 @@
 
 import { initConfirm } from './confirm.js';
 import { initFeed } from './feed.js';
-import { initLiveFilters } from './filters.js';
+import { initLiveFilters } from './filters.js?v=20261022-search-all';
 import { initNoteForms } from './note-form.js';
 import { initStatusToggles } from './status-toggle.js';
 import { setBusy } from './util.js';

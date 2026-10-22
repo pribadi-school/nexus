@@ -284,13 +284,21 @@ final class ChromebookController
         return Response::redirect($this->yearPath((int) $chromebook['academic_year']));
     }
 
-    /** @return array{year:?int, status:?string, q:?string}  year null = every year */
+    /**
+     * A search looks through every year and status, so a year or status picked
+     * earlier never hides a match. Clearing the search brings the picks back.
+     * @return array{year:?int, status:?string, q:?string, searching:bool}  year null = every year
+     */
     private function filters(Request $request): array
     {
+        $q = $request->query('q') !== null ? mb_substr(trim((string) $request->query('q')), 0, 100) : null;
+        $q = $q === '' ? null : $q;
+        $searching = $q !== null;
         return [
-            'year' => $this->optionalYear($request->query('year')),
-            'status' => in_array($request->query('status'), $this->category->statuses(), true) ? $request->query('status') : null,
-            'q' => $request->query('q') !== null ? mb_substr((string) $request->query('q'), 0, 100) : null,
+            'year' => $searching ? null : $this->optionalYear($request->query('year')),
+            'status' => $searching ? null : (in_array($request->query('status'), $this->category->statuses(), true) ? $request->query('status') : null),
+            'q' => $q,
+            'searching' => $searching,
         ];
     }
 

@@ -32,7 +32,7 @@ $targetYear = $year ?? $years[0];
   <div class="filters__search">
     <?= icon('search', 'icon--sm') ?>
     <label class="visually-hidden" for="filter-q">Search by asset ID, serial, student or email</label>
-    <input class="input" id="filter-q" type="search" name="q" value="<?= e($filters['q'] ?? '') ?>"
+    <input class="input" id="filter-q" type="search" name="q" data-overrides-filters value="<?= e($filters['q'] ?? '') ?>"
            placeholder="Search asset ID, serial, student" autocomplete="off" enterkeyhint="search">
   </div>
   <div class="filters__field">

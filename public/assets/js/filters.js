@@ -26,8 +26,20 @@ function initForm(form) {
   let controller = null;
   let latest = 0;
 
+  // A search field marked data-overrides-filters searches everything: the
+  // dropdowns are set aside (and left out of the address) while it has text,
+  // and their picks return when it is cleared.
+  const overrider = form.querySelector('[data-overrides-filters]');
+  const syncOverride = () => {
+    if (!overrider) return;
+    const searching = overrider.value.trim() !== '';
+    form.querySelectorAll('select').forEach((select) => { select.disabled = searching; });
+  };
+  syncOverride();
+
   const run = async () => {
     clearTimeout(timer);
+    syncOverride();
     const url = urlFor(form);
     controller?.abort();
     controller = new AbortController();
