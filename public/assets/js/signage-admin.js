@@ -1,6 +1,7 @@
 import { initContentForms } from './signage-content.js?v=20261020-batch-upload';
 import { initContentActions } from './signage-content-actions.js?v=20261020-actions';
 import { toast } from './toast.js';
+import { request } from './util.js';
 
 // Keep previews across in-place page switches; logout/full reload clears them.
 // Media URLs include a file revision, so replacing a file cannot reuse its frame.
@@ -25,6 +26,21 @@ function thumbnailDuration(seconds) {
   const minutes = Math.floor((total % 3600) / 60);
   const remainder = String(total % 60).padStart(2, '0');
   return hours ? `${hours}:${String(minutes).padStart(2, '0')}:${remainder}` : `${minutes}:${remainder}`;
+}
+
+// Keep the decoded frame on the server, so later visits show a small image
+// instead of streaming the whole video through the shared hosting account.
+function savePoster(source, frame, duration, width, height) {
+  const url = new URL(source, window.location.href);
+  const id = url.pathname.match(/\/signage\/preview\/media\/(\d+)$/)?.[1];
+  if (!id || !Number.isFinite(duration) || duration <= 0) return;
+  const body = new FormData();
+  body.set('v', url.searchParams.get('v') ?? '');
+  body.set('image', frame);
+  body.set('duration', String(duration));
+  body.set('width', String(width));
+  body.set('height', String(height));
+  request(`/signage/preview/poster/${id}`, {method: 'POST', body}).catch(() => {});
 }
 
 function loadThumbnail(card) {
@@ -91,6 +107,7 @@ function loadThumbnail(card) {
         thumbnailCache.set(source, {frame, duration: video.duration, width: video.videoWidth, height: video.videoHeight});
         if (thumbnailCache.size > thumbnailCacheLimit) thumbnailCache.delete(thumbnailCache.keys().next().value);
         showImage(frame);
+        savePoster(source, frame, video.duration, video.videoWidth, video.videoHeight);
         finish(true);
       } catch {
         finish(false);

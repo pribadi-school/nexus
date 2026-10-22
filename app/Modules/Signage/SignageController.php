@@ -234,6 +234,7 @@ final class SignageController
         if ($deleted['stored_filename'] !== null) {
             SignageStorage::delete($deleted['stored_filename']);
         }
+        SignagePoster::deleteFor((int) $item['id']);
         if ($request->isFetch()) return Response::json(['message' => 'Content deleted.']);
         Session::flash('success', 'Content deleted.');
         return Response::redirect('/signage/content');

@@ -101,6 +101,39 @@ final class SignagePlayerController
         return $this->videoResponse($request, $item);
     }
 
+    /** GET /signage/preview/poster/{id} : the saved preview frame of a video. */
+    public function poster(Request $request): Response
+    {
+        $this->releaseSession();
+        $item = db()->one("SELECT * FROM signage_content WHERE id = ? AND type = 'video'", [(int) $request->param('id')]);
+        if ($item === null || SignagePoster::find($item) === null) {
+            throw HttpException::notFound();
+        }
+        // The URL carries the media revision, so the frame can be cached for good.
+        return new Response((string) file_get_contents(SignagePoster::path($item)), 200, [
+            'Content-Type' => 'image/jpeg',
+            'Cache-Control' => 'private, max-age=31536000, immutable',
+        ]);
+    }
+
+    /** POST /signage/preview/poster/{id} : save a frame the browser decoded once. */
+    public function savePoster(Request $request): Response
+    {
+        $this->releaseSession();
+        $item = db()->one("SELECT * FROM signage_content WHERE id = ? AND type = 'video'", [(int) $request->param('id')]);
+        // A stale page may send a frame of a file that has since been replaced.
+        if ($item === null || $request->input('v') !== SignagePoster::revision($item)) {
+            return Response::json(['error' => 'This video has changed. Reload the page.'], 409);
+        }
+        try {
+            SignagePoster::store($item, (string) $request->input('image', ''), (float) $request->input('duration', '0'),
+                (int) $request->input('width', '0'), (int) $request->input('height', '0'));
+        } catch (\RuntimeException $error) {
+            return Response::json(['error' => $error->getMessage()], 422);
+        }
+        return Response::json(['ok' => true]);
+    }
+
     /** @return array<string,mixed> */
     private function screenForToken(Request $request): array
     {
@@ -228,7 +261,8 @@ final class SignagePlayerController
         }
         $length = $end - $start + 1;
         $headers['Content-Length'] = (string) $length;
-        return Response::stream(static function () use ($path, $start, $length): void {
+        $rate = (float) config('signage.stream_mb_per_second', 2) * 1048576;
+        return Response::stream(static function () use ($path, $start, $length, $rate): void {
             // Avoid PHP output buffering turning a large video into one allocation.
             while (ob_get_level() > 0) {
                 if (!@ob_end_clean()) {
@@ -246,6 +280,7 @@ final class SignagePlayerController
                     return;
                 }
                 $remaining = $length;
+                $began = microtime(true);
                 while ($remaining > 0 && !feof($handle) && !connection_aborted()) {
                     $chunk = fread($handle, min(262144, $remaining));
                     if ($chunk === false || $chunk === '') {
@@ -254,6 +289,14 @@ final class SignagePlayerController
                     echo $chunk;
                     $remaining -= strlen($chunk);
                     flush();
+                    // Pace large transfers so one download cannot use the whole
+                    // account's I/O allowance and stall every other site.
+                    if ($rate > 0) {
+                        $ahead = ($length - $remaining) / $rate - (microtime(true) - $began);
+                        if ($ahead > 0) {
+                            usleep((int) min(1_000_000, $ahead * 1_000_000));
+                        }
+                    }
                 }
             } finally {
                 fclose($handle);

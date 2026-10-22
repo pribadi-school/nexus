@@ -6,10 +6,15 @@ $assignedScreens ??= [];
 $editUrl = '/signage/content/' . (int) $entry['id'] . '/edit';
 $host = $video || $image ? '' : (string) parse_url((string) $entry['source_url'], PHP_URL_HOST);
 $previewUrl = $video || $image ? url('/signage/preview/media/' . (int) $entry['id'], ['v' => substr(hash('sha256', (string) $entry['stored_filename']), 0, 16)]) : '';
+// A saved frame avoids streaming the whole video just to draw this preview.
+$poster = $video ? \App\Modules\Signage\SignagePoster::find($entry) : null;
 ?>
-<li class="card signage-content-card" data-content-card data-content-id="<?= (int) $entry['id'] ?>" data-size-bytes="<?= (int) $entry['size_bytes'] ?>"<?= $video ? ' data-signage-thumbnail data-video-src="' . e($previewUrl) . '"' : '' ?>>
+<li class="card signage-content-card" data-content-card data-content-id="<?= (int) $entry['id'] ?>" data-size-bytes="<?= (int) $entry['size_bytes'] ?>"<?= $video ? ($poster === null ? ' data-signage-thumbnail' : ' data-video-duration="' . e($poster['duration']) . '"') . ' data-video-src="' . e($previewUrl) . '"' : '' ?>>
   <a class="signage-thumbnail<?= !$video && !$image ? ' signage-thumbnail--website' : '' ?>" href="<?= e($editUrl) ?>" aria-label="Edit <?= e($entry['name']) ?>">
-    <?php if ($video): ?>
+    <?php if ($video && $poster !== null): ?>
+      <img class="signage-thumbnail__image" src="<?= e($poster['url']) ?>" alt="" loading="lazy" data-thumbnail-image>
+      <span class="signage-thumbnail__duration" data-thumbnail-duration><?= e(\App\Modules\Signage\SignagePoster::clock($poster['duration'])) ?></span>
+    <?php elseif ($video): ?>
       <img class="signage-thumbnail__image" alt="" data-thumbnail-image hidden>
       <span class="signage-thumbnail__fallback" data-thumbnail-fallback><?= icon('presentation', 'icon--xl') ?><span data-thumbnail-message>Video preview</span></span>
       <span class="signage-thumbnail__duration" data-thumbnail-duration hidden></span>
@@ -47,7 +52,7 @@ $previewUrl = $video || $image ? url('/signage/preview/media/' . (int) $entry['i
         </form>
       </div>
     </div>
-    <p class="signage-content-card__meta"><?= $video ? 'Video' : ($image ? 'Image' : 'Website') ?><span data-thumbnail-orientation></span> · <?= e(time_ago($entry['updated_at'])) ?></p>
+    <p class="signage-content-card__meta"><?= $video ? 'Video' : ($image ? 'Image' : 'Website') ?><span data-thumbnail-orientation><?= $poster !== null ? ($poster['height'] > $poster['width'] ? ' · Portrait' : ' · Landscape') : '' ?></span> · <?= e(time_ago($entry['updated_at'])) ?></p>
     <p class="signage-content-card__details"><?= $video || $image ? e($bytes((int) $entry['size_bytes'])) . ' · ' : '' ?><span data-content-usage><?= e(plural((int) $entry['used_count'], 'playlist use')) ?></span></p>
   </div>
 </li>

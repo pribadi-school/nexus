@@ -6,7 +6,8 @@ $rowMenuId = 'playlist-actions-' . ($saved ? 'item-' . (int) $entry['item_id'] :
   <span class="visually-hidden" data-item-position<?= !$saved ? ' hidden' : '' ?>><?= $position ?></span>
   <div class="signage-editor-item__thumbnail"><?= partial('Signage::_playlist-thumbnail', ['cover' => $entry, 'href' => '/signage/content/' . (int) $entry['id'] . '/edit', 'label' => 'Edit ' . $entry['name'], 'emptyText' => 'Preview']) ?></div>
   <div class="signage-editor-item__info"><span class="signage-row__title" title="<?= e($entry['name']) ?>"><?= e($entry['name']) ?></span>
-    <span class="signage-row__sub"<?= $entry['type'] === 'video' ? ' data-video-minutes' : '' ?>><?= $entry['type'] === 'video' ? 'Video' : ($entry['type'] === 'image' ? 'Image' : 'Website') ?></span>
+    <?php $poster = $entry['type'] === 'video' ? \App\Modules\Signage\SignagePoster::find($entry) : null; ?>
+    <span class="signage-row__sub"<?= $entry['type'] === 'video' ? ' data-video-minutes' : '' ?>><?= $entry['type'] === 'video' ? ($poster !== null ? 'Video · ' . e(round($poster['duration'] / 60, 2)) . ' min' : 'Video') : ($entry['type'] === 'image' ? 'Image' : 'Website') ?></span>
   </div>
   <?php if ($entry['type'] !== 'video'): ?>
   <form class="signage-editor-item__timing" method="post" action="<?= e($itemBase) ?>" data-duration-form<?= !$saved ? ' hidden' : '' ?>><?= csrf_field() ?><label><span>Duration</span><span class="signage-editor-item__duration-value"><input class="input" name="duration_minutes" type="number" min="0.083333" max="1440" step="any" value="<?= $saved ? e(round((int) $entry['duration_seconds'] / 60, 6)) : '0.5' ?>" aria-label="Duration in minutes for <?= e($entry['name']) ?>" data-item-duration><span>min</span></span></label><noscript><button class="btn btn--secondary btn--sm" type="submit">Save duration</button></noscript></form>

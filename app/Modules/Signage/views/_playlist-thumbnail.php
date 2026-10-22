@@ -2,9 +2,15 @@
 $video = $cover !== null && $cover['type'] === 'video';
 $image = $cover !== null && $cover['type'] === 'image';
 $previewUrl = $video || $image ? url('/signage/preview/media/' . (int) $cover['id'], ['v' => substr(hash('sha256', (string) $cover['stored_filename']), 0, 16)]) : '';
+// A saved frame avoids streaming the whole video just to draw this preview.
+$poster = $video ? \App\Modules\Signage\SignagePoster::find($cover) : null;
 ?>
-<a class="signage-thumbnail" href="<?= e($href) ?>" aria-label="<?= e($label) ?>"<?= $video ? ' data-signage-thumbnail data-video-duration data-video-src="' . e($previewUrl) . '"' : '' ?>>
-  <?php if ($video): ?>
+<a class="signage-thumbnail" href="<?= e($href) ?>" aria-label="<?= e($label) ?>"<?= $video ? ($poster === null ? ' data-signage-thumbnail' : '') . ' data-video-duration="' . e($poster['duration'] ?? '') . '" data-video-src="' . e($previewUrl) . '"' : '' ?>>
+  <?php if ($video && $poster !== null): ?>
+    <img class="signage-thumbnail__image" src="<?= e($poster['url']) ?>" alt="" loading="lazy" data-thumbnail-image>
+    <span class="signage-thumbnail__duration" data-thumbnail-duration><?= e(\App\Modules\Signage\SignagePoster::clock($poster['duration'])) ?></span>
+    <span class="visually-hidden" data-thumbnail-orientation><?= $poster['height'] > $poster['width'] ? ' · Portrait' : ' · Landscape' ?></span>
+  <?php elseif ($video): ?>
     <img class="signage-thumbnail__image" alt="" data-thumbnail-image hidden>
     <span class="signage-thumbnail__fallback" data-thumbnail-fallback><?= icon('presentation', 'icon--xl') ?><span data-thumbnail-message>Video preview</span></span>
     <span class="signage-thumbnail__duration" data-thumbnail-duration hidden></span>

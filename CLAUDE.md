@@ -89,6 +89,12 @@ completely separate from the school's WordPress site. UI language: English.
    popovers. The full library remains visible; repeated content is supported
    with independent image/website durations. Videos play to their natural end;
    the manifest ignores stored video overrides and totals use detected file lengths.
+   Video previews are decoded in the browser once, then saved as a small JPEG +
+   length (`SignagePoster`, `storage/signage/posters/`, keyed by media revision,
+   no migration); pages show the saved frame instead of streaming the video.
+   PHP media streams are paced (`SIGNAGE_STREAM_MBPS`, default 2): the hosting
+   account's 8 MB/s I/O cap is shared with Duty/Report, and full-speed video
+   transfers slowed every site on it (cPanel Resource Usage, Oct 2026).
    Android TV 1.2.0 implements the same behavior. Dragging a playlist item onto the library
    removes that occurrence. Popovers are measured after opening and kept
    within the viewport above mobile navigation. Each screen has a random revocable player URL and a

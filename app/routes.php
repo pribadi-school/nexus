@@ -74,6 +74,8 @@ $router->post('/signage/screens/{id}/items/{item}/delete', [SignageController::c
 $router->get('/signage/playlists/{id}/preview', [SignagePlayerController::class, 'preview']);
 $router->get('/signage/playlists/{id}/preview/manifest', [SignagePlayerController::class, 'previewManifest']);
 $router->get('/signage/preview/media/{id}', [SignagePlayerController::class, 'previewMedia']);
+$router->get('/signage/preview/poster/{id}', [SignagePlayerController::class, 'poster']);
+$router->post('/signage/preview/poster/{id}', [SignagePlayerController::class, 'savePoster']);
 $router->get('/signage/player/{token}', [SignagePlayerController::class, 'player'], public: true);
 $router->get('/signage/player/{token}/manifest', [SignagePlayerController::class, 'manifest'], public: true);
 $router->get('/signage/player/{token}/media/{id}', [SignagePlayerController::class, 'media'], public: true);
