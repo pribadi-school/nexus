@@ -26,7 +26,7 @@ const ICONS = [
   'wrench', 'cpu', 'message-square-text', 'refresh-cw', 'sliders-horizontal',
   'pencil', 'trash-2', 'copy', 'upload', 'download', 'menu', 'settings', 'shield-check',
   'clock', 'map-pin', 'ellipsis-vertical', 'loader-circle', 'inbox', 'history',
-  'ban', 'rotate-ccw', 'lock', 'tv-minimal',
+  'ban', 'rotate-ccw', 'lock', 'tv-minimal', 'bell', 'bell-ring', 'play', 'volume-2', 'calendar-x', 'key-round',
 ];
 
 function buildSprite() {

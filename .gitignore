@@ -43,3 +43,11 @@ bin/tv-agent.json
 bin/tv-agent.log*
 storage/signage/tv-screenshots/*
 !storage/signage/tv-screenshots/.gitkeep
+storage/bell/sounds/*
+
+# Bell PC app build output
+bell-pc/dist/
+bell-pc/build/
+bell-pc/*.spec
+__pycache__/
+*.pyc

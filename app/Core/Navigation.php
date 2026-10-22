@@ -15,6 +15,7 @@ final class Navigation
             $items[] = ['label' => $category->name(), 'href' => $category->path(), 'icon' => $category->icon()];
         }
         $items[] = ['label' => 'Signage', 'href' => '/signage', 'icon' => 'tv-minimal'];
+        $items[] = ['label' => 'Bell', 'href' => '/bell', 'icon' => 'bell'];
         return $items;
     }
 }

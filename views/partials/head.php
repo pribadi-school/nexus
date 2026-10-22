@@ -19,5 +19,6 @@
 <link rel="stylesheet" href="<?= e(asset('css/components.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/devices.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/signage.css')) ?>">
+<link rel="stylesheet" href="<?= e(asset('css/bell.css')) ?>">
 <link rel="stylesheet" href="<?= e(asset('css/mobile.css')) ?>">
 <script type="module" src="<?= e(asset('js/app.js')) ?>"></script>

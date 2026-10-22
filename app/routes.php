@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Auth\AuthController;
 use App\Core\Router;
 use App\Devices\DeviceController;
+use App\Modules\Bell\BellApiController;
+use App\Modules\Bell\BellController;
 use App\Modules\Dashboard\DashboardController;
 use App\Modules\Signage\SignageController;
 use App\Modules\Signage\SignagePlayerController;
@@ -109,5 +111,39 @@ $router->post('/signage/preview/poster/{id}', [SignagePlayerController::class, '
 $router->get('/signage/player/{token}', [SignagePlayerController::class, 'player'], public: true);
 $router->get('/signage/player/{token}/manifest', [SignagePlayerController::class, 'manifest'], public: true);
 $router->get('/signage/player/{token}/media/{id}', [SignagePlayerController::class, 'media'], public: true);
+
+// Bell: two independent floors (zones). The bell PC downloads the schedule
+// through the public, key-protected API and rings from its own copy.
+$router->get('/bell', [BellController::class, 'index']);
+$router->get('/bell/zones/{id}', [BellController::class, 'zone']);
+$router->post('/bell/zones/{id}/active-profile', [BellController::class, 'activate']);
+$router->get('/bell/zones/{id}/settings', [BellController::class, 'settings']);
+$router->post('/bell/zones/{id}/settings', [BellController::class, 'saveSettings']);
+$router->post('/bell/zones/{id}/profiles', [BellController::class, 'createProfile']);
+$router->post('/bell/zones/{id}/holidays', [BellController::class, 'addHoliday']);
+$router->post('/bell/holidays/{id}/delete', [BellController::class, 'deleteHoliday']);
+$router->post('/bell/profiles/{id}', [BellController::class, 'renameProfile']);
+$router->post('/bell/profiles/{id}/delete', [BellController::class, 'deleteProfile']);
+$router->post('/bell/profiles/{id}/copy', [BellController::class, 'copyProfile']);
+$router->get('/bell/profiles/{id}/entries/create', [BellController::class, 'createEntry']);
+$router->post('/bell/profiles/{id}/entries', [BellController::class, 'storeEntry']);
+$router->get('/bell/profiles/{id}/export.csv', [BellController::class, 'exportCsv']);
+$router->post('/bell/profiles/{id}/import', [BellController::class, 'importCsv']);
+$router->get('/bell/entries/{id}/edit', [BellController::class, 'editEntry']);
+$router->post('/bell/entries/{id}', [BellController::class, 'updateEntry']);
+$router->post('/bell/entries/{id}/toggle', [BellController::class, 'toggleEntry']);
+$router->post('/bell/entries/{id}/delete', [BellController::class, 'deleteEntry']);
+$router->post('/bell/entries/{id}/copy', [BellController::class, 'copyEntry']);
+$router->get('/bell/backup.json', [BellController::class, 'backup']);
+$router->get('/bell/sounds', [BellController::class, 'sounds']);
+$router->post('/bell/sounds', [BellController::class, 'uploadSound']);
+$router->get('/bell/sounds/builtin/{key}', [BellController::class, 'builtinFile']);
+$router->get('/bell/sounds/{id}/file', [BellController::class, 'soundFile']);
+$router->post('/bell/sounds/{id}/delete', [BellController::class, 'deleteSound']);
+$router->get('/bell/pc', [BellController::class, 'pc']);
+$router->post('/bell/pc/key', [BellController::class, 'createKey']);
+$router->post('/bell/pc/key/revoke', [BellController::class, 'revokeKey']);
+$router->post('/bell/api/sync', [BellApiController::class, 'sync'], public: true, csrf: false);
+$router->get('/bell/api/sounds/{id}', [BellApiController::class, 'sound'], public: true);
 
 return $router;

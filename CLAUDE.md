@@ -157,6 +157,18 @@ completely separate from the school's WordPress site. UI language: English.
    production `.env`, and cPanel Git "Update from Remote". Deployment itself
    must be verified on the hosting account.
 
+7. **Done: Bell** (`app/Modules/Bell`, `bell-pc/`): navigation item below
+   Signage (`/bell`). Two independent floors (zones, seeded Lantai 2 / Lantai 3 by
+   migration 017), each with its own profiles, schedule, holidays, volume and
+   active profile; alarm-clock-style list, CSV export/import, JSON backup, sound
+   library (MP3/WAV in `storage/bell/sounds/`, three built-in WAVs in
+   `bell-pc/sounds/`), and a **Bell PC** page (connection key, online state,
+   recent bells). The Windows program in `bell-pc/` (Python, tkinter, packaged to
+   `NexusBell.exe` by `bell-pc/build.ps1`) downloads the schedule through
+   `POST /bell/api/sync` (public route, key in `X-Nexus-Bell-Token`) and rings from
+   its saved copy, so bells work offline. Bell times are wall-clock, never UTC.
+   See `docs/bell.md`; tests: `tests/bell.php` and `bell-pc/tests`.
+
 ### Shared device building blocks (reuse them, don't copy them)
 
 - `App\Devices\DeviceService`: create / update / changeStatus / addNote /

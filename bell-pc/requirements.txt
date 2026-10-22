@@ -1,0 +1,8 @@
+# Runtime
+sounddevice>=0.4.6
+soundfile>=0.12.1
+numpy>=1.26
+pystray>=0.19.5
+Pillow>=10.0
+# Packaging (only to build the .exe)
+pyinstaller>=6.0

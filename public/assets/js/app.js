@@ -13,6 +13,7 @@ import { initSignageAdmin } from './signage-admin.js?v=20261022-posters';
 import { initSignageEditor } from './signage-editor.js?v=20261022-touch';
 import { initChromebookGoogle } from './chromebook-google.js';
 import { initTvControl } from './tv-control.js?v=20261022-tv-control2';
+import { initBell } from './bell.js?v=20261022-bell2';
 import { initPullToRefresh } from './pull-refresh.js?v=20261022-ptr';
 
 function initDismiss() {
@@ -52,7 +53,8 @@ function initPage() {
   const cleanupSignage = initSignageAdmin();
   const cleanupGoogle = initChromebookGoogle();
   const cleanupTv = initTvControl();
-  cleanupPage = () => { cleanupFilters(); cleanupEditor(); cleanupSignage(); cleanupGoogle(); cleanupTv(); };
+  const cleanupBell = initBell();
+  cleanupPage = () => { cleanupFilters(); cleanupEditor(); cleanupSignage(); cleanupGoogle(); cleanupTv(); cleanupBell(); };
 }
 initPullToRefresh();
 initPage();
