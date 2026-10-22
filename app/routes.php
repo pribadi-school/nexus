@@ -9,6 +9,7 @@ use App\Modules\Dashboard\DashboardController;
 use App\Modules\Signage\SignageController;
 use App\Modules\Signage\SignagePlayerController;
 use App\Modules\Signage\SignagePairingController;
+use App\Modules\Signage\SignageTvControlController;
 
 // Every route needs a signed-in person unless marked public: true.
 // Device categories add their own routes from their Category class.
@@ -48,6 +49,12 @@ $router->get('/signage/screens/{id}/edit', [SignageController::class, 'editScree
 $router->post('/signage/screens/{id}', [SignageController::class, 'updateScreen']);
 $router->post('/signage/screens/{id}/delete', [SignageController::class, 'deleteScreen']);
 $router->post('/signage/screens/{id}/rotate-token', [SignageController::class, 'rotateScreenToken']);
+$router->get('/signage/screens/{id}/tv-control', [SignageTvControlController::class, 'show']);
+$router->post('/signage/screens/{id}/tv-control', [SignageTvControlController::class, 'queue']);
+$router->get('/signage/screens/{id}/tv-control/{command}/screenshot', [SignageTvControlController::class, 'screenshot']);
+// The helper PC authenticates with SIGNAGE_TV_AGENT_TOKEN, not a session.
+$router->post('/signage/api/tv-agent/poll', [SignageTvControlController::class, 'poll'], public: true, csrf: false);
+$router->post('/signage/api/tv-agent/result', [SignageTvControlController::class, 'result'], public: true, csrf: false);
 $router->get('/signage/screens/{id}/photo', [SignageController::class, 'screenPhoto']);
 $router->post('/signage/screens/{id}/photo', [SignageController::class, 'uploadScreenPhoto']);
 $router->post('/signage/screens/{id}/photo/delete', [SignageController::class, 'deleteScreenPhoto']);

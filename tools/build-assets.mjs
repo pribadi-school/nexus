@@ -24,7 +24,7 @@ const ICONS = [
   'check', 'chevron-right', 'chevron-left', 'chevron-down', 'chevron-up', 'arrow-right',
   'arrow-left-right', 'triangle-alert', 'circle-alert', 'circle-check', 'info',
   'wrench', 'cpu', 'message-square-text', 'refresh-cw', 'sliders-horizontal',
-  'pencil', 'trash-2', 'upload', 'download', 'menu', 'settings', 'shield-check',
+  'pencil', 'trash-2', 'copy', 'upload', 'download', 'menu', 'settings', 'shield-check',
   'clock', 'map-pin', 'ellipsis-vertical', 'loader-circle', 'inbox', 'history',
   'ban', 'rotate-ccw', 'lock', 'tv-minimal',
 ];

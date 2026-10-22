@@ -95,6 +95,14 @@ completely separate from the school's WordPress site. UI language: English.
    PHP media streams are paced (`SIGNAGE_STREAM_MBPS`, default 2): the hosting
    account's 8 MB/s I/O cap is shared with Duty/Report, and full-speed video
    transfers slowed every site on it (cPanel Resource Usage, Oct 2026).
+   **TV control** (migration 013, `SignageTvControl`): each screen page has
+   Open Nexus / Check status / Screenshot / Restart TV buttons. They queue a
+   fixed action; `bin/tv-agent.ps1` on an always-on school PC polls
+   `/signage/api/tv-agent/{poll,result}` (header `X-Nexus-Agent-Token` =
+   `SIGNAGE_TV_AGENT_TOKEN`; empty hides the feature) and runs ADB after
+   checking the TV serial. TV IPs/serials live only in the helper's
+   `tv-agent.json`. Setup: `docs/tv-agent.md`. Kantin must keep Google TV
+   enabled (disabling it kills its Wi-Fi), so Open Nexus is its recovery.
    Android TV 1.2.0 implements the same behavior. Dragging a playlist item onto the library
    removes that occurrence. Popovers are measured after opening and kept
    within the viewport above mobile navigation. Each screen has a random revocable player URL and a
@@ -123,7 +131,7 @@ completely separate from the school's WordPress site. UI language: English.
    Android 10+ makes no toggle request. It does not use the
    AbleSign API. Migration 007 adds expiring device-secret
    pairing requests and hashed-IP start throttling; only its two public POST
-   APIs omit CSRF. The signed-in pairing approval form still requires CSRF.
+   APIs (and the two token-checked TV helper APIs) omit CSRF. The signed-in pairing approval form still requires CSRF.
    Migration 006 adds four signage tables without seeds. `config/signage.php`
    and `SIGNAGE_MAX_UPLOAD_MB` control the upload ceiling, further limited by
    PHP settings. Only player documents allow website frames / embedding;

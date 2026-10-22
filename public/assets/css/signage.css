@@ -56,14 +56,15 @@
 /* A playlist item held over the library: dropping it removes it from the playlist. */
 .signage-editor__library.is-drop-remove { border-radius: var(--radius-lg); background: var(--color-problem-tint); outline: 2px dashed var(--color-problem); outline-offset: 6px; }
 .signage-editor__empty { display: flex; align-items: center; justify-content: center; gap: var(--space-3); padding: var(--space-5); margin: var(--space-2) 0; border: 1px dashed var(--color-border-strong); border-radius: var(--radius-lg); color: var(--color-muted-foreground); font-size: var(--fs-ui); }
-.signage-editor-item { display: flex; align-items: center; gap: var(--space-3); min-width: 0; min-height: 80px; padding: 0 var(--space-2) 0 0; overflow: hidden; transition: opacity 160ms ease-out, border-color 160ms ease-out; }
+.signage-editor-item { display: flex; align-items: center; gap: var(--space-3); min-width: 0; padding: 0 var(--space-2) 0 0; overflow: hidden; transition: opacity 160ms ease-out, border-color 160ms ease-out; }
 .signage-editor-item[data-draggable="true"],
 .signage-editor-item[data-draggable="true"] a { cursor: grab; }
 .is-signage-dragging, .is-signage-dragging * { cursor: grabbing !important; user-select: none; }
 .signage-editor-item.is-dragging { opacity: .45; cursor: grabbing; }
 .signage-editor-item__position { flex: 0 0 18px; color: var(--color-muted-foreground); text-align: center; font-size: var(--fs-caption); font-variant-numeric: tabular-nums; }
-.signage-editor-item__thumbnail { flex: 0 0 124px; align-self: stretch; min-height: 78px; overflow: hidden; }
-.signage-editor-item__thumbnail .signage-thumbnail { height: 100%; width: 100%; aspect-ratio: auto; }
+/* Always 16:9 like the TVs, so 16:9 videos fill it with no bars above or below. */
+.signage-editor-item__thumbnail { flex: 0 0 140px; aspect-ratio: 16 / 9; align-self: flex-start; overflow: hidden; }
+.signage-editor-item__thumbnail .signage-thumbnail { height: 100%; width: 100%; aspect-ratio: 16 / 9; }
 .signage-editor-item__thumbnail .signage-thumbnail__fallback, .signage-editor-item__thumbnail .signage-thumbnail__website { padding: var(--space-2); gap: 0; font-size: var(--fs-caption); }
 .signage-editor-item__thumbnail .signage-thumbnail__website span, .signage-editor-item__thumbnail [data-thumbnail-message], .signage-editor-item__thumbnail .signage-thumbnail__kind { display: none; }
 .signage-editor-item__thumbnail .signage-thumbnail__duration { padding: 1px var(--space-1); right: var(--space-1); bottom: var(--space-1); }
@@ -81,7 +82,7 @@
 .signage-editor-item__timing .input::-webkit-inner-spin-button, .signage-editor-item__timing .input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 @media (max-width: 639px) {
   .signage-editor-item { gap: var(--space-2); }
-  .signage-editor-item__thumbnail { flex-basis: 80px; }
+  .signage-editor-item__thumbnail { flex-basis: 96px; }
   .signage-editor-item__timing { flex-basis: 76px; }
   .signage-editor-item__timing .input { width: 46px; font-size: var(--fs-card-title); }
   .signage-editor-item__actions > .icon-btn { width: 32px; }
@@ -184,3 +185,13 @@
 .signage-screen-photo__image { aspect-ratio: 16 / 9; overflow: hidden; border-radius: var(--radius-md); background: var(--color-surface-muted); }
 .signage-screen-photo__body { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); }
 .signage-screen-photo__upload { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+
+/* TV control (ADB actions through the helper PC) */
+.signage-tv-control { margin-top: var(--space-4); }
+.signage-tv-control__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.signage-tv-control__actions .btn { min-height: 44px; }
+.signage-tv-control__log { list-style: none; margin: var(--space-4) 0 0; padding: 0; border-top: 1px solid var(--color-border); }
+.signage-tv-control__log li { display: flex; flex-direction: column; gap: 2px; padding: var(--space-2) 0; border-bottom: 1px solid var(--color-border); overflow-wrap: anywhere; }
+.signage-tv-control__what { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.signage-tv-control__shot { margin: var(--space-4) 0 0; }
+.signage-tv-control__shot img { display: block; width: 100%; max-width: 640px; height: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md, 8px); }

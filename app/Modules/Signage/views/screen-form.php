@@ -12,6 +12,7 @@ $playerUrl = !$adding ? rtrim((string) config('app.url', ''), '/') . '/signage/p
 
 <?php if (!$adding): ?>
 <?= partial('Signage::_screen-editor', ['screen' => $screen, 'items' => $items, 'content' => $content, 'revision' => $revision]) ?>
+<?php if (\App\Modules\Signage\SignageTvControl::enabled()): ?><?= partial('Signage::_tv-control', ['screen' => $screen]) ?><?php endif ?>
 <?php endif ?>
 
 <?php if (!$adding): ?>

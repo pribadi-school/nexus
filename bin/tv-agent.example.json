@@ -1,0 +1,12 @@
+{
+  "url": "https://nexus.pribadidepok.sch.id",
+  "token": "same value as SIGNAGE_TV_AGENT_TOKEN in the server .env",
+  "name": "IT helper PC",
+  "adb": "C:\\platform-tools\\adb.exe",
+  "poll_seconds": 10,
+  "screens": [
+    { "screen_id": 1, "name": "TV Kantin", "address": "10.10.6.130", "serial": "40239C48100000569" },
+    { "screen_id": 2, "name": "TV SD", "address": "10.10.2.169", "serial": "40687D06100000167" },
+    { "screen_id": 3, "name": "TV Lantai 3", "address": "10.10.1.61", "serial": "40239C48100000568" }
+  ]
+}

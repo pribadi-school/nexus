@@ -37,3 +37,9 @@ B · Rise-html.zip
 database new/
 *.sql.bak
 nexus-backup*.sql
+
+# TV helper: secret token and TV addresses stay on the helper PC
+bin/tv-agent.json
+bin/tv-agent.log*
+storage/signage/tv-screenshots/*
+!storage/signage/tv-screenshots/.gitkeep

@@ -145,6 +145,10 @@ if (editor) {
     } else if (form.matches('[data-library-add]')) {
       event.preventDefault();
       add(row);
+    } else if (form.matches('[data-item-duplicate]')) {
+      // A draft copy right below, keeping this row's duration; saved with the rest.
+      event.preventDefault();
+      add(row, row.nextElementSibling);
     } else if (form.matches('[data-item-remove]')) {
       event.preventDefault();
       removeRow(row);

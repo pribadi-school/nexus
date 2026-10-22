@@ -17,6 +17,7 @@ $rowMenuId = 'playlist-actions-' . ($saved ? 'item-' . (int) $entry['item_id'] :
     <div class="signage-content-menu signage-editor-item__menu" id="<?= e($rowMenuId) ?>" popover>
       <form method="post" action="<?= e($itemBase) ?>/move" data-item-move="up"><?= csrf_field() ?><input type="hidden" name="direction" value="up"><button class="menu-item" type="submit" aria-label="Move <?= e($entry['name']) ?> up"><?= icon('chevron-up', 'icon--sm') ?>Move up</button></form>
       <form method="post" action="<?= e($itemBase) ?>/move" data-item-move="down"><?= csrf_field() ?><input type="hidden" name="direction" value="down"><button class="menu-item" type="submit" aria-label="Move <?= e($entry['name']) ?> down"><?= icon('chevron-down', 'icon--sm') ?>Move down</button></form>
+      <form method="post" action="<?= e($base) ?>/items" data-item-duplicate><?= csrf_field() ?><input type="hidden" name="content_id" value="<?= (int) $entry['id'] ?>"><input type="hidden" name="duration_seconds" value="<?= $saved ? (int) $entry['duration_seconds'] : 30 ?>"><button class="menu-item" type="submit" aria-label="Duplicate <?= e($entry['name']) ?>"><?= icon('copy', 'icon--sm') ?>Duplicate</button></form>
       <form method="post" action="<?= e($itemBase) ?>/delete" data-item-remove><?= csrf_field() ?><button class="menu-item btn--danger-quiet" type="submit" aria-label="Remove <?= e($entry['name']) ?> from this screen"><?= icon('x', 'icon--sm') ?>Remove from playlist</button></form>
     </div>
   </div>

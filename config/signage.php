@@ -9,5 +9,8 @@ return [
     // Shared hosting caps disk I/O for the whole account (8 MB/s on the school's
     // plan). Pacing each media download leaves room for Nexus and sibling sites.
     // 0 disables pacing.
+    // Shared secret for the helper PC that runs ADB actions on TVs
+    // (bin/tv-agent.ps1). Empty hides TV control and disables its API.
+    'tv_agent_token' => (string) env('SIGNAGE_TV_AGENT_TOKEN', ''),
     'stream_mb_per_second' => max(0, min(100, (float) env('SIGNAGE_STREAM_MBPS', 2))),
 ];

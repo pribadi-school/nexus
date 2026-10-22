@@ -10,8 +10,9 @@ import { setBusy } from './util.js';
 import { initNavigation } from './navigation.js?v=20261019-performance';
 // cPanel caches modules for a year; new behavior needs fresh module URLs.
 import { initSignageAdmin } from './signage-admin.js?v=20261022-posters';
-import { initSignageEditor } from './signage-editor.js?v=20261019-natural-video';
+import { initSignageEditor } from './signage-editor.js?v=20261022-duplicate';
 import { initChromebookGoogle } from './chromebook-google.js';
+import { initTvControl } from './tv-control.js?v=20261022-tv-control2';
 
 function initDismiss() {
   document.addEventListener('click', (event) => {
@@ -48,7 +49,8 @@ function initPage() {
   const cleanupEditor = initSignageEditor();
   const cleanupSignage = initSignageAdmin();
   const cleanupGoogle = initChromebookGoogle();
-  cleanupPage = () => { cleanupFilters(); cleanupEditor(); cleanupSignage(); cleanupGoogle(); };
+  const cleanupTv = initTvControl();
+  cleanupPage = () => { cleanupFilters(); cleanupEditor(); cleanupSignage(); cleanupGoogle(); cleanupTv(); };
 }
 initPage();
 initNavigation({beforeSwap: () => cleanupPage(), afterSwap: initPage});
