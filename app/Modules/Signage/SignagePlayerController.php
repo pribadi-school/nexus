@@ -35,7 +35,11 @@ final class SignagePlayerController
     {
         $screen = $this->screenForToken($request);
         $this->releaseSession();
-        $playlist = $screen['playlist_id'] === null ? null : $this->repository->playlist((int) $screen['playlist_id']);
+        // An active schedule hands its playlist to the TV for its window; afterwards the
+        // TV's assigned playlist returns on the next check. Players need no schedule logic.
+        $active = (new SignageSchedules())->activeFor((int) $screen['id']);
+        $playlistId = $active !== null ? (int) $active['playlist_id'] : ($screen['playlist_id'] === null ? null : (int) $screen['playlist_id']);
+        $playlist = $playlistId === null ? null : $this->repository->playlist($playlistId);
         $items = $playlist !== null && (bool) $screen['enabled'] ? $this->repository->playlistItems((int) $playlist['id']) : [];
         if ($request->method !== 'HEAD') {
             $this->heartbeat($request, $screen, $items);
@@ -52,9 +56,12 @@ final class SignagePlayerController
             throw HttpException::notFound();
         }
         $contentId = (int) $request->param('id');
-        foreach ($this->repository->playlistItems((int) $screen['playlist_id']) as $item) {
-            if ((int) $item['id'] === $contentId && in_array($item['type'], ['video', 'image'], true)) {
-                return $this->videoResponse($request, $item);
+        // Also the scheduled playlists, so a download in progress survives a schedule change.
+        foreach ((new SignageSchedules())->playlistIdsFor($screen) as $playlistId) {
+            foreach ($this->repository->playlistItems($playlistId) as $item) {
+                if ((int) $item['id'] === $contentId && in_array($item['type'], ['video', 'image'], true)) {
+                    return $this->videoResponse($request, $item);
+                }
             }
         }
         throw HttpException::notFound();

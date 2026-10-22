@@ -520,6 +520,7 @@ final class SignageController
             'revision' => $playlistId === null ? '' : $this->signage->playlistRevision($playlistId),
             'content' => $this->signage->content(),
             'currentPlaylist' => $playlistId === null ? null : $this->signage->playlist($playlistId),
+            'activeSchedule' => $screen === null ? null : (new SignageSchedules())->activeFor((int) $screen['id']),
             'sharedPlaylists' => $screen === null ? [] : $this->signage->sharedPlaylists(),
         ], 'screens', $screen === null ? 'Add a screen' : $screen['name'], $errors === [] ? 200 : 422);
     }

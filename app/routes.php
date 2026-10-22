@@ -9,6 +9,7 @@ use App\Modules\Dashboard\DashboardController;
 use App\Modules\Signage\SignageController;
 use App\Modules\Signage\SignagePlayerController;
 use App\Modules\Signage\SignagePairingController;
+use App\Modules\Signage\SignageScheduleController;
 use App\Modules\Signage\SignageTvControlController;
 
 // Every route needs a signed-in person unless marked public: true.
@@ -70,6 +71,13 @@ $router->post('/signage/content/{id}/delete', [SignageController::class, 'delete
 $router->post('/signage/content/{id}/screens', [SignageController::class, 'addContentToScreens']);
 
 // Older bookmarks lead to the screen that owns the playlist.
+$router->get('/signage/schedules', [SignageScheduleController::class, 'index']);
+$router->get('/signage/schedules/create', [SignageScheduleController::class, 'create']);
+$router->post('/signage/schedules', [SignageScheduleController::class, 'store']);
+$router->get('/signage/schedules/{id}/edit', [SignageScheduleController::class, 'edit']);
+$router->post('/signage/schedules/{id}', [SignageScheduleController::class, 'update']);
+$router->post('/signage/schedules/{id}/toggle', [SignageScheduleController::class, 'toggle']);
+$router->post('/signage/schedules/{id}/delete', [SignageScheduleController::class, 'delete']);
 $router->get('/signage/playlists', [SignageController::class, 'playlists']);
 $router->get('/signage/playlists/create', [SignageController::class, 'playlists']);
 $router->get('/signage/playlists/{id}/edit', [SignageController::class, 'editPlaylist']);

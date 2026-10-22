@@ -228,3 +228,26 @@ section > .signage-playlist-new, .signage-playlist-source__share .signage-playli
 .signage-playlist-source__share > summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
 /* Phones: playlist cards still say which TVs play them. */
 @media (max-width: 639px) { .signage-content-card__details.signage-playlist-tvs { display: block; } }
+
+/* Schedules */
+.signage-tabs { overflow-x: auto; scrollbar-width: none; }
+.signage-tabs__link { white-space: nowrap; }
+.signage-schedule-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.signage-schedule { display: flex; flex-wrap: wrap; gap: var(--space-3); justify-content: space-between; align-items: center; padding: var(--space-4); }
+.signage-schedule.is-active { border-color: var(--color-success); }
+.signage-schedule__main { flex: 1 1 260px; min-width: 0; }
+.signage-schedule__title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-weight: 600; }
+.signage-schedule__title a { color: var(--color-foreground); overflow-wrap: anywhere; }
+.signage-schedule__when { margin: var(--space-1) 0; font-variant-numeric: tabular-nums; }
+.signage-schedule__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.signage-schedule__actions .btn { min-height: 44px; }
+.signage-schedule-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.signage-schedule-form__days { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.signage-day { position: relative; }
+.signage-day input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.signage-day span { display: flex; align-items: center; justify-content: center; min-width: 48px; min-height: 44px; padding: 0 var(--space-3); border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); font-weight: 600; }
+.signage-day input:checked + span { background: var(--color-action); border-color: var(--color-action); color: var(--color-on-primary); }
+.signage-day input:focus-visible + span { outline: 2px solid var(--color-action); outline-offset: 2px; }
+/* The unused half of the form is hidden for the chosen mode (all shown without :has support). */
+.signage-schedule-form:has(input[name="mode"][value="once"]:checked) [data-mode="weekly"],
+.signage-schedule-form:has(input[name="mode"][value="weekly"]:checked) [data-mode="once"] { display: none; }

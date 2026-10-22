@@ -10,6 +10,9 @@ foreach ($sharedPlaylists as $option) {
     }
 }
 ?>
+<?php if (!empty($activeSchedule)): ?>
+  <div class="notice notice--info" role="status"><?= icon('clock') ?><div>Right now this TV plays <strong><?= e($activeSchedule['playlist_name']) ?></strong> because of the schedule <a href="/signage/schedules/<?= (int) $activeSchedule['id'] ?>/edit"><?= e($activeSchedule['name']) ?></a>, until <?= e(substr((string) $activeSchedule['end_time'], 0, 5)) ?>. Its normal playlist below returns afterwards.</div></div>
+<?php endif ?>
 <section class="card signage-playlist-source" id="playlist-source" aria-labelledby="playlist-source-title">
   <h2 class="card__title" id="playlist-source-title">Playlist for this TV</h2>
   <?php if ($shared): ?>

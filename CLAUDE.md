@@ -75,7 +75,16 @@ completely separate from the school's WordPress site. UI language: English.
    TV on it (never copied). Leaving one gives the TV a private copy; deleting a TV never
    deletes a shared playlist, and a shared playlist can only be deleted when no TV plays it.
    Playlist-edit endpoints serve both `/signage/screens/{id}/…` and `/signage/playlists/{id}/…`
-   through `playlistTarget()`; `tests/signage-shared-playlists.php` covers it. Content cards have a native
+   through `playlistTarget()`; `tests/signage-shared-playlists.php` covers it.
+   **Schedules** (migration 015, `SignageSchedules`, Schedules tab): optional; for a time
+   window (weekly days + times, or one date, Asia/Jakarta wall clock) a *shared* playlist
+   overrides the chosen TVs' assigned playlist. The server decides: `SignagePlayerController::manifest`
+   returns the active schedule's playlist, else the TV's own, so web and Android players need no
+   schedule logic and switch on their next 30 s check (the manifest revision changes). Overlaps: latest
+   start wins, then newest. Media is served from the assigned and any scheduled playlist. A playlist in a
+   schedule cannot be deleted. Android 1.4.x downloads a playlist's media when its manifest changes, so
+   uncached scheduled videos only start once downloaded (a prefetch of upcoming schedules would need an
+   app update). `tests/signage-schedules.php`. Content cards have a native
    three-dot popover with editable TV checkboxes: checking adds, unchecking
    removes every occurrence from that TV when saved. Only changed TVs are
    updated; retained items keep their durations. Older

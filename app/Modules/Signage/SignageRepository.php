@@ -288,6 +288,9 @@ final class SignageRepository
             if (db()->value('SELECT 1 FROM signage_screens WHERE playlist_id = ? LIMIT 1', [$id])) {
                 throw new InvalidArgumentException('Move the TVs using this playlist to another playlist first.');
             }
+            if (db()->value('SELECT 1 FROM signage_schedules WHERE playlist_id = ? LIMIT 1', [$id])) {
+                throw new InvalidArgumentException('Delete or change the schedules that play this playlist first.');
+            }
             db()->run('DELETE FROM signage_playlists WHERE id = ? AND is_shared = 1', [$id]);
         });
     }
