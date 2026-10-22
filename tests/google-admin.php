@@ -74,10 +74,13 @@ try {
     $check($fallback['lan_source'] === 'directory' && $fallback['network_state'] === null && $fallback['network_reported_at'] === null, 'last known IP does not fabricate connectivity or report time');
     $data = ['chromebook' => ['id' => 1, 'serial_number' => 'TEST-SERIAL-123'], 'googleConfigured' => true,
         'googleCanMove' => true, 'googleCache' => ['report' => $report + ['telemetry_warning' => null], 'refreshed_at' => '2026-10-19 02:00:00'], 'googleMoves' => []];
-    $data['googleCache']['report']['location'] = '<script>alert(1)</script>';
+    $users = GoogleDeviceService::report($fixture->device + ['recentUsers' => [['type' => 'USER_TYPE_MANAGED', 'email' => 'newest@pribadidepok.sch.id'], ['type' => 'USER_TYPE_UNMANAGED'], ['type' => 'USER_TYPE_MANAGED', 'email' => 'b@x.id'], ['type' => 'USER_TYPE_MANAGED', 'email' => 'fourth@x.id']], 'activeTimeRanges' => [['date' => '2026-10-17', 'activeTime' => 5000], ['date' => '2026-10-19', 'activeTime' => 0], ['date' => '2026-10-18', 'activeTime' => 900]]], []);
+    $check($users['recent_users'] === ['newest@pribadidepok.sch.id', 'Unmanaged user', 'b@x.id'] && $users['last_active_date'] === '2026-10-18', 'three newest users kept and last active day ignores zero-use days');
+    $check(!array_key_exists('location', $users), 'location label no longer stored');
+    $data['googleCache']['report']['recent_users'] = ['<script>alert(1)</script>'];
     $html = View::partial('Chromebooks::_google-details', $data);
     $check(str_contains($html, '&lt;script&gt;') && !str_contains($html, '<script>alert'), 'Google content escaped in report');
-    $check(str_contains($html, 'Last policy sync') && str_contains($html, 'Network reported') && str_contains($html, 'Nexus refreshed') && str_contains($html, 'Management password'), 'details contain freshness and OU controls');
+    $check(str_contains($html, 'Last policy sync') && str_contains($html, 'Recent users') && !str_contains($html, 'Location') && str_contains($html, 'Network reported') && str_contains($html, 'Nexus refreshed') && str_contains($html, 'Management password'), 'details contain freshness and OU controls');
     $data['googleConfigured'] = false;
     $html = View::partial('Chromebooks::_google-details', $data);
     $check(str_contains($html, 'Set up Google Admin') && !str_contains($html, 'Library') && !str_contains($html, 'data-google-auto-refresh'), 'disconnected mode hides reports and disables polling');

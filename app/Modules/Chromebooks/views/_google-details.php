@@ -37,7 +37,7 @@ $googleLabel = static fn (?string $value): string => $value ? ucwords(strtolower
         <div><dt>Last policy sync</dt><dd><?= e($googleTime($report['last_sync'])) ?></dd></div>
         <div><dt>ChromeOS</dt><dd><?= e($report['os_version'] ?: 'Not reported') ?></dd></div>
         <div><dt>Google model</dt><dd><?= e($report['model'] ?: 'Not reported') ?></dd></div>
-        <div><dt>Location</dt><dd><?= e($report['location'] ?: 'Not set') ?><span class="google-device__sub">Administrator’s location label</span></dd></div>
+        <div><dt>Recent users</dt><dd><?php if (!empty($report['recent_users'])): ?><?php foreach ($report['recent_users'] as $index => $user): ?><span class="google-device__user"><?= e($user) ?><?= $index === 0 ? ' <span class="google-device__sub">most recent</span>' : '' ?></span><?php endforeach ?><?php else: ?>Not reported<?php endif ?><?php if (!empty($report['last_active_date'])): ?><span class="google-device__sub">Last active <?= e(day_label($report['last_active_date'])) ?></span><?php endif ?></dd></div>
         <div><dt>Organizational unit</dt><dd><?= e($report['ou'] ?: 'Not reported') ?></dd></div>
         <div><dt>Reported network</dt><dd><?= e($googleLabel($report['network_state'])) ?></dd></div>
         <div><dt>Connection type</dt><dd><?= e($googleLabel($report['network_type'])) ?></dd></div>

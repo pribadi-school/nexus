@@ -120,13 +120,24 @@ final class GoogleDeviceService
         });
         $network = $networks[0] ?? [];
         $known = $directory['lastKnownNetwork'][0] ?? [];
+        // Google lists recent users newest first. Keep three; unmanaged (guest or
+        // personal) accounts have no email.
+        $users = [];
+        foreach (array_slice($directory['recentUsers'] ?? [], 0, 3) as $user) {
+            $users[] = (string) ($user['email'] ?? '') !== '' ? (string) $user['email']
+                : (($user['type'] ?? '') === 'USER_TYPE_UNMANAGED' ? 'Unmanaged user' : 'Unknown user');
+        }
+        // Daily usage ranges; the newest day with use is the last active day.
+        $days = array_filter($directory['activeTimeRanges'] ?? [], static fn ($range): bool => (int) ($range['activeTime'] ?? 0) > 0 && !empty($range['date']));
+        usort($days, static fn (array $a, array $b): int => strcmp((string) $b['date'], (string) $a['date']));
         return [
             'serial' => $directory['serialNumber'] ?? null,
             'model' => $directory['model'] ?? null,
             'status' => $directory['status'] ?? null,
             'os_version' => $directory['osVersion'] ?? null,
             'last_sync' => $directory['lastSync'] ?? null,
-            'location' => $directory['annotatedLocation'] ?? null,
+            'recent_users' => $users,
+            'last_active_date' => $days[0]['date'] ?? null,
             'ou' => $directory['orgUnitPath'] ?? null,
             'lan_ip' => $network['lanIpAddress'] ?? $known['ipAddress'] ?? null,
             'lan_source' => isset($network['lanIpAddress']) ? 'telemetry' : 'directory',

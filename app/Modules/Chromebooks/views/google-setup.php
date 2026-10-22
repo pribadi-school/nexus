@@ -85,7 +85,7 @@ unset nexus_ou_password</pre>
           <li><strong>Details appear but network fields are missing:</strong> enable network status reporting for the device’s OU in Google Admin. Reports depend on Google’s reporting policies and device eligibility.</li>
           <li><strong>cURL or OpenSSL error:</strong> enable those PHP extensions in cPanel, or ask your hosting support to enable them.</li>
         </ul>
-        <p>Google reports can be delayed. Nexus checks every five minutes while the device page is open; it displays Google’s report time separately. Location is the administrator’s label.</p>
+        <p>Google reports can be delayed. Nexus checks every five minutes while the device page is open; it displays Google’s report time separately. Recent users are the last accounts Google saw signed in on the device.</p>
         <p><a href="https://developers.google.com/chrome/management/guides/setup" target="_blank" rel="noopener noreferrer">Open Google’s official setup guide</a></p>
       </div>
     </details>
