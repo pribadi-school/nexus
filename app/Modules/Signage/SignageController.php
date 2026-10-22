@@ -257,10 +257,6 @@ final class SignageController
         return Response::redirect('/signage/content');
     }
 
-    public function playlists(Request $request): Response
-    {
-        return Response::redirect('/signage/screens');
-    }
 
     public function addContentToScreens(Request $request): Response
     {
@@ -290,65 +286,167 @@ final class SignageController
         return Response::redirect('/signage');
     }
 
+    /** GET /signage/playlists : shared playlists that several TVs can play. */
+    public function playlists(Request $request): Response
+    {
+        return $this->render('playlists', ['playlists' => $this->signage->sharedPlaylists(), 'errors' => []], 'playlists', 'Playlists');
+    }
+
+    /** POST /signage/playlists : create an empty shared playlist. */
+    public function storePlaylist(Request $request): Response
+    {
+        try {
+            $id = $this->signage->createSharedPlaylist($request->input('name', ''));
+        } catch (InvalidArgumentException $error) {
+            Session::flash('error', $error->getMessage());
+            return Response::redirect('/signage/playlists');
+        }
+        Session::flash('success', 'Playlist created. Add videos, images or websites to it.');
+        return Response::redirect('/signage/playlists/' . $id . '/edit');
+    }
+
+    /** GET /signage/playlists/{id}/edit : a shared playlist; an old private one opens on its TV. */
     public function editPlaylist(Request $request): Response
     {
-        $screen = db()->one('SELECT id FROM signage_screens WHERE playlist_id = ? ORDER BY id LIMIT 1', [(int) $request->param('id')]);
-        return Response::redirect($screen ? '/signage/screens/' . $screen['id'] . '/edit#playlist' : '/signage/screens');
-    }
-
-    public function addPlaylistItem(Request $request): Response
-    {
-        $screen = $this->screen($request);
-        [$data, $errors] = SignageValidation::playlistItem($request->body);
-        if ($errors !== []) {
-            Session::flash('error', implode(' ', array_values($errors)));
-        } else {
-            try {
-                $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->addPlaylistItem($id, (int) $data['content_id'], (int) $data['duration_seconds']));
-                Session::flash('success', 'Content added to ' . $screen['name'] . '.');
-            } catch (InvalidArgumentException $error) {
-                Session::flash('error', $error->getMessage());
-            }
+        $playlist = $this->signage->sharedPlaylist((int) $request->param('id'));
+        if ($playlist === null) {
+            $screen = db()->one('SELECT id FROM signage_screens WHERE playlist_id = ? ORDER BY id LIMIT 1', [(int) $request->param('id')]);
+            return Response::redirect($screen ? '/signage/screens/' . $screen['id'] . '/edit#playlist' : '/signage/playlists');
         }
-        return Response::redirect($request->input('from_library') === '1' ? '/signage' : '/signage/screens/' . $screen['id'] . '/edit#playlist');
+        return $this->playlistForm($playlist, 'playlist');
     }
 
-    public function updatePlaylistItem(Request $request): Response
+    /** GET /signage/playlists/{id}/settings */
+    public function playlistSettings(Request $request): Response
+    {
+        return $this->playlistForm($this->sharedPlaylist($request), 'settings');
+    }
+
+    /** POST /signage/playlists/{id} : rename. */
+    public function updatePlaylist(Request $request): Response
+    {
+        $playlist = $this->sharedPlaylist($request);
+        try {
+            $this->signage->renameSharedPlaylist((int) $playlist['id'], $request->input('name', ''));
+            Session::flash('success', 'Playlist renamed.');
+        } catch (InvalidArgumentException $error) {
+            Session::flash('error', $error->getMessage());
+        }
+        return Response::redirect('/signage/playlists/' . $playlist['id'] . '/settings');
+    }
+
+    /** POST /signage/playlists/{id}/duplicate */
+    public function duplicatePlaylist(Request $request): Response
+    {
+        $playlist = $this->sharedPlaylist($request);
+        try {
+            $id = $this->signage->duplicateSharedPlaylist((int) $playlist['id'], $request->input('name', ''));
+        } catch (InvalidArgumentException $error) {
+            Session::flash('error', $error->getMessage());
+            return Response::redirect('/signage/playlists/' . $playlist['id'] . '/settings');
+        }
+        Session::flash('success', 'Playlist copied. No TV plays the copy yet.');
+        return Response::redirect('/signage/playlists/' . $id . '/edit');
+    }
+
+    /** POST /signage/playlists/{id}/delete : only when no TV plays it. */
+    public function deletePlaylist(Request $request): Response
+    {
+        $playlist = $this->sharedPlaylist($request);
+        try {
+            $this->signage->deleteSharedPlaylist((int) $playlist['id']);
+        } catch (InvalidArgumentException $error) {
+            Session::flash('error', $error->getMessage());
+            return Response::redirect('/signage/playlists/' . $playlist['id'] . '/settings');
+        }
+        Session::flash('success', 'Playlist deleted. Content stays in the content library.');
+        return Response::redirect('/signage/playlists');
+    }
+
+    /** POST /signage/screens/{id}/assign-playlist : playlist_id 0 = this TV's own playlist. */
+    public function assignScreenPlaylist(Request $request): Response
     {
         $screen = $this->screen($request);
-        [$data, $errors] = SignageValidation::playlistItem($request->body, false);
-        if ($errors !== []) {
-            Session::flash('error', implode(' ', array_values($errors)));
-        } else {
-            $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->updatePlaylistItem($id, (int) $request->param('item'), (int) $data['duration_seconds']));
-            Session::flash('success', 'Display duration saved.');
+        $choice = $request->input('playlist_id', '');
+        if (!preg_match('/^[0-9]{1,10}$/D', $choice)) {
+            Session::flash('error', 'Choose a playlist.');
+            return Response::redirect('/signage/screens/' . $screen['id'] . '/edit');
+        }
+        try {
+            $this->signage->assignScreenPlaylist((int) $screen['id'], (int) $choice === 0 ? null : (int) $choice);
+            Session::flash('success', (int) $choice === 0 ? $screen['name'] . ' now has its own playlist.' : $screen['name'] . ' now plays the shared playlist.');
+        } catch (InvalidArgumentException | HttpException $error) {
+            Session::flash('error', $error->getMessage());
         }
         return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#playlist');
     }
 
-    public function movePlaylistItem(Request $request): Response
+    /** POST /signage/screens/{id}/share-playlist : keep this TV's playlist as a named shared one. */
+    public function shareScreenPlaylist(Request $request): Response
     {
         $screen = $this->screen($request);
         try {
-            $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->movePlaylistItem($id, (int) $request->param('item'), (string) $request->input('direction')));
-            Session::flash('success', 'Playlist order saved.');
+            $this->signage->shareScreenPlaylist((int) $screen['id'], $request->input('name', ''));
+            Session::flash('success', 'Saved as a shared playlist. Other TVs can now use it.');
         } catch (InvalidArgumentException $error) {
             Session::flash('error', $error->getMessage());
         }
         return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#playlist');
     }
 
+    public function addPlaylistItem(Request $request): Response
+    {
+        $target = $this->playlistTarget($request);
+        [$data, $errors] = SignageValidation::playlistItem($request->body);
+        if ($errors !== []) {
+            Session::flash('error', implode(' ', array_values($errors)));
+        } else {
+            try {
+                ($target['run'])(fn (int $id) => $this->signage->addPlaylistItem($id, (int) $data['content_id'], (int) $data['duration_seconds']));
+                Session::flash('success', 'Content added to ' . $target['name'] . '.');
+            } catch (InvalidArgumentException $error) {
+                Session::flash('error', $error->getMessage());
+            }
+        }
+        return Response::redirect($request->input('from_library') === '1' ? '/signage' : $target['back']);
+    }
+
+    public function updatePlaylistItem(Request $request): Response
+    {
+        $target = $this->playlistTarget($request);
+        [$data, $errors] = SignageValidation::playlistItem($request->body, false);
+        if ($errors !== []) {
+            Session::flash('error', implode(' ', array_values($errors)));
+        } else {
+            ($target['run'])(fn (int $id) => $this->signage->updatePlaylistItem($id, (int) $request->param('item'), (int) $data['duration_seconds']));
+            Session::flash('success', 'Display duration saved.');
+        }
+        return Response::redirect($target['back']);
+    }
+
+    public function movePlaylistItem(Request $request): Response
+    {
+        $target = $this->playlistTarget($request);
+        try {
+            ($target['run'])(fn (int $id) => $this->signage->movePlaylistItem($id, (int) $request->param('item'), (string) $request->input('direction')));
+            Session::flash('success', 'Playlist order saved.');
+        } catch (InvalidArgumentException $error) {
+            Session::flash('error', $error->getMessage());
+        }
+        return Response::redirect($target['back']);
+    }
+
     public function deletePlaylistItem(Request $request): Response
     {
-        $screen = $this->screen($request);
-        $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->deletePlaylistItem($id, (int) $request->param('item')));
-        Session::flash('success', 'Content removed from this screen.');
-        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#playlist');
+        $target = $this->playlistTarget($request);
+        ($target['run'])(fn (int $id) => $this->signage->deletePlaylistItem($id, (int) $request->param('item')));
+        Session::flash('success', 'Content removed from ' . $target['name'] . '.');
+        return Response::redirect($target['back']);
     }
 
     public function saveScreenPlaylist(Request $request): Response
     {
-        $screen = $this->screen($request);
+        $target = $this->playlistTarget($request);
         try {
             $raw = $request->input('playlist_items', '');
             if (strlen($raw) > 200000) {
@@ -358,17 +456,56 @@ final class SignageController
             if (!is_array($entries) || !array_is_list($entries)) {
                 throw new InvalidArgumentException('Choose valid playlist items.');
             }
-            $this->signage->withScreenPlaylist((int) $screen['id'], fn (int $id) => $this->signage->savePlaylistItems($id, $entries, (string) $request->input('revision')));
+            ($target['run'])(fn (int $id) => $this->signage->savePlaylistItems($id, $entries, (string) $request->input('revision')));
         } catch (InvalidArgumentException | JsonException | HttpException $error) {
             if ($request->isFetch()) {
                 return Response::json(['error' => $error instanceof JsonException ? 'Choose valid playlist items.' : $error->getMessage()], $error instanceof HttpException ? $error->status : 422);
             }
             Session::flash('error', $error instanceof JsonException ? 'Choose valid playlist items.' : $error->getMessage());
-            return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#playlist');
+            return Response::redirect($target['back']);
         }
-        Session::flash('success', 'Playlist saved for ' . $screen['name'] . '.');
-        $redirect = '/signage/screens/' . $screen['id'] . '/edit#playlist';
+        Session::flash('success', 'Playlist saved for ' . $target['name'] . '.');
+        $redirect = $target['back'];
         return $request->isFetch() ? Response::json(['redirect' => $redirect]) : Response::redirect($redirect);
+    }
+
+    /**
+     * What a playlist-editing request changes: the playlist of a TV (its own, or the
+     * shared one it plays), or a shared playlist opened from the Playlists tab.
+     * @return array{name:string, back:string, run:callable}
+     */
+    private function playlistTarget(Request $request): array
+    {
+        if (str_starts_with($request->path, '/signage/playlists/')) {
+            $playlist = $this->sharedPlaylist($request);
+            return [
+                'name' => (string) $playlist['name'], 'back' => '/signage/playlists/' . $playlist['id'] . '/edit#playlist',
+                'run' => fn (callable $change) => $this->signage->withSharedPlaylist((int) $playlist['id'], $change),
+            ];
+        }
+        $screen = $this->screen($request);
+        return [
+            'name' => (string) $screen['name'], 'back' => '/signage/screens/' . $screen['id'] . '/edit#playlist',
+            'run' => fn (callable $change) => $this->signage->withScreenPlaylist((int) $screen['id'], $change),
+        ];
+    }
+
+    /** @return array<string,mixed> */
+    private function sharedPlaylist(Request $request): array
+    {
+        return $this->signage->sharedPlaylist((int) $request->param('id'))
+            ?? throw HttpException::notFound('That shared playlist does not exist.');
+    }
+
+    /** @param array<string,mixed> $playlist */
+    private function playlistForm(array $playlist, string $section): Response
+    {
+        return $this->render('playlist-form', [
+            'playlist' => $playlist, 'section' => $section,
+            'items' => $this->signage->playlistItems((int) $playlist['id']),
+            'revision' => $this->signage->playlistRevision((int) $playlist['id']),
+            'content' => $this->signage->content(),
+        ], 'playlists', (string) $playlist['name']);
     }
 
     private function screenForm(?array $screen, array $values, array $errors = [], string $section = 'playlist'): Response
@@ -382,6 +519,8 @@ final class SignageController
             'items' => $playlistId === null ? [] : $this->signage->playlistItems($playlistId),
             'revision' => $playlistId === null ? '' : $this->signage->playlistRevision($playlistId),
             'content' => $this->signage->content(),
+            'currentPlaylist' => $playlistId === null ? null : $this->signage->playlist($playlistId),
+            'sharedPlaylists' => $screen === null ? [] : $this->signage->sharedPlaylists(),
         ], 'screens', $screen === null ? 'Add a screen' : $screen['name'], $errors === [] ? 200 : 422);
     }
 

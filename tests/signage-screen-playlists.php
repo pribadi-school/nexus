@@ -88,12 +88,12 @@ try {
     $request = new Request('GET', '/signage/screens/' . $second . '/edit', [], [], []);
     $request->params['id'] = (string) $second;
     $html = $controller->editScreen($request)->body;
-    $check(str_contains($html, 'data-screen-editor') && str_contains($html, 'data-screen-library') && !str_contains($html, 'name="playlist_id"'), 'screen contains library and playlist without assignment picker');
+    $check(str_contains($html, 'data-screen-editor') && str_contains($html, 'data-screen-library') && str_contains($html, 'This TV only (its own playlist)'), 'screen contains library and playlist, with the own-or-shared playlist picker');
     $check(!str_contains($html, 'Duration in minutes for Editor video') && str_contains($html, 'Duration in minutes for Editor website'), 'only still content has adjustable duration fields');
     $html = $controller->content(new Request('GET', '/signage', [], [], []))->body;
     $check(str_contains($html, 'popovertarget="content-menu-') && str_contains($html, 'Save TV playlists'), 'content kebab menu includes TV membership editing');
     $tabs = partial('Signage::_tabs', ['tab' => 'screens']);
-    $check(!str_contains($tabs, '/signage/playlists'), 'separate playlists tab removed');
+    $check(str_contains($tabs, '/signage/playlists'), 'Playlists tab is available for shared playlists');
     $repo->deleteScreen($fresh);
     $check($repo->playlist($freshId) === null && $repo->contentItem($website) !== null, 'deleting screen removes private playlist but keeps library content');
 } catch (Throwable $error) { $failure = $error; }

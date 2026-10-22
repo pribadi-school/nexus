@@ -211,3 +211,20 @@
 .signage-tv-control__what { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .signage-tv-control__shot { margin: var(--space-4) 0 0; }
 .signage-tv-control__shot img { display: block; width: 100%; max-width: 640px; height: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md, 8px); }
+
+/* Shared playlists */
+.signage-playlist-new { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; padding: var(--space-3); margin-bottom: var(--space-4); }
+.signage-playlist-new .input { flex: 1 1 220px; min-width: 0; }
+.signage-playlist-new .btn { min-height: 44px; }
+section > .signage-playlist-new, .signage-playlist-source__share .signage-playlist-new, .form-card > .signage-playlist-new { padding: 0; margin: var(--space-2) 0 0; }
+.signage-playlist-tvs { overflow-wrap: anywhere; }
+.signage-playlist-source { padding: var(--space-4); margin-bottom: var(--space-4); }
+@media (min-width: 768px) { .signage-playlist-source { padding: var(--space-5); } }
+.signage-playlist-new.card { max-width: 760px; }
+.signage-playlist-source__form { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
+.signage-playlist-source__form .select { flex: 1 1 240px; min-width: 0; }
+.signage-playlist-source__form .btn { min-height: 44px; }
+.signage-playlist-source__share { margin-top: var(--space-3); }
+.signage-playlist-source__share > summary { cursor: pointer; font-weight: 600; min-height: 44px; display: flex; align-items: center; }
+/* Phones: playlist cards still say which TVs play them. */
+@media (max-width: 639px) { .signage-content-card__details.signage-playlist-tvs { display: block; } }

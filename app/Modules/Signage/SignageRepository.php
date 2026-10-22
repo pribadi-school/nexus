@@ -73,7 +73,9 @@ final class SignageRepository
             $previous = $screen['playlist_id'] === null ? null : (int) $screen['playlist_id'];
             if ($previous !== null) {
                 $this->lockPlaylist($previous);
-                if (!(bool) db()->value('SELECT 1 FROM signage_screens WHERE playlist_id = ? AND id <> ? LIMIT 1', [$previous, $screenId])) {
+                // A shared playlist is edited in place: every TV using it changes together.
+                if ((bool) db()->value('SELECT is_shared FROM signage_playlists WHERE id = ?', [$previous])
+                    || !(bool) db()->value('SELECT 1 FROM signage_screens WHERE playlist_id = ? AND id <> ? LIMIT 1', [$previous, $screenId])) {
                     return $previous;
                 }
             }
@@ -126,7 +128,7 @@ final class SignageRepository
             }
             db()->run('DELETE FROM signage_screens WHERE id = ?', [$id]);
             if ($playlist !== null && !db()->value('SELECT 1 FROM signage_screens WHERE playlist_id = ? LIMIT 1', [$playlist])) {
-                db()->run('DELETE FROM signage_playlists WHERE id = ?', [$playlist]);
+                db()->run('DELETE FROM signage_playlists WHERE id = ? AND is_shared = 0', [$playlist]);
             }
         });
     }
@@ -231,6 +233,157 @@ final class SignageRepository
             }
             return $result;
         });
+    }
+
+    // ---- Shared playlists -------------------------------------------------
+
+    /** @return list<array<string,mixed>> shared playlists with item count and the TVs using each */
+    public function sharedPlaylists(): array
+    {
+        $rows = db()->all('SELECT p.*, (SELECT COUNT(*) FROM signage_playlist_items i WHERE i.playlist_id = p.id) AS item_count
+            FROM signage_playlists p WHERE p.is_shared = 1 ORDER BY p.name, p.id');
+        $users = [];
+        foreach (db()->all('SELECT s.id, s.name, s.playlist_id FROM signage_screens s WHERE s.playlist_id IS NOT NULL ORDER BY s.name, s.id') as $screen) {
+            $users[(int) $screen['playlist_id']][] = ['id' => (int) $screen['id'], 'name' => (string) $screen['name']];
+        }
+        foreach ($rows as &$row) {
+            $row['screens'] = $users[(int) $row['id']] ?? [];
+            $row['cover'] = db()->one("SELECT c.* FROM signage_playlist_items i JOIN signage_content c ON c.id = i.content_id
+                WHERE i.playlist_id = ? AND c.type IN ('video', 'image') ORDER BY i.sort_order, i.id LIMIT 1", [$row['id']]);
+        }
+        return $rows;
+    }
+
+    /** @return array<string,mixed>|null a shared playlist, with the TVs using it */
+    public function sharedPlaylist(int $id): ?array
+    {
+        foreach ($this->sharedPlaylists() as $playlist) {
+            if ((int) $playlist['id'] === $id) return $playlist;
+        }
+        return null;
+    }
+
+    public function createSharedPlaylist(string $name): int
+    {
+        return db()->transaction(function () use ($name): int {
+            $this->assertSharedName($name);
+            return $this->createPlaylist(['name' => trim($name), 'description' => null, 'is_shared' => 1]);
+        });
+    }
+
+    public function renameSharedPlaylist(int $id, string $name): void
+    {
+        db()->transaction(function () use ($id, $name): void {
+            $this->lockSharedPlaylist($id);
+            $this->assertSharedName($name, $id);
+            db()->update('signage_playlists', ['name' => trim($name), 'updated_at' => Database::now()], ['id' => $id]);
+        });
+    }
+
+    /** A shared playlist can only be deleted once no TV plays it. */
+    public function deleteSharedPlaylist(int $id): void
+    {
+        db()->transaction(function () use ($id): void {
+            $this->lockSharedPlaylist($id);
+            if (db()->value('SELECT 1 FROM signage_screens WHERE playlist_id = ? LIMIT 1', [$id])) {
+                throw new InvalidArgumentException('Move the TVs using this playlist to another playlist first.');
+            }
+            db()->run('DELETE FROM signage_playlists WHERE id = ? AND is_shared = 1', [$id]);
+        });
+    }
+
+    /** Copy a shared playlist into a new shared playlist (items and timings). */
+    public function duplicateSharedPlaylist(int $id, string $name): int
+    {
+        return db()->transaction(function () use ($id, $name): int {
+            $this->lockSharedPlaylist($id);
+            $this->assertSharedName($name);
+            $copy = $this->createPlaylist(['name' => trim($name), 'description' => null, 'is_shared' => 1]);
+            $this->copyItems($id, $copy);
+            return $copy;
+        });
+    }
+
+    /** Turn this TV's own playlist into a named shared playlist it keeps playing. */
+    public function shareScreenPlaylist(int $screenId, string $name): int
+    {
+        return db()->transaction(function () use ($screenId, $name): int {
+            $playlistId = $this->screenPlaylistId($screenId);
+            $this->lockPlaylist($playlistId);
+            if ((bool) db()->value('SELECT is_shared FROM signage_playlists WHERE id = ?', [$playlistId])) {
+                throw new InvalidArgumentException('This TV already uses a shared playlist.');
+            }
+            $this->assertSharedName($name);
+            db()->update('signage_playlists', ['name' => trim($name), 'is_shared' => 1, 'updated_at' => Database::now()], ['id' => $playlistId]);
+            return $playlistId;
+        });
+    }
+
+    /**
+     * Point a TV at a shared playlist, or (null) back to a private playlist of its
+     * own, which starts as a copy of the shared one. A private playlist it leaves
+     * behind is removed; shared ones are never deleted here.
+     */
+    public function assignScreenPlaylist(int $screenId, ?int $sharedId): void
+    {
+        db()->transaction(function () use ($screenId, $sharedId): void {
+            $screen = db()->one('SELECT * FROM signage_screens WHERE id = ? FOR UPDATE', [$screenId]);
+            if ($screen === null) throw HttpException::notFound('That screen no longer exists.');
+            $previous = $screen['playlist_id'] === null ? null : (int) $screen['playlist_id'];
+            if ($sharedId === $previous) return;
+            if ($sharedId !== null) {
+                $this->lockSharedPlaylist($sharedId);
+                $target = $sharedId;
+            } else {
+                // Leaving a shared playlist keeps what the TV was playing.
+                $target = $this->createPlaylist(['name' => $screen['name'], 'description' => null]);
+                if ($previous !== null) $this->copyItems($previous, $target);
+            }
+            db()->update('signage_screens', [
+                'playlist_id' => $target, 'last_content_id' => null, 'last_error' => null, 'updated_at' => Database::now(),
+            ], ['id' => $screenId]);
+            if ($previous !== null) {
+                $this->lockPlaylist($previous);
+                if (!db()->value('SELECT 1 FROM signage_screens WHERE playlist_id = ? LIMIT 1', [$previous])) {
+                    db()->run('DELETE FROM signage_playlists WHERE id = ? AND is_shared = 0', [$previous]);
+                }
+            }
+        });
+    }
+
+    /** Runs a change on a shared playlist under its lock (used by the playlist editor). */
+    public function withSharedPlaylist(int $id, callable $change): void
+    {
+        db()->transaction(function () use ($id, $change): void {
+            $this->lockSharedPlaylist($id);
+            $change($id);
+        });
+    }
+
+    private function copyItems(int $from, int $to): void
+    {
+        db()->run('INSERT INTO signage_playlist_items (playlist_id, content_id, sort_order, duration_seconds)
+            SELECT ?, content_id, sort_order, duration_seconds FROM signage_playlist_items
+            WHERE playlist_id = ? ORDER BY sort_order, id', [$to, $from]);
+    }
+
+    private function lockSharedPlaylist(int $id): void
+    {
+        $row = db()->one('SELECT id, is_shared FROM signage_playlists WHERE id = ? FOR UPDATE', [$id]);
+        if ($row === null || !(bool) $row['is_shared']) {
+            throw HttpException::notFound('That shared playlist does not exist.');
+        }
+    }
+
+    private function assertSharedName(string $name, ?int $exceptId = null): void
+    {
+        $name = trim($name);
+        if ($name === '' || mb_strlen($name) > 160) {
+            throw new InvalidArgumentException('Use a playlist name of 1 to 160 characters.');
+        }
+        if (db()->value('SELECT 1 FROM signage_playlists WHERE is_shared = 1 AND name = ? AND id <> ? LIMIT 1', [$name, $exceptId ?? 0])) {
+            throw new InvalidArgumentException('A shared playlist with that name already exists.');
+        }
     }
 
     public function usageBytes(): int

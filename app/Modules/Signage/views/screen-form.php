@@ -25,6 +25,7 @@ $sections['settings'] = ['Settings', $base . '/settings'];
 <?php endif ?>
 
 <?php if (!$adding && $section === 'playlist'): ?>
+<?= partial('Signage::_playlist-source', ['screen' => $screen, 'currentPlaylist' => $currentPlaylist, 'sharedPlaylists' => $sharedPlaylists]) ?>
 <?= partial('Signage::_screen-editor', ['screen' => $screen, 'items' => $items, 'content' => $content, 'revision' => $revision]) ?>
 <?php endif ?>
 

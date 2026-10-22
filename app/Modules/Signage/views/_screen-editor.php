@@ -1,4 +1,4 @@
-<?php $base = '/signage/screens/' . (int) $screen['id']; ?>
+<?php $base ??= '/signage/screens/' . (int) $screen['id']; $owner ??= "this screen's playlist"; ?>
 <section class="signage-editor" id="playlist" data-screen-editor>
   <div class="signage-editor__playlist">
     <div class="signage-editor__heading"><h2 class="card__title">Playlist</h2>
@@ -14,7 +14,7 @@
       <?php endforeach ?>
     </ol>
     <p class="signage-editor__feedback" aria-live="polite" data-editor-feedback></p>
-    <p class="signage-editor__empty" data-playlist-empty<?= $items !== [] ? ' hidden' : '' ?>><?= icon('plus') ?>Drop videos, images or websites here to start this screen's playlist.</p>
+    <p class="signage-editor__empty" data-playlist-empty<?= $items !== [] ? ' hidden' : '' ?>><?= icon('plus') ?>Drop videos, images or websites here to start <?= e($owner) ?>.</p>
   </div>
   <div class="signage-editor__library" data-library-panel>
     <div class="signage-editor__heading"><h2 class="card__title">Content library</h2><a class="btn btn--secondary btn--sm" href="/signage/content/create"><?= icon('upload', 'icon--sm') ?>Add content</a></div>

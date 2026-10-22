@@ -67,9 +67,15 @@ completely separate from the school's WordPress site. UI language: English.
 5. **Done: Signage** (`app/Modules/Signage`): separate navigation item below
    Chromebooks. `/signage` opens the Content library first, with large browser-
    generated video thumbnails; Screens lives at `/signage/screens`. Each
-   screen owns its playlist, edited beside a shared content library with mouse
-   drag/drop, keyboard/touch buttons and atomic Save changes. There is no
-   separate playlist menu or assignment selector. Content cards have a native
+   screen owns its playlist by default, edited beside a shared content library with mouse
+   drag/drop, keyboard/touch buttons and atomic Save changes. **Shared playlists** (migration 014, `signage_playlists.is_shared`): the Playlists
+   tab creates named playlists that several TVs play; each screen's Playlist tab has a
+   "Playlist for this TV" picker (own, or a shared one) and "Save as shared playlist".
+   Editing a shared playlist, from its page or from any TV playing it, changes every
+   TV on it (never copied). Leaving one gives the TV a private copy; deleting a TV never
+   deletes a shared playlist, and a shared playlist can only be deleted when no TV plays it.
+   Playlist-edit endpoints serve both `/signage/screens/{id}/…` and `/signage/playlists/{id}/…`
+   through `playlistTarget()`; `tests/signage-shared-playlists.php` covers it. Content cards have a native
    three-dot popover with editable TV checkboxes: checking adds, unchecking
    removes every occurrence from that TV when saved. Only changed TVs are
    updated; retained items keep their durations. Older
