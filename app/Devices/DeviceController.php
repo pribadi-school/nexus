@@ -9,6 +9,7 @@ use App\Core\HttpException;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Session;
+use RuntimeException;
 
 /** Endpoints shared by every category: forwarding, the status switch, the notes log. */
 final class DeviceController
@@ -78,19 +79,56 @@ final class DeviceController
             return Response::redirect($category->detailPath($id) . '#add-note');
         }
 
-        $service = new DeviceService();
-        $statusChanged = db()->transaction(function () use ($service, $category, $device, $id, $kind, $body, $setStatus): bool {
-            $service->addNote($id, Auth::id(), $kind, $body);
-            if (is_string($setStatus) && $category->acceptsStatus($setStatus)) {
-                return $service->changeStatus($category, $device, $setStatus, Auth::id());
+        $image = null;
+        $file = $request->files['image'] ?? [];
+        if (is_array($file) && NoteImage::submitted($file)) {
+            try {
+                $image = NoteImage::store($file);
+            } catch (RuntimeException $e) {
+                Session::flash('error', $e->getMessage());
+                Session::put('note.draft', ['device' => $id, 'kind' => $kind, 'body' => $body, 'set_status' => $setStatus]);
+                return Response::redirect($category->detailPath($id) . '#add-note');
             }
-            return false;
-        });
+        }
+
+        $service = new DeviceService();
+        try {
+            $statusChanged = db()->transaction(function () use ($service, $category, $device, $id, $kind, $body, $setStatus, $image): bool {
+                $service->addNote($id, Auth::id(), $kind, $body, null, $image);
+                if (is_string($setStatus) && $category->acceptsStatus($setStatus)) {
+                    return $service->changeStatus($category, $device, $setStatus, Auth::id());
+                }
+                return false;
+            });
+        } catch (\Throwable $e) {
+            NoteImage::delete($image); // do not leave an orphan file behind
+            throw $e;
+        }
 
         Session::flash('success', $statusChanged
             ? 'Note added, and the status is now "' . $category->statusLabel((string) $setStatus) . '".'
             : 'Note added.');
         return Response::redirect($back);
+    }
+
+    /** GET /devices/notes/{id}/image : a note's picture (signed-in users only). */
+    public function noteImage(Request $request): Response
+    {
+        $filename = (string) db()->value(
+            'SELECT n.image_filename FROM device_notes n JOIN devices d ON d.id = n.device_id
+             WHERE n.id = ? AND d.deleted_at IS NULL',
+            [(int) $request->param('id')],
+        );
+        $path = $filename !== '' ? NoteImage::path($filename) : '';
+        if ($path === '' || !is_file($path)) {
+            throw HttpException::notFound('This note has no image.');
+        }
+        if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
+        return new Response((string) file_get_contents($path), 200, [
+            'Content-Type' => NoteImage::mime($filename),
+            'Cache-Control' => 'private, max-age=31536000, immutable',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /** @return array{0: array<string, mixed>, 1: Category} */

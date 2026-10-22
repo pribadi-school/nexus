@@ -178,6 +178,10 @@ completely separate from the school's WordPress site. UI language: English.
   Repositories select these with an indexed correlated join, never per-row queries.
   `tests/device-search-notes.php` covers historical search, escaping, soft deletion,
   latest-note ordering and both list presentations with rollback fixtures.
+- Notes can carry one optional **image** (JPG/PNG/WebP, 2 MB at most; migration 016,
+  `device_notes.image_filename`; `App\Devices\NoteImage` stores it in
+  `storage/private/note-images/`, served to signed-in users at
+  `/devices/notes/{id}/image`; the file field is in `notes-log.php`).
 - `views/partials/notes-log.php`: add-note form (placeholder from `Category::noteExample()`, kinds from
   `Category::noteKinds()`, "Also mark as …" checkbox) + entries
   (`partials/note-entry.php`, also used by the dashboard feed).

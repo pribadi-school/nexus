@@ -7,7 +7,7 @@ namespace App\Devices;
 /** The notes log (device_notes): every report, problem, fix and status change. */
 final class NoteRepository
 {
-    private const SELECT = 'SELECT n.id, n.device_id, n.kind, n.body, n.meta, n.created_at, n.edited_at,
+    private const SELECT = 'SELECT n.id, n.device_id, n.kind, n.body, n.meta, n.image_filename, n.created_at, n.edited_at,
                                    d.category, u.name AS author_name, eu.name AS editor_name
                             FROM device_notes n
                             JOIN devices d ON d.id = n.device_id

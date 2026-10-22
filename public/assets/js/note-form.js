@@ -18,3 +18,24 @@ export function initNoteForms() {
     });
   });
 }
+
+// Image on a note: tell the person right away when a picture is over the
+// limit, instead of after a slow upload (the server checks again).
+export function initNoteImages() {
+  document.querySelectorAll('input[type="file"][data-max-bytes]').forEach((input) => {
+    const message = input.closest('.field')?.querySelector('[data-image-error]');
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      const tooBig = file && file.size > Number(input.dataset.maxBytes);
+      if (tooBig) {
+        input.value = '';
+        if (message) {
+          message.textContent = `That image is ${(file.size / 1048576).toFixed(1)} MB. Choose one of 2 MB or less.`;
+          message.hidden = false;
+        }
+      } else if (message) {
+        message.hidden = true;
+      }
+    });
+  });
+}

@@ -32,7 +32,7 @@ $other = $isOk ? Status::PROBLEM : Status::OK;
     <span class="chip chip--quiet num"><?= $noteCount ?></span>
   </div>
 
-  <form class="note-form" id="add-note" method="post" action="/devices/<?= $id ?>/notes"
+  <form class="note-form" id="add-note" method="post" action="/devices/<?= $id ?>/notes" enctype="multipart/form-data"
         data-note-form data-busy-on-submit data-current-status="<?= e($device['status']) ?>">
     <?= csrf_field() ?>
     <?php if (!$plainNotes): ?>
@@ -53,6 +53,13 @@ $other = $isOk ? Status::PROBLEM : Status::OK;
       <label class="field__label" for="note-body"><?= $plainNotes ? 'Note' : 'What happened?' ?></label>
       <textarea class="input textarea" id="note-body" name="body" rows="3" maxlength="<?= DeviceController::NOTE_MAX ?>" required
                 placeholder="<?= e($category->noteExample()) ?>"><?= e($draft['body'] ?? '') ?></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="note-image">Add image <span class="field__hint">(optional · JPG, PNG or WebP · 2 MB at most)</span></label>
+      <input class="input" type="file" id="note-image" name="image" accept="image/jpeg,image/png,image/webp"
+             data-max-bytes="<?= \App\Devices\NoteImage::MAX_BYTES ?>">
+      <p class="field__error" data-image-error hidden></p>
     </div>
 
     <div class="note-form__footer">

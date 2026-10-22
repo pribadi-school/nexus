@@ -32,6 +32,7 @@ $router->get('/search', [DashboardController::class, 'search']);
 $router->get('/devices/{id}', [DeviceController::class, 'show']);
 $router->post('/devices/{id}/status', [DeviceController::class, 'status']);
 $router->post('/devices/{id}/notes', [DeviceController::class, 'addNote']);
+$router->get('/devices/notes/{id}/image', [DeviceController::class, 'noteImage']);
 
 // Device categories (config/modules.php)
 categories()->registerRoutes($router);

@@ -89,7 +89,7 @@ final class DeviceService
      *
      * @param array<string, mixed>|null $meta
      */
-    public function addNote(int $deviceId, ?int $userId, string $kind, string $body, ?array $meta = null): int
+    public function addNote(int $deviceId, ?int $userId, string $kind, string $body, ?array $meta = null, ?string $imageFilename = null): int
     {
         $now = Database::now();
         $noteId = db()->insert('device_notes', [
@@ -98,6 +98,7 @@ final class DeviceService
             'kind' => $kind,
             'body' => $body,
             'meta' => $meta === null ? null : json_encode($meta, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+            'image_filename' => $imageFilename,
             'created_at' => $now,
         ]);
         db()->update('devices', ['updated_by' => $userId, 'updated_at' => $now], ['id' => $deviceId]);

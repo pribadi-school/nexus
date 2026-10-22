@@ -4,7 +4,7 @@
 import { initConfirm } from './confirm.js';
 import { initFeed } from './feed.js';
 import { initLiveFilters } from './filters.js?v=20261022-search-all';
-import { initNoteForms } from './note-form.js';
+import { initNoteForms, initNoteImages } from './note-form.js';
 import { initStatusToggles } from './status-toggle.js';
 import { setBusy } from './util.js';
 import { initNavigation } from './navigation.js?v=20261019-performance';
@@ -47,6 +47,7 @@ let cleanupPage = () => {};
 function initPage() {
   const cleanupFilters = initLiveFilters();
   initNoteForms();
+  initNoteImages();
   const cleanupEditor = initSignageEditor();
   const cleanupSignage = initSignageAdmin();
   const cleanupGoogle = initChromebookGoogle();

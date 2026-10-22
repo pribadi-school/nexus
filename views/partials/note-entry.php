@@ -42,6 +42,11 @@ $meta = is_array($note['meta']) ? $note['meta'] : [];
     <p class="note__text"><?= nl2br(e($note['body'])) ?></p>
     <p class="note__author">by <?= e($author) ?></p>
   <?php endif ?>
+  <?php if (!empty($note['image_filename'])): ?>
+    <a class="note__image" href="/devices/notes/<?= (int) $note['id'] ?>/image" target="_blank" rel="noopener">
+      <img src="/devices/notes/<?= (int) $note['id'] ?>/image" alt="Image attached to this note" loading="lazy">
+    </a>
+  <?php endif ?>
   <?php if (!empty($note['edited_at'])): ?>
     <p class="note__author">Edited <?= e(time_ago($note['edited_at'])) ?><?= !empty($note['editor_name']) ? ' by ' . e($note['editor_name']) : '' ?></p>
   <?php endif ?>
