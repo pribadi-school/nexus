@@ -190,7 +190,9 @@ if (editor) {
     animateChange(() => row.remove());
     update(`Removed ${name}. Save changes to update this TV.`);
   };
+  let holdTimer = null;
   const stopDrag = () => {
+    clearTimeout(holdTimer);
     if (!dragging) return;
     dragging.row.classList.remove('is-dragging');
     dragging.ghost?.remove();
@@ -206,12 +208,43 @@ if (editor) {
   // 6px drags, a plain click still opens the link. Only real controls
   // (buttons, fields) keep their own behaviour.
   let suppressClick = false;
+  const begin = (x, y) => {
+    dragging.active = true;
+    // Capture only once it is a drag, so a plain click reaches the link.
+    try { dragging.row.setPointerCapture(dragging.pointerId); } catch { /* touch released already */ }
+    dragging.ghost = dragging.row.cloneNode(true);
+    dragging.ghost.classList.add('signage-drag-ghost');
+    dragging.ghost.setAttribute('aria-hidden', 'true');
+    dragging.ghost.inert = true;
+    document.body.append(dragging.ghost);
+    dragging.row.classList.add('is-dragging');
+    document.body.classList.add('is-signage-dragging');
+    moveGhost(x, y);
+  };
+  const moveGhost = (x, y) => {
+    dragging.ghost.style.left = `${Math.min(innerWidth - Math.min(330, innerWidth - 16), Math.max(8, x - 60))}px`;
+    dragging.ghost.style.top = `${y - 30}px`;
+  };
+  // Mouse: press and move 6px. Finger or pen: hold still briefly, then drag;
+  // moving sooner is an ordinary scroll, and a quick tap still opens the link.
   editor.addEventListener('pointerdown', event => {
     const row = event.target.closest('[data-editor-item]');
-    if (!row || event.pointerType !== 'mouse' || event.button !== 0 || saving || event.target.closest('button, input, select, textarea')) return;
-    event.preventDefault();
-    dragging = {row, fromLibrary: library.contains(row), pointerId: event.pointerId, x: event.clientX, y: event.clientY, active: false};
+    if (!row || !event.isPrimary || event.button !== 0 || saving || event.target.closest('button, input, select, textarea')) return;
+    const touch = event.pointerType !== 'mouse';
+    if (!touch) event.preventDefault();
+    dragging = {row, fromLibrary: library.contains(row), pointerId: event.pointerId, x: event.clientX, y: event.clientY, active: false, touch};
+    if (touch) {
+      clearTimeout(holdTimer);
+      holdTimer = setTimeout(() => {
+        if (!dragging || dragging.row !== row || dragging.active) return;
+        begin(dragging.x, dragging.y);
+        navigator.vibrate?.(15);
+      }, 450);
+    }
   });
+  // Once a finger drag starts, the page must not scroll under it.
+  editor.addEventListener('touchmove', event => { if (dragging?.active) event.preventDefault(); }, {passive: false, signal});
+  editor.addEventListener('contextmenu', event => { if (dragging?.touch) event.preventDefault(); }, {signal});
   // After a real drag, the release must not also follow the thumbnail link.
   editor.addEventListener('click', event => {
     if (!suppressClick) return;
@@ -222,21 +255,17 @@ if (editor) {
   window.addEventListener('pointermove', event => {
     if (!dragging || event.pointerId !== dragging.pointerId) return;
     if (!dragging.active) {
-      if (Math.hypot(event.clientX - dragging.x, event.clientY - dragging.y) < 6) return;
-      dragging.active = true;
-      // Capture only once it is a drag, so a plain click reaches the link.
-      dragging.row.setPointerCapture(event.pointerId);
-      dragging.ghost = dragging.row.cloneNode(true);
-      dragging.ghost.classList.add('signage-drag-ghost');
-      dragging.ghost.setAttribute('aria-hidden', 'true');
-      dragging.ghost.inert = true;
-      document.body.append(dragging.ghost);
-      dragging.row.classList.add('is-dragging');
-      document.body.classList.add('is-signage-dragging');
+      const moved = Math.hypot(event.clientX - dragging.x, event.clientY - dragging.y);
+      if (dragging.touch) {
+        // Moved before the hold finished: the person is scrolling.
+        if (moved > 8) { clearTimeout(holdTimer); dragging = null; }
+        return;
+      }
+      if (moved < 6) return;
+      begin(event.clientX, event.clientY);
     }
     event.preventDefault();
-    dragging.ghost.style.left = `${Math.min(innerWidth - 330, Math.max(8, event.clientX - 60))}px`;
-    dragging.ghost.style.top = `${event.clientY - 30}px`;
+    moveGhost(event.clientX, event.clientY);
     const over = inDropArea(event.clientX, event.clientY);
     list.classList.toggle('is-drop-active', !!over);
     if (over) {

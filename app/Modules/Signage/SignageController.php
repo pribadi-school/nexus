@@ -49,7 +49,24 @@ final class SignageController
     public function editScreen(Request $request): Response
     {
         $screen = $this->screen($request);
-        return $this->screenForm($screen, $screen);
+        return $this->screenForm($screen, $screen, [], 'playlist');
+    }
+
+    /** GET /signage/screens/{id}/settings : name, display options, photo and player address. */
+    public function screenSettings(Request $request): Response
+    {
+        $screen = $this->screen($request);
+        return $this->screenForm($screen, $screen, [], 'settings');
+    }
+
+    /** GET /signage/screens/{id}/control : TV control buttons (when the helper is set up). */
+    public function screenControl(Request $request): Response
+    {
+        $screen = $this->screen($request);
+        if (!SignageTvControl::enabled()) {
+            return Response::redirect('/signage/screens/' . $screen['id'] . '/edit');
+        }
+        return $this->screenForm($screen, $screen, [], 'control');
     }
 
     public function updateScreen(Request $request): Response
@@ -57,14 +74,14 @@ final class SignageController
         $screen = $this->screen($request);
         [$data, $errors] = SignageValidation::screen($request->body);
         if ($errors !== []) {
-            return $this->screenForm($screen, $data, $errors);
+            return $this->screenForm($screen, $data, $errors, 'settings');
         }
         $this->signage->withScreenPlaylist((int) $screen['id'], function (int $playlistId) use ($screen, $data): void {
             $data['playlist_id'] = $playlistId;
             $this->signage->updateScreen((int) $screen['id'], $data);
         });
         Session::flash('success', 'Screen settings saved.');
-        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit');
+        return Response::redirect('/signage/screens/' . $screen['id'] . '/settings');
     }
 
     /** GET /signage/screens/{id}/photo : the TV photo (signed-in users only). */
@@ -93,11 +110,11 @@ final class SignageController
             $filename = SignageScreenPhoto::store($request->files['photo'] ?? []);
         } catch (RuntimeException $error) {
             Session::flash('error', $error->getMessage());
-            return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#screen-photo');
+            return Response::redirect('/signage/screens/' . $screen['id'] . '/settings#screen-photo');
         }
         SignageScreenPhoto::delete($this->signage->setScreenPhoto((int) $screen['id'], $filename));
         Session::flash('success', 'Screen photo saved.');
-        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#screen-photo');
+        return Response::redirect('/signage/screens/' . $screen['id'] . '/settings#screen-photo');
     }
 
     /** POST /signage/screens/{id}/photo/delete */
@@ -106,7 +123,7 @@ final class SignageController
         $screen = $this->screen($request);
         SignageScreenPhoto::delete($this->signage->setScreenPhoto((int) $screen['id'], null));
         Session::flash('success', 'Screen photo removed.');
-        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#screen-photo');
+        return Response::redirect('/signage/screens/' . $screen['id'] . '/settings#screen-photo');
     }
 
     public function deleteScreen(Request $request): Response
@@ -123,7 +140,7 @@ final class SignageController
         $screen = $this->screen($request);
         $this->signage->rotateScreenToken((int) $screen['id']);
         Session::flash('success', 'Player address replaced. Open the new address on the TV.');
-        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit');
+        return Response::redirect('/signage/screens/' . $screen['id'] . '/settings');
     }
 
     public function content(Request $request): Response
@@ -354,14 +371,14 @@ final class SignageController
         return $request->isFetch() ? Response::json(['redirect' => $redirect]) : Response::redirect($redirect);
     }
 
-    private function screenForm(?array $screen, array $values, array $errors = []): Response
+    private function screenForm(?array $screen, array $values, array $errors = [], string $section = 'playlist'): Response
     {
         $playlistId = $screen === null ? null : $this->signage->screenPlaylistId((int) $screen['id']);
         if ($screen !== null) {
             $screen = $this->signage->screen((int) $screen['id']);
         }
         return $this->render('screen-form', [
-            'screen' => $screen, 'values' => $values, 'errors' => $errors,
+            'screen' => $screen, 'values' => $values, 'errors' => $errors, 'section' => $section,
             'items' => $playlistId === null ? [] : $this->signage->playlistItems($playlistId),
             'revision' => $playlistId === null ? '' : $this->signage->playlistRevision($playlistId),
             'content' => $this->signage->content(),

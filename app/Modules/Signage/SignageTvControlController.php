@@ -40,7 +40,7 @@ final class SignageTvControlController
         } catch (RuntimeException $error) {
             if ($request->isFetch()) return Response::json(['error' => $error->getMessage()], 422);
             Session::flash('error', $error->getMessage());
-            return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#tv-control');
+            return Response::redirect('/signage/screens/' . $screen['id'] . '/control');
         }
         $message = SignageTvControl::ACTIONS[$action] . ' sent. The helper PC runs it within about 10 seconds.';
         if ($request->isFetch()) {
@@ -48,7 +48,7 @@ final class SignageTvControlController
             return Response::json(['message' => $message, 'html' => $this->card($screen)]);
         }
         Session::flash('success', $message);
-        return Response::redirect('/signage/screens/' . $screen['id'] . '/edit#tv-control');
+        return Response::redirect('/signage/screens/' . $screen['id'] . '/control');
     }
 
     /** GET /signage/screens/{id}/tv-control/{command}/screenshot */

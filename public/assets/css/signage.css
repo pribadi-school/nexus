@@ -89,7 +89,9 @@
 }
 .signage-editor-item [hidden], .signage-editor__empty[hidden], .signage-editor [hidden] { display: none; }
 .signage-drag-slot { flex: 0 0 72px; border: 1px dashed var(--color-action); border-radius: var(--radius-lg); background: var(--color-surface-muted); }
-.signage-drag-ghost { position: fixed; top: -1000px; left: -1000px; width: 320px; transform: rotate(-2deg); border-color: var(--color-action); pointer-events: none; }
+.signage-drag-ghost { position: fixed; top: -1000px; left: -1000px; width: min(320px, calc(100vw - 16px)); transform: rotate(-2deg); border-color: var(--color-action); pointer-events: none; }
+/* A long press starts a finger drag: no text selection or callout menu. */
+.signage-editor .signage-editor-item { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .signage-settings-title { margin: var(--space-6) 0 var(--space-3); font-size: var(--fs-card-title); }
 @media (min-width: 1200px) { .signage-editor { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--space-6); } }
 @media (prefers-reduced-motion: reduce) { .signage-editor-item, .signage-editor__list[data-playlist-drop] { transition: none; } }
@@ -97,6 +99,9 @@
 .signage-tabs__link { display: flex; align-items: center; min-height: 44px; padding: 0 0 var(--space-2); margin-bottom: -1px; border-bottom: 2px solid transparent; color: var(--color-muted-foreground); font-weight: 600; }
 .signage-tabs__link:hover { color: var(--color-action); text-decoration: none; }
 .signage-tabs__link.is-active { color: var(--color-action); border-bottom-color: var(--color-action); }
+.signage-tabs--screen { gap: var(--space-4); margin-top: calc(-1 * var(--space-2)); overflow-x: auto; scrollbar-width: none; }
+.signage-tabs--screen .signage-tabs__link { font-size: var(--fs-ui); white-space: nowrap; }
+.signage-tv-control:first-of-type { margin-top: 0; }
 .signage-muted { color: var(--color-muted-foreground); font-size: var(--fs-ui); }
 .signage-break { overflow-wrap: anywhere; }
 .signage-num { font-variant-numeric: tabular-nums; }

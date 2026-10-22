@@ -46,6 +46,8 @@ $router->post('/signage/api/pairing/poll', [SignagePairingController::class, 'po
 $router->get('/signage/screens/create', [SignageController::class, 'createScreen']);
 $router->post('/signage/screens', [SignageController::class, 'storeScreen']);
 $router->get('/signage/screens/{id}/edit', [SignageController::class, 'editScreen']);
+$router->get('/signage/screens/{id}/settings', [SignageController::class, 'screenSettings']);
+$router->get('/signage/screens/{id}/control', [SignageController::class, 'screenControl']);
 $router->post('/signage/screens/{id}', [SignageController::class, 'updateScreen']);
 $router->post('/signage/screens/{id}/delete', [SignageController::class, 'deleteScreen']);
 $router->post('/signage/screens/{id}/rotate-token', [SignageController::class, 'rotateScreenToken']);

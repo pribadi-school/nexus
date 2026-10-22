@@ -27,6 +27,6 @@
     <?php if ($content === []): ?><p class="signage-help" data-library-empty>Upload a video or image, or add a website to start.</p><?php endif ?>
     <p class="signage-help" data-library-no-results hidden>No matching content.</p>
   </div>
-  <details class="signage-editor__help"><summary>Playlist help</summary><p class="signage-help">Drag content between the columns to add or remove it. Drag rows to reorder, or use each row’s menu. Videos play for their full file duration. Set image and website durations in minutes, then save changes.</p></details>
+  <details class="signage-editor__help"><summary>Playlist help</summary><p class="signage-help">Drag content between the columns to add or remove it. Drag rows to reorder (on a phone, hold a row, then drag it), or use each row’s menu. Videos play for their full file duration. Set image and website durations in minutes, then save changes.</p></details>
 </section>
 <?= partial('Signage::_content-dialog', ['uploadLimitBytes' => \App\Modules\Signage\SignageStorage::maxUploadBytes()]) ?>
