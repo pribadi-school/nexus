@@ -35,7 +35,7 @@
 
 /* ------------------------------------------------------ floor panel --- */
 /* A coloured bar along the top says which floor you are editing. */
-.bell-panel { position: relative; overflow: hidden; max-width: none; padding-top: calc(var(--space-4) + 4px); }
+.bell-panel { position: relative; overflow: hidden; padding-top: calc(var(--space-4) + 4px); }
 @media (min-width: 768px) { .bell-panel { padding-top: calc(var(--space-5) + 4px); } }
 .bell-panel::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--zone); }
 .bell-panel__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
@@ -62,7 +62,6 @@
 
 /* ---------------------------------------------------- the alarm list --- */
 .bell-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
-@media (min-width: 768px) { .bell-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); } }
 /* 12px inside the coloured edge + the 4px edge = the 16px right inset: equal on both sides. */
 .bell-row { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: var(--space-4); padding: var(--space-3) var(--space-4) var(--space-3) var(--space-3); border: 1px solid var(--color-border-strong); border-left: 4px solid var(--zone); border-radius: var(--radius-lg); background: var(--color-surface); }
 .bell-row.is-off { border-left-color: var(--color-border-strong); background: var(--color-surface-page); }
@@ -150,9 +149,9 @@
   .bell-event { grid-template-columns: 1fr; gap: 2px; }
 }
 
-/* An alarm as a compact card: switch and time on top, the details, then four equal buttons.
-   Used on phones and, in two columns, from 768px up (tablet-width single columns keep the wide row). */
-@media (max-width: 639px), (min-width: 768px) {
+/* An alarm on phones as a compact card: switch and time on top, the details, then four equal buttons.
+   Wider screens keep the single-line row. */
+@media (max-width: 639px) {
   .bell-row { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'switch time' 'body body' 'actions actions'; align-content: start; gap: var(--space-2) var(--space-3); }
   .bell-row__switch { grid-area: switch; }
   .bell-row__time { grid-area: time; font-size: 1.5rem; }
