@@ -10,7 +10,7 @@ import { setBusy } from './util.js';
 import { initNavigation } from './navigation.js?v=20261019-performance';
 // cPanel caches modules for a year; new behavior needs fresh module URLs.
 import { initSignageAdmin } from './signage-admin.js?v=20261022-posters';
-import { initSignageEditor } from './signage-editor.js?v=20261022-touch';
+import { initSignageEditor } from './signage-editor.js?v=20261023-menu';
 import { initChromebookGoogle } from './chromebook-google.js';
 import { initTvControl } from './tv-control.js?v=20261022-tv-control2';
 import { initBell } from './bell.js?v=20261022-bell2';

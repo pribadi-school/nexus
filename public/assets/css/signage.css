@@ -38,6 +38,7 @@
 }
 .signage-card-status { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3); }
 .signage-content-menu { position: fixed; inset: auto; margin: 0; width: min(280px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow-y: auto; overscroll-behavior: contain; padding: var(--space-2); border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); background: var(--color-surface); color: var(--color-foreground); }
+.signage-content-menu[data-measuring] { visibility: hidden; }
 .signage-content-menu__label { margin: var(--space-2) 0 var(--space-1); padding: var(--space-2); border-top: 1px solid var(--color-border); font-size: var(--fs-caption); color: var(--color-muted-foreground); }
 .signage-content-menu__hint { margin: 0; padding: 0 var(--space-2) var(--space-2); font-size: var(--fs-caption); color: var(--color-muted-foreground); }
 .signage-content-menu .menu-item span { overflow-wrap: anywhere; text-align: left; }

@@ -354,7 +354,10 @@ const positionMenu = menu => {
   menu.style.width = `${width}px`;
   menu.style.maxHeight = `${maxHeight}px`;
   const rect = trigger.getBoundingClientRect();
-  const height = menu.getBoundingClientRect().height || maxHeight;
+  // Before it opens a menu has no height. Guess a typical one so the first position is
+  // already beside the button; assuming the maximum threw it to the top of the screen for
+  // a frame, until the measured pass after opening corrected it.
+  const height = menu.getBoundingClientRect().height || Math.min(maxHeight, 220);
   const below = rect.bottom + 4;
   const above = rect.top - height - 4;
   const preferred = below + height <= bottomEdge ? below : above >= topEdge ? above : bottomEdge - height;
@@ -362,7 +365,16 @@ const positionMenu = menu => {
   menu.style.top = `${Math.max(topEdge, Math.min(preferred, bottomEdge - height))}px`;
 };
 for (const name of ['beforetoggle', 'toggle']) document.addEventListener(name, event => {
-  if (event.newState === 'open' && event.target.matches('.signage-content-menu')) positionMenu(event.target);
+  if (event.newState !== 'open' || !event.target.matches('.signage-content-menu')) return;
+  const menu = event.target;
+  // Keep the menu invisible (but laid out) until the measured pass has placed it, so it
+  // never flashes at a guessed position. The timeout is a safety net.
+  if (name === 'beforetoggle') {
+    menu.dataset.measuring = '';
+    setTimeout(() => menu.removeAttribute('data-measuring'), 250);
+  }
+  positionMenu(menu);
+  if (name === 'toggle') menu.removeAttribute('data-measuring');
 }, {capture: true, signal});
 const repositionMenus = () => document.querySelectorAll('.signage-content-menu:popover-open').forEach(positionMenu);
 window.addEventListener('resize', repositionMenus, {signal});
