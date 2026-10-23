@@ -6,6 +6,7 @@
 import { iconHtml } from './util.js';
 import { toast } from './toast.js';
 
+const START = 24;       // finger travel before a touch counts as a pull; a tap drifts less
 const THRESHOLD = 72;   // pulled distance (px) that arms a refresh
 const MAX_PULL = 120;
 const RESIST = 0.5;     // the finger moves twice as far as the page
@@ -32,7 +33,7 @@ export function initPullToRefresh() {
   let refreshing = false;
 
   const blocked = target => !!target.closest?.(
-    'input, textarea, select, dialog[open], [popover]:popover-open, .signage-editor, [data-editor-item], [data-content-dialog]'
+    'input, textarea, select, button, summary, label, [role="button"], [role="switch"], [popovertarget], dialog[open], [popover]:popover-open, .signage-editor, [data-editor-item], [data-content-dialog]'
   ) || document.body.classList.contains('is-signage-dragging');
   const hasDraft = () => !!document.querySelector('[data-unsaved="true"], [data-uploading="true"]');
 
@@ -99,11 +100,11 @@ export function initPullToRefresh() {
     if (!pulling) {
       // Upward or sideways movement means a normal scroll or swipe.
       if (dy < -6 || Math.abs(dx) > Math.abs(dy) + 4 || window.scrollY > 0) { tracking = false; return; }
-      if (dy < 10) return;
+      if (dy < START) return;
       pulling = true;
     }
     if (event.cancelable) event.preventDefault();
-    distance = Math.min(MAX_PULL, (dy - 10) * RESIST);
+    distance = Math.min(MAX_PULL, (dy - START) * RESIST);
     if (!armed && distance >= THRESHOLD) { armed = true; navigator.vibrate?.(8); }
     else if (armed && distance < THRESHOLD) armed = false;
     show(distance, false);

@@ -14,7 +14,7 @@ import { initSignageEditor } from './signage-editor.js?v=20261023-menu';
 import { initChromebookGoogle } from './chromebook-google.js';
 import { initTvControl } from './tv-control.js?v=20261022-tv-control2';
 import { initBell } from './bell.js?v=20261022-bell2';
-import { initPullToRefresh } from './pull-refresh.js?v=20261022-ptr';
+import { initPullToRefresh } from './pull-refresh.js?v=20261023-tap';
 
 function initDismiss() {
   document.addEventListener('click', (event) => {
