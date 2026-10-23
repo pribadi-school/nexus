@@ -7,7 +7,7 @@ use App\Modules\Bell\BellSounds;
 <header class="page-header"><div><h1 class="page-title">Bell</h1><p class="page-subtitle">Sounds you can use on either floor.</p></div></header>
 <?= partial('Bell::_tabs', ['tab' => 'sounds']) ?>
 
-<section class="card form-card">
+<section class="card bell-card">
   <h2 class="card__title">Add a sound</h2>
   <form method="post" action="/bell/sounds" enctype="multipart/form-data" data-busy-on-submit>
     <?= csrf_field() ?>
@@ -20,7 +20,7 @@ use App\Modules\Bell\BellSounds;
   </form>
 </section>
 
-<section class="card">
+<section class="card bell-card">
   <div class="card__header"><h2 class="card__title">Sounds</h2><span class="chip chip--quiet num"><?= count($sounds) + count(BellSounds::BUILTIN) ?></span></div>
   <ul class="bell-settings-list">
     <?php foreach (BellSounds::BUILTIN as $key => $name): ?>

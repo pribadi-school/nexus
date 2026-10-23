@@ -23,7 +23,7 @@ $time = substr((string) $values['ring_time'], 0, 8);
 </div></header>
 <?= partial('Bell::_tabs', ['tab' => 'zone-' . (int) $zone['id']]) ?>
 
-<form class="card form-card bell-zone bell-zone--<?= e($zone['color']) ?>" method="post" action="<?= e($action) ?>" data-busy-on-submit novalidate>
+<form class="card bell-card bell-zone bell-zone--<?= e($zone['color']) ?>" method="post" action="<?= e($action) ?>" data-busy-on-submit novalidate>
   <?= csrf_field() ?>
   <?php if ($errors !== []): ?><div class="notice notice--error" role="alert"><?= icon('circle-alert') ?><div>Check the highlighted <?= count($errors) === 1 ? 'field' : 'fields' ?>.</div></div><?php endif ?>
   <div class="form-grid">

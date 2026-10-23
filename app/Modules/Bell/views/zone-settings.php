@@ -13,7 +13,7 @@ $zoneId = (int) $zone['id'];
 <header class="page-header"><div><h1 class="page-title"><?= e($zone['name']) ?> settings</h1><p class="page-subtitle">Name, volume, profiles and holidays of this floor only.</p></div></header>
 <?= partial('Bell::_tabs', ['tab' => 'zone-' . $zoneId]) ?>
 
-<section class="card form-card bell-zone bell-zone--<?= e($zone['color']) ?>">
+<section class="card bell-card bell-zone bell-zone--<?= e($zone['color']) ?>">
   <h2 class="card__title">Floor</h2>
   <form method="post" action="/bell/zones/<?= $zoneId ?>/settings" data-busy-on-submit>
     <?= csrf_field() ?>
@@ -29,7 +29,7 @@ $zoneId = (int) $zone['id'];
   </form>
 </section>
 
-<section class="card form-card" id="profiles">
+<section class="card bell-card" id="profiles">
   <h2 class="card__title">Profiles</h2>
   <p class="signage-help">A profile is a full day plan, such as Normal, Jumat, Ujian or Pendek. Only the one marked "In use" rings. Profiles of this floor never change the other floor.</p>
   <ul class="bell-settings-list">
@@ -63,7 +63,7 @@ $zoneId = (int) $zone['id'];
   </form>
 </section>
 
-<section class="card form-card" id="holidays">
+<section class="card bell-card" id="holidays">
   <h2 class="card__title">Holidays</h2>
   <p class="signage-help">No bells ring on this floor on these dates, whatever profile is in use.</p>
   <?php if ($holidays === []): ?><p class="notes-placeholder">No holidays added.</p><?php else: ?>
@@ -86,7 +86,7 @@ $zoneId = (int) $zone['id'];
   </form>
 </section>
 
-<section class="card form-card">
+<section class="card bell-card">
   <h2 class="card__title">Backup</h2>
   <p class="signage-help">One JSON file with both floors, all profiles, bells and holidays. The sound files are not inside it (only their names).</p>
   <div class="form-actions"><a class="btn btn--secondary" href="/bell/backup.json"><?= icon('download', 'icon--sm') ?>Download backup</a></div>

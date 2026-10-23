@@ -45,6 +45,7 @@
   /* Choices form an even grid instead of a ragged 3-2-1 wrap. */
   .choice-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .choice-chip span { display: flex; width: 100%; justify-content: center; }
+  .choice-chips > .choice-chip:last-child:nth-child(odd) { grid-column: 1 / -1; }
 
   /* Tab bars: equal columns with centred labels, like a segmented control. */
   .signage-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; }
@@ -85,8 +86,8 @@
   }
 }
 
-/* Very narrow phones (320-360px): all five bottom-nav labels fit in full. */
-@media (max-width: 360px) {
+/* Narrow phones (up to 420px): all six bottom-nav labels fit in full. */
+@media (max-width: 420px) {
   .bottom-nav__label { font-size: 0.6875rem; letter-spacing: -0.02em; }
   .bottom-nav { grid-auto-columns: minmax(max-content, 1fr); }
   .bottom-nav__link { padding-inline: 2px; }

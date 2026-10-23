@@ -22,18 +22,18 @@ $other = $others[0] ?? null;
 </header>
 <?= partial('Bell::_tabs', ['tab' => $tab]) ?>
 
-<section class="card bell-panel bell-zone bell-zone--<?= e($zone['color']) ?>" data-bell-panel>
-  <div class="bell-panel__top">
+<section class="card bell-card bell-panel bell-zone bell-zone--<?= e($zone['color']) ?>" data-bell-panel>
+  <div class="bell-panel__head">
     <div class="bell-panel__title">
       <span class="bell-dot" aria-hidden="true"></span>
       <h2 class="card__title"><?= e($zone['name']) ?></h2>
       <span class="chip chip--quiet"><?= icon('volume-2', 'icon--sm') ?>Volume <?= (int) $zone['volume'] ?>%</span>
-      <a class="btn btn--secondary btn--sm" href="/bell/zones/<?= $zoneId ?>/settings"><?= icon('settings', 'icon--sm') ?>Floor settings</a>
     </div>
-    <div class="bell-clock" aria-live="off">
-      <span class="bell-clock__time" data-bell-clock>--:--:--</span>
-      <span class="bell-clock__next" data-bell-next>Next bell: -</span>
-    </div>
+    <a class="btn btn--secondary btn--sm" href="/bell/zones/<?= $zoneId ?>/settings"><?= icon('settings', 'icon--sm') ?>Floor settings</a>
+  </div>
+  <div class="bell-clock" aria-live="off">
+    <span class="bell-clock__time" data-bell-clock>--:--:--</span>
+    <span class="bell-clock__next" data-bell-next>Next bell: -</span>
   </div>
 
   <?php if ($selected === null): ?>

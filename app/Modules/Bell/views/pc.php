@@ -14,7 +14,7 @@ $deviceStatus = is_array($status['zones'] ?? null) ? $status['zones'] : [];
 <header class="page-header"><div><h1 class="page-title">Bell</h1><p class="page-subtitle">The Windows PC that plays the bells through the speakers.</p></div></header>
 <?= partial('Bell::_tabs', ['tab' => 'pc']) ?>
 
-<section class="card form-card">
+<section class="card bell-card">
   <div class="card__header">
     <h2 class="card__title">Bell PC</h2>
     <?php if (!$hasKey): ?><span class="chip chip--quiet">Not connected</span>
@@ -61,7 +61,7 @@ $deviceStatus = is_array($status['zones'] ?? null) ? $status['zones'] : [];
   </div>
 </section>
 
-<section class="card">
+<section class="card bell-card">
   <div class="card__header"><h2 class="card__title">Recent bells</h2><span class="chip chip--quiet num"><?= count($events) ?></span></div>
   <?php if ($events === []): ?>
     <?= partial('partials/empty-state', ['icon' => 'history', 'title' => 'Nothing reported yet', 'text' => 'Every bell the PC rings, skips or fails will be listed here.', 'compact' => true]) ?>
