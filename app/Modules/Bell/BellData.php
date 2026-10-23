@@ -16,7 +16,7 @@ final class BellData
         4 => ['Thu', 'Kam', 'Kamis'], 5 => ['Fri', 'Jum', 'Jumat'], 6 => ['Sat', 'Sab', 'Sabtu'], 7 => ['Sun', 'Min', 'Minggu'],
     ];
 
-    public const COLORS = ['blue' => 'Blue', 'orange' => 'Orange', 'green' => 'Green', 'purple' => 'Purple'];
+    public const COLORS = ['blue' => 'Blue', 'orange' => 'Orange', 'green' => 'Green', 'purple' => 'Purple', 'red' => 'Red'];
 
     public const CSV_HEADER = ['Waktu', 'Hari', 'File suara', 'Label', 'Aktif', 'Dua lantai'];
 

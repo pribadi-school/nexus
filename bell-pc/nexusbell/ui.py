@@ -13,7 +13,7 @@ from . import audio, strings, winutil
 from .core import BellCore
 from .engine import Entry, Zone
 
-ZONE_COLORS = {"blue": "#1F4E9F", "orange": "#B45309", "green": "#15803D", "purple": "#6D28D9"}
+ZONE_COLORS = {"blue": "#1F4E9F", "orange": "#B45309", "green": "#15803D", "purple": "#6D28D9", "red": "#B91C1C"}
 LIGHT = {"bg": "#F2F5F9", "card": "#FFFFFF", "fg": "#12233C", "muted": "#5A6472", "line": "#C9D2DF", "off": "#8A94A3",
          "banner_bg": "#FEF3C7", "banner_fg": "#7C2D12"}
 NIGHT = {"bg": "#14181F", "card": "#1D232D", "fg": "#E6EAF0", "muted": "#9AA5B5", "line": "#2E3745", "off": "#6B7686",

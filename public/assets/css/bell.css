@@ -11,6 +11,7 @@
 .bell-zone--orange { --zone: var(--color-warning); }
 .bell-zone--green { --zone: var(--color-success); }
 .bell-zone--purple { --zone: color-mix(in srgb, var(--color-action) 55%, var(--color-problem)); }
+.bell-zone--red { --zone: var(--color-brand-red); }
 .bell-dot { display: inline-block; flex: none; width: 12px; height: 12px; border-radius: 50%; background: var(--zone); }
 .bell-tabs .bell-dot { margin-right: var(--space-2); }
 .bell-tabs .bell-zone.is-active { color: var(--zone); }
