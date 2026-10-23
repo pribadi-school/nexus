@@ -29,7 +29,22 @@ $other = $others[0] ?? null;
       <h2 class="card__title"><?= e($zone['name']) ?></h2>
       <span class="chip chip--quiet"><?= icon('volume-2', 'icon--sm') ?>Volume <?= (int) $zone['volume'] ?>%</span>
     </div>
-    <a class="btn btn--secondary btn--sm" href="/bell/zones/<?= $zoneId ?>/settings"><?= icon('settings', 'icon--sm') ?>Floor settings</a>
+    <div class="bell-panel__actions">
+      <?php if ($selected !== null): ?>
+        <a class="btn btn--secondary btn--sm" href="/bell/profiles/<?= (int) $selected['id'] ?>/export.csv"><?= icon('download', 'icon--sm') ?>Export</a>
+        <details class="bell-import">
+          <summary class="btn btn--secondary btn--sm"><?= icon('upload', 'icon--sm') ?>Import</summary>
+          <form class="bell-import__form" method="post" action="/bell/profiles/<?= (int) $selected['id'] ?>/import" enctype="multipart/form-data" data-busy-on-submit>
+            <?= csrf_field() ?>
+            <p class="field__hint">Columns: <?= e(implode(' · ', BellData::CSV_HEADER)) ?>. Excel files saved as CSV work. Nothing is imported if any line has a mistake.</p>
+            <input class="input" type="file" name="file" accept=".csv,text/csv" required>
+            <label class="checkbox"><input type="checkbox" name="replace" value="1"><span>Replace this profile's current bells</span></label>
+            <button class="btn btn--primary btn--sm" type="submit">Import</button>
+          </form>
+        </details>
+      <?php endif ?>
+      <a class="btn btn--secondary btn--sm" href="/bell/zones/<?= $zoneId ?>/settings"><?= icon('settings', 'icon--sm') ?><span class="bell-label-long">Floor settings</span><span class="bell-label-short">Settings</span></a>
+    </div>
   </div>
   <div class="bell-clock" aria-live="off">
     <span class="bell-clock__time" data-bell-clock>--:--:--</span>
@@ -54,20 +69,6 @@ $other = $others[0] ?? null;
         <button class="btn btn--primary btn--sm" type="submit"><?= icon('check', 'icon--sm') ?>Use this profile now</button>
       </form>
     <?php endif ?>
-  </div>
-
-  <div class="bell-toolbar">
-    <a class="btn btn--secondary btn--sm" href="/bell/profiles/<?= (int) $selected['id'] ?>/export.csv"><?= icon('download', 'icon--sm') ?>Export CSV</a>
-    <details class="bell-import">
-      <summary class="btn btn--secondary btn--sm"><?= icon('upload', 'icon--sm') ?>Import CSV</summary>
-      <form class="bell-import__form" method="post" action="/bell/profiles/<?= (int) $selected['id'] ?>/import" enctype="multipart/form-data" data-busy-on-submit>
-        <?= csrf_field() ?>
-        <p class="field__hint">Columns: <?= e(implode(' · ', BellData::CSV_HEADER)) ?>. Excel files saved as CSV work. Nothing is imported if any line has a mistake.</p>
-        <input class="input" type="file" name="file" accept=".csv,text/csv" required>
-        <label class="checkbox"><input type="checkbox" name="replace" value="1"><span>Replace this profile's current bells</span></label>
-        <button class="btn btn--primary btn--sm" type="submit">Import</button>
-      </form>
-    </details>
   </div>
 
   <?php if ($entries === []): ?>

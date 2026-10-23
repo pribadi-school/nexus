@@ -52,11 +52,13 @@
 .bell-profile:hover { text-decoration: none; background: var(--color-surface-page); }
 .bell-profile.is-current { border-color: var(--zone); background: color-mix(in srgb, var(--zone) 8%, var(--color-surface)); font-weight: 600; color: var(--color-foreground); }
 
-.bell-toolbar { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2); }
+.bell-panel__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.bell-label-short { display: none; }
 .bell-import { position: relative; }
 .bell-import > summary { list-style: none; cursor: pointer; }
 .bell-import > summary::-webkit-details-marker { display: none; }
-.bell-import__form { display: grid; gap: var(--space-3); width: min(360px, 82vw); margin-top: var(--space-2); padding: var(--space-4); border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); background: var(--color-surface); }
+/* The import form floats under its button, like a menu, so it never moves the list. */
+.bell-import__form { position: absolute; z-index: 10; top: calc(100% + var(--space-2)); right: 0; display: grid; gap: var(--space-3); width: min(360px, 82vw); padding: var(--space-4); border: 1px solid var(--color-border-strong); border-radius: var(--radius-lg); background: var(--color-surface); box-shadow: var(--shadow-e4); }
 
 /* ---------------------------------------------------- the alarm list --- */
 .bell-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
@@ -119,8 +121,13 @@
   /* Time, date and number fields use the full width of the card. */
   .input--time, .input--date, .input--short { max-width: none; }
   /* Floor panel: the settings button sits on the title row, equal margins all round. */
-  .bell-panel__head { flex-wrap: nowrap; }
-  .bell-panel__head > .btn { flex: none; }
+  .bell-panel__head { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+  .bell-panel__actions { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+  .bell-panel__actions > .btn, .bell-import > summary { width: 100%; }
+  .bell-label-long { display: none; }
+  .bell-label-short { display: inline; }
+  .bell-import { position: static; }
+  .bell-import__form { left: var(--space-4); right: var(--space-4); width: auto; }
   .bell-clock { flex-direction: column; align-items: flex-start; gap: 2px; }
   .bell-clock__next { flex: none; text-align: left; }
 
@@ -128,12 +135,6 @@
   .bell-profiles { flex-direction: column; align-items: stretch; gap: var(--space-3); }
   .bell-profile-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .bell-profiles form, .bell-profiles form .btn { width: 100%; }
-
-  /* Export and Import share one row; the import form opens full width beneath. */
-  .bell-toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .bell-toolbar > .btn, .bell-import > summary { width: 100%; }
-  .bell-import[open] { grid-column: 1 / -1; }
-  .bell-import__form { width: 100%; }
 
   /* An alarm: switch and time on top, the details, then four equal buttons. */
   .bell-row { grid-template-columns: auto minmax(0, 1fr); grid-template-areas: 'switch time' 'body body' 'actions actions'; gap: var(--space-2) var(--space-3); }
