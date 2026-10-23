@@ -18,11 +18,26 @@ dimainkan **bersamaan**.
 
 ## 1. Pasang di PC bel
 
-1. Salin file **`NexusBell.exe`** ke PC bel, misalnya ke `C:\NexusBell\`
-   (satu file saja, tidak perlu install Python).
-2. Klik dua kali `NexusBell.exe`. Jendela aplikasi terbuka.
-3. Folder `C:\NexusBell\` akan berisi `pengaturan.json` (pengaturan), folder `suara`
-   (suara yang diunduh) dan folder `log` (catatan harian). Jangan hapus folder ini.
+**Cara mudah (disarankan): pakai installer.**
+
+1. Salin **`NexusBell-Setup.exe`** ke PC bel (dari folder `releases`), lalu klik dua kali.
+   Kalau Windows menampilkan *Windows protected your PC*, pilih **More info** > **Run anyway**.
+2. Ikuti langkahnya. Biarkan **Start with Windows** tercentang supaya bel langsung
+   berjalan setiap kali PC menyala. Tidak perlu hak administrator dan tidak perlu Python.
+3. Di akhir, biarkan **Open Nexus Bell now** tercentang. Jendela aplikasi terbuka.
+4. Program terpasang di `%LOCALAPPDATA%\Programs\NexusBell` dan ada di menu Start. Folder itu
+   berisi `pengaturan.json` (pengaturan), folder `suara` (suara yang diunduh) dan folder `log`
+   (catatan harian). Jangan hapus isinya.
+
+**Memperbarui:** jalankan installer versi baru. Pengaturan, suara dan log tetap ada.
+Installer hanya menghentikan Nexus Bell yang terpasang, bukan salinan lain.
+
+**Mencopot:** Windows > Pengaturan > Aplikasi > Nexus Bell > Copot. Anda ditanya apakah
+pengaturan, suara dan log ikut dihapus (pilihan awal: tidak, supaya aman).
+
+**Cara manual (tanpa installer):** salin **`NexusBell.exe`** ke satu folder yang bisa ditulis,
+misalnya `C:\NexusBell\`, lalu klik dua kali. Folder yang sama akan berisi `pengaturan.json`,
+`suara` dan `log`. Jangan hapus isinya.
 
 Membuat `NexusBell.exe` sendiri (sekali saja, di PC yang ada Python 3.11+):
 
@@ -32,6 +47,16 @@ powershell -ExecutionPolicy Bypass -File build.ps1
 
 Hasilnya ada di `dist\NexusBell.exe`. Tes otomatis dijalankan dulu; kalau ada tes
 yang gagal, file `.exe` tidak dibuat.
+
+Membuat **installer** (`NexusBell-Setup-<versi>.exe`) dari file itu, perlu Inno Setup 6
+(`winget install JRSoftware.InnoSetup`):
+
+```
+powershell -ExecutionPolicy Bypass -File build-installer.ps1
+```
+
+Hasilnya ada di `installer\Output\`. Salin ke `releases\NexusBell-Setup.exe` dan
+perbarui file `.sha256`-nya.
 
 ## 2. Sambungkan ke Nexus
 

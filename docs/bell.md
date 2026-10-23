@@ -83,4 +83,6 @@ cd bell-pc && python -m unittest discover -s tests -v   # engine, devices, store
 1. Import `database/migrations/017_bell_scheduler.sql` in phpMyAdmin.
 2. Pull and publish (`bash ~/repositories/nexus/update.sh`).
 3. Open **Bell**, add each floor's bells (or import CSV), then **Bell PC → Make connection key**.
-4. Install `NexusBell.exe` on the bell PC and follow `bell-pc/README.md`.
+4. Install `releases/NexusBell-Setup.exe` on the bell PC (per-user installer: Start menu entry,
+   optional Start with Windows, uninstaller in Apps; settings, sounds and logs stay across upgrades) and follow
+   `bell-pc/README.md`. Build it with `bell-pc/build-installer.ps1` (Inno Setup 6, script in `bell-pc/installer/`).

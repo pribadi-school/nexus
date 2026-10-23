@@ -51,3 +51,11 @@ bell-pc/build/
 bell-pc/*.spec
 __pycache__/
 *.pyc
+
+# Installer build output
+bell-pc/installer/Output/
+# Files the bell app writes when it is run from this folder (they hold a connection key)
+releases/pengaturan.json
+releases/jadwal-cache.json
+releases/log/
+releases/suara/
