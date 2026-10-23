@@ -35,7 +35,7 @@
 
 /* ------------------------------------------------------ floor panel --- */
 /* A coloured bar along the top says which floor you are editing. */
-.bell-panel { position: relative; overflow: hidden; padding-top: calc(var(--space-4) + 4px); }
+.bell-panel { position: relative; overflow: hidden; max-width: none; padding-top: calc(var(--space-4) + 4px); }
 @media (min-width: 768px) { .bell-panel { padding-top: calc(var(--space-5) + 4px); } }
 .bell-panel::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--zone); }
 .bell-panel__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
