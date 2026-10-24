@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <queries><intent><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.HOME" /></intent></queries>
     <uses-feature android:name="android.software.leanback" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
@@ -31,8 +32,19 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
-        <!-- The keeper exits before startForeground on API 29+: legacy API 25–28
-             have no foreground service types and allow direct Wi-Fi control. -->
+        <!-- A separate process keeps maintenance input available even if a
+             vendor Wi-Fi call blocks the player's process. It never claims HOME. -->
+        <activity android:name=".RecoveryActivity" android:exported="true"
+            android:process=":recovery" android:label="@string/recovery_app_name"
+            android:theme="@style/RecoveryTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- Runtime policy permits API 25–28, plus API 29 with target <= 28.
+             It exits before foreground startup on all newer Android versions. -->
         <service android:name=".WifiKeeperService" android:exported="false" tools:ignore="ForegroundServiceType" />
         <receiver android:name=".Startup" android:exported="false">
             <intent-filter>

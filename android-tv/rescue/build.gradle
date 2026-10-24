@@ -1,0 +1,23 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'sch.id.pribadidepok.nexus.rescue'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'sch.id.pribadidepok.nexus.rescue'
+        minSdk 25
+        // Android 10 explicitly retains manual Wi-Fi control for target <= 28.
+        targetSdk 28
+        versionCode 1
+        versionName '1.0.0'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    lint {
+        abortOnError true
+        disable 'ExpiredTargetSdkVersion'
+    }
+}
+dependencies { testImplementation 'junit:junit:4.13.2' }

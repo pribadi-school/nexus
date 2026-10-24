@@ -40,7 +40,9 @@ public final class Startup extends BroadcastReceiver {
         try { KioskAdmin.configure(context); } catch (RuntimeException ignored) { /* Normal Home startup remains available. */ }
         // Modern Android starts the selected HOME app. On older TVs the boot
         // receiver also works after the first installation/setup launch.
-        if (isHome(context) || Build.VERSION.SDK_INT < 29) {
+        // Android 10 exempts "display over other apps" holders from its
+        // background-launch block, for TVs that must keep their own launcher.
+        if (isHome(context) || Build.VERSION.SDK_INT < 29 || Settings.canDrawOverlays(context)) {
             try {
                 context.startActivity(new Intent(context, MainActivity.class)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP));

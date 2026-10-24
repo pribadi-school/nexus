@@ -5,3 +5,5 @@ dependencyResolutionManagement {
 }
 rootProject.name = 'NexusSignageTV'
 include ':app'
+// Standalone, manually launched maintenance tool; excluded from player builds.
+if (providers.gradleProperty('networkRescue').orElse('false').get().toBoolean()) include ':rescue'

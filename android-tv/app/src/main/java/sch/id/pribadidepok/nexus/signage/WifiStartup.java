@@ -23,9 +23,11 @@ final class WifiStartup {
         listener = (preferences, key) -> { if (STATUS.equals(key)) this.report.accept(status()); };
     }
 
-    static boolean supported() { return Build.VERSION.SDK_INT < 29; }
+    static boolean supported(Context context) {
+        return WifiRecoveryPolicy.supported(Build.VERSION.SDK_INT, context.getApplicationInfo().targetSdkVersion);
+    }
     static SharedPreferences preferences(Context context) { return context.getSharedPreferences("nexus", Context.MODE_PRIVATE); }
-    static boolean enabled(Context context) { return supported() && preferences(context).getBoolean(PREFERENCE, true); }
+    static boolean enabled(Context context) { return supported(context) && preferences(context).getBoolean(PREFERENCE, true); }
     static void publish(Context context, String detail) {
         SharedPreferences preferences = preferences(context);
         if (!detail.equals(preferences.getString(STATUS, ""))) {
@@ -38,7 +40,7 @@ final class WifiStartup {
     static void ensureStarted(Context context) { launch(context.getApplicationContext(), false); }
 
     private static void launch(Context app, boolean retry) {
-        if (!supported()) return;
+        if (!supported(app)) return;
         if (!enabled(app)) {
             stopService(app);
             publish(app, "Automatic Wi-Fi keeper is off.");
@@ -61,8 +63,8 @@ final class WifiStartup {
 
     boolean enabled() { return enabled(app); }
     void enabled(boolean enabled) {
-        settings.edit().putBoolean(PREFERENCE, enabled && supported()).apply();
-        if (enabled && supported()) retry();
+        settings.edit().putBoolean(PREFERENCE, enabled && supported(app)).apply();
+        if (enabled && supported(app)) retry();
         else {
             stopService(app);
             publish(app, "Automatic Wi-Fi keeper is off.");
@@ -77,7 +79,7 @@ final class WifiStartup {
     /** Activity pause only detaches its view; unattended recovery continues. */
     void stop() { if (listening) { settings.unregisterOnSharedPreferenceChangeListener(listener); listening = false; } }
     String status() {
-        if (!supported()) return "This Android version requires Wi-Fi to be enabled in System settings.";
+        if (!supported(app)) return "This build requires Wi-Fi to be enabled in System settings on this Android version.";
         if (!enabled()) return "Automatic Wi-Fi keeper is off.";
         return settings.getString(STATUS, "Starting automatic Wi-Fi recovery…");
     }

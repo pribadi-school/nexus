@@ -62,11 +62,81 @@ Nexus immediately schedules a playlist sync on network restoration and retains
 downloaded media when offline. No saved network, credential, DHCP, sleep or hotspot
 setting is modified, and no Wi-Fi scan is used.
 
-On Android 10+ automatic radio control is unavailable and no toggle request is
-made. Wi-Fi hardware remains optional. Hardware/driver failure, lost power,
+In the standard modern-target build, automatic radio control is unavailable on
+Android 10+ and no toggle request is made. Wi-Fi hardware remains optional. Hardware/driver failure, lost power,
 Force stop and vendor restrictions cannot be bypassed by an ordinary APK. Verify
 cold boot, standby/wake and radio-off recovery on each physical TV; local builds
 do not prove those behaviors. See [Android's Wi-Fi API](https://developer.android.com/reference/android/net/wifi/WifiManager#setWifiEnabled(boolean)).
+
+### Android 10 landscape Wi-Fi build (1.4.0)
+
+For Kantin, SD and Lantai 3 Xiaomi MiTV-MOOQ1 TVs running Android 10, build with
+`bin/build-android.ps1 -LandscapeWifi`. The output is
+`dist/nexus-signage-landscape-wifi.apk`. The build shares the latest player code,
+package identity and signing key with earlier APKs, defaults to landscape, and
+retains the 1.2.1 desktop website sizing and all subsequent playback fixes.
+
+This dedicated sideload build intentionally targets API 28. Android 10 permits
+apps with this compatibility target to request `WifiManager.setWifiEnabled(true)`
+with `CHANGE_WIFI_STATE`; a target-36 build cannot make the same request. The
+keeper checks both the running OS and the installed APK's actual target before
+starting. It runs on Android 7.1–9, plus Android 10 when the target is <= 28;
+it does not start on Android 11+. Standard builds continue targeting API 36.
+See [Android's compatibility rule](https://developer.android.google.cn/reference/android/net/wifi/WifiManager.html#setWifiEnabled(boolean)).
+
+The keeper defaults on and retains an explicitly disabled preference. It keeps
+the Wi-Fi/CPU awake locks while active and retries radio activation automatically
+with capped cooldowns. Android reconnects to the saved network: the app does not
+change passwords or network configuration, and radio-on does not prove internet
+access. Airplane mode and switching the keeper off suspend recovery. Force stop,
+power loss, firmware restrictions, failed hardware and unavailable access points
+cannot be overcome by the APK.
+
+Hold the remote's **Back button for two seconds** for Wi-Fi Settings, or press
+**Menu → Wi-Fi settings**. The Settings key opens Android Settings. These paths
+work during setup, pairing and offline playback, without relying on the Home
+launcher or a response from Nexus. Setup and player message screens also offer
+a Wi-Fi Settings button. If a vendor blocks an action, Nexus tries alternate
+Settings actions and reports failure. Managed kiosk lock is temporarily stopped
+for maintenance and reapplied on return to Nexus.
+
+Choose **Update**, never uninstall, to preserve pairing, saved content and the
+existing Home selection. Test radio-off recovery, boot, standby/wake, portrait
+and landscape content, website scaling and offline Settings on one physical TV
+before updating the rest. A TV already disconnected cannot receive this APK
+over Wi-Fi; restore local/USB or network access first.
+
+### Recovery isolation (1.4.1)
+
+The 1.4.0 keeper performed Wi-Fi Binder calls on the main service thread, which
+is also the player's UI thread. A stalled vendor Wi-Fi API could therefore
+freeze remote input. Version 1.4.1 dispatches all Wi-Fi, airplane-state and
+awake-lock work to a background HandlerThread. Repeated events are coalesced;
+shutdown invalidates queued work without joining a potentially blocked thread.
+An in-flight Binder call cannot be forcibly cancelled: its cleanup waits for
+the call to return, while player input and recovery remain independent.
+
+The Wi-Fi/System settings shortcuts now open the separate **Nexus Recovery**
+activity/process, also listed as a maintenance app in the TV app list. It uses
+plain native buttons, leaves system navigation visible, and performs no player,
+Wi-Fi-service or network initialization. It temporarily stops the keeper;
+returning to the player resumes the keeper according to its existing setting.
+No SharedPreferences are read or written from the recovery process.
+
+On the matching MiTV-MOOQ1, read-only resolution confirmed these available
+Android TV activities: NetworkActivity, MainSettings, AppsActivity and the
+Google TV package's AppManagementActivity. Recovery tries explicit network/
+Settings/Apps activities followed by standard Settings actions, and reports
+when no target opens. The Google TV app-info button only opens its page: it
+does not re-enable the launcher, clear data or change the Home role itself.
+
+If opening Android Wi-Fi still freezes, return using Back or Home and try
+**Open Apps settings** or **Open Google TV app settings**. If the latter opens
+and the TV shows **Enable**, enabling Google TV is a manual recovery option
+that restores its features and can change Home-button behavior. A running
+Android Settings process can still hang independently of Nexus; the new
+activity is not a firmware repair. These fixes address identified risks;
+Kantin's actual failure cannot be confirmed without device logs.
 
 ## Installation and pairing
 
@@ -81,7 +151,8 @@ do not prove those behaviors. See [Android's Wi-Fi API](https://developer.androi
    and choose the screen. Codes expire after ten minutes.
 6. Keep the TV connected until its first playlist has downloaded. Use the
    remote's OK/Menu button for controls, including Sync now, Next, Startup and
-   Settings. Back reveals controls, then follows normal Android navigation.
+   Settings. Back reveals/hides controls; holding it for two seconds opens Wi-Fi
+   Settings. Menu opens settings even before pairing.
 
 The TV needs network access to the server. `localhost` on the TV points at the
 TV, not your development computer. For LAN testing, use the computer's private

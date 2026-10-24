@@ -2,6 +2,7 @@
   Build and check the Nexus Android TV player, then copy the APK to dist/.
 
     powershell -ExecutionPolicy Bypass -File bin\build-android.ps1
+    powershell -ExecutionPolicy Bypass -File bin\build-android.ps1 -LandscapeWifi
     powershell -ExecutionPolicy Bypass -File bin\build-android.ps1 -JdkRoot C:\Java\jdk-17 -SdkRoot C:\Android\Sdk
 
   Requires JDK 17, Android SDK platform 36, Build Tools 35.0.0, and Platform
@@ -10,7 +11,8 @@
 #>
 param(
   [string]$JdkRoot = '',
-  [string]$SdkRoot = ''
+  [string]$SdkRoot = '',
+  [switch]$LandscapeWifi
 )
 
 $ErrorActionPreference = 'Stop'
@@ -66,7 +68,8 @@ if (-not (Test-Path -LiteralPath $wrapperPath -PathType Leaf)) {
 }
 $distDir = Join-Path $projectRoot 'dist'
 New-Item -ItemType Directory -Force -Path $distDir | Out-Null
-$buildLog = Join-Path $distDir 'android-build.log'
+$buildName = if ($LandscapeWifi) { 'nexus-signage-landscape-wifi' } else { 'nexus-signage-tv' }
+$buildLog = Join-Path $distDir ($buildName + '-build.log')
 
 Write-Host 'Building APK and running Android unit tests and lint...'
 Push-Location -LiteralPath $androidProject
@@ -74,7 +77,8 @@ try {
   # PowerShell 5 wraps native stderr in ErrorRecord objects. Gradle's exit code
   # determines success; harmless native warning output must still reach the log.
   $ErrorActionPreference = 'Continue'
-  & $wrapperPath --no-daemon --console=plain :app:assembleDebug :app:testDebugUnitTest :app:lintDebug 2>&1 |
+  $landscapeProperty = '-PlandscapeWifi=' + $LandscapeWifi.IsPresent.ToString().ToLowerInvariant()
+  & $wrapperPath --no-daemon --console=plain $landscapeProperty :app:assembleDebug :app:testDebugUnitTest :app:lintDebug 2>&1 |
     ForEach-Object { $_.ToString() } |
     Tee-Object -FilePath $buildLog
   $gradleExit = $LASTEXITCODE
@@ -91,10 +95,10 @@ $builtApk = Join-Path $androidProject 'app\build\outputs\apk\debug\app-debug.apk
 if (-not (Test-Path -LiteralPath $builtApk -PathType Leaf)) {
   throw 'Gradle completed but the expected debug APK is missing.'
 }
-$distApk = Join-Path $distDir 'nexus-signage-tv.apk'
+$distApk = Join-Path $distDir ($buildName + '.apk')
 Copy-Item -LiteralPath $builtApk -Destination $distApk -Force
 $checksum = (Get-FileHash -LiteralPath $distApk -Algorithm SHA256).Hash.ToLowerInvariant()
-Set-Content -LiteralPath ($distApk + '.sha256') -Value "$checksum  nexus-signage-tv.apk" -Encoding ascii
+Set-Content -LiteralPath ($distApk + '.sha256') -Value "$checksum  $buildName.apk" -Encoding ascii
 Write-Host "APK ready: $distApk"
 Write-Host "SHA-256: $checksum"
 Write-Host "Unit test reports: $(Join-Path $androidProject 'app\build\reports\tests\testDebugUnitTest\index.html')"
