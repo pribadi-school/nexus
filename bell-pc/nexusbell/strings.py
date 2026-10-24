@@ -31,6 +31,7 @@ SHARED_FROM = "dari %s"
 
 # Koneksi ke Nexus
 CONNECTION = "Koneksi"
+EDIT_IN_NEXUS = "Edit di Nexus"
 CONNECTION_TITLE = "Koneksi ke Nexus"
 SERVER_ADDRESS = "Alamat Nexus"
 CONNECTION_KEY = "Kunci koneksi"

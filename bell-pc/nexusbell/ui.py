@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import queue
 import tkinter as tk
+import webbrowser
 from datetime import datetime
 from tkinter import messagebox, ttk
 from typing import Callable, Dict, List, Optional
@@ -166,6 +167,7 @@ class App:
         self.sync.pack(fill="x")
         buttons = tk.Frame(top, bg=theme["bg"])
         buttons.pack(side="right")
+        ttk.Button(buttons, text=strings.EDIT_IN_NEXUS, command=self.open_editor).pack(side="left", padx=4)
         ttk.Button(buttons, text=strings.CONNECTION, command=self.open_connection).pack(side="left", padx=4)
         ttk.Button(buttons, text=strings.SYNC_NOW, command=self.core.sync_soon).pack(side="left", padx=4)
         self.options_button = ttk.Menubutton(buttons, text=strings.MENU_OPTIONS)
@@ -209,6 +211,12 @@ class App:
     def _toggle_night(self) -> None:
         self.core.set_option("night_mode", self.night_var.get())
         messagebox.showinfo(strings.APP_TITLE, "Mode malam dipakai setelah aplikasi dibuka ulang.")
+
+    def open_editor(self) -> None:
+        # Bells are edited on the website only; this just opens its Bell page in the browser.
+        base = (self.core.settings["server_url"] or "https://nexus.pribadidepok.sch.id").strip().rstrip("/")
+        if base.startswith(("http://", "https://")):
+            webbrowser.open(base + "/bell")
 
     def open_connection(self) -> None:
         dialog = tk.Toplevel(self.root)
