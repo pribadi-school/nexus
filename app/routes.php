@@ -41,7 +41,7 @@ $router->get('/devices/notes/{id}/image', [DeviceController::class, 'noteImage']
 categories()->registerRoutes($router);
 
 // Signage manages displays and content separately from the device inventory.
-$router->get('/signage', [SignageController::class, 'content']);
+$router->get('/signage', [SignageController::class, 'index']);
 $router->get('/signage/screens', [SignageController::class, 'index']);
 $router->get('/signage/app/download/{kind}', [SignageAppController::class, 'download']);
 $router->get('/signage/pair', [SignagePairingController::class, 'show']);

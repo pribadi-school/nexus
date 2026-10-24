@@ -79,7 +79,7 @@ try {
     $request = new Request('POST', '/signage/screens/' . $fresh . '/items', [], ['content_id' => (string) $website, 'duration_seconds' => '30', 'from_library' => '1'], []);
     $request->params['id'] = (string) $fresh;
     $response = $controller->addPlaylistItem($request);
-    $check($response->headers['Location'] === '/signage' && count($repo->playlistItems($freshId)) === 1, 'content menu adds directly to selected TV and returns to library');
+    $check($response->headers['Location'] === '/signage/content' && count($repo->playlistItems($freshId)) === 1, 'content menu adds directly to selected TV and returns to library');
     $request = new Request('POST', '/signage/screens/' . $first . '/playlist', [], ['playlist_items' => '[]', 'revision' => $currentRevision], ['HTTP_X_REQUESTED_WITH' => 'fetch']);
     $request->params['id'] = (string) $first;
     $response = $controller->saveScreenPlaylist($request);

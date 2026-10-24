@@ -246,7 +246,7 @@ final class SignageController
         } catch (InvalidArgumentException $error) {
             if ($request->isFetch()) return Response::json(['error' => $error->getMessage()], 422);
             Session::flash('error', $error->getMessage());
-            return Response::redirect($request->input('from_library') === '1' ? '/signage' : '/signage/content/' . $item['id'] . '/edit');
+            return Response::redirect($request->input('from_library') === '1' ? '/signage/content' : '/signage/content/' . $item['id'] . '/edit');
         }
         if ($deleted['stored_filename'] !== null) {
             SignageStorage::delete($deleted['stored_filename']);
@@ -271,7 +271,7 @@ final class SignageController
         } catch (InvalidArgumentException $error) {
             if ($request->isFetch()) return Response::json(['error' => $error->getMessage()], 422);
             Session::flash('error', $error->getMessage());
-            return Response::redirect('/signage');
+            return Response::redirect('/signage/content');
         }
         $parts = [];
         if ($result['added'] > 0) $parts[] = 'Added to ' . $result['added'] . ($result['added'] === 1 ? ' TV' : ' TVs');
@@ -283,7 +283,7 @@ final class SignageController
             'used_count' => (int) $this->signage->contentItem((int) $item['id'])['used_count'],
         ]);
         Session::flash('success', $message);
-        return Response::redirect('/signage');
+        return Response::redirect('/signage/content');
     }
 
     /** GET /signage/playlists : shared playlists that several TVs can play. */
@@ -408,7 +408,7 @@ final class SignageController
                 Session::flash('error', $error->getMessage());
             }
         }
-        return Response::redirect($request->input('from_library') === '1' ? '/signage' : $target['back']);
+        return Response::redirect($request->input('from_library') === '1' ? '/signage/content' : $target['back']);
     }
 
     public function updatePlaylistItem(Request $request): Response

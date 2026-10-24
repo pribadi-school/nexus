@@ -182,7 +182,7 @@ export function initContentForms() {
       const remaining = isWebsite ? added === 0 : queue.some(entry => entry.state !== 'done');
       if (!remaining) {
         meter.value = 100; percentage.textContent = '100%';
-        if (inDialog) dialog.close(); else location.assign('/signage');
+        if (inDialog) dialog.close(); else location.assign('/signage/content');
         toast(added === 1 ? 'Content added to the library.' : `${added} files added to the library.`);
       } else {
         progressStatus.textContent = `${added} of ${tasks.length} added`;

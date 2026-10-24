@@ -123,7 +123,7 @@ const aborted = auth.submit(); auth.cleanup(); await aborted; assert.equal(auth.
 const plain = harness(false); await plain.choose([media('one.png'), media('one.png')]);
 assert.equal(plain.queue.children.length, 1, 'duplicate selections are not queued twice');
 const direct = plain.submit(); plain.requests[0].progress(null); assert.equal(plain.percentage.textContent, 'Uploading…', 'unknown transfer length stays indeterminate');
-plain.requests[0].reply(); await direct; assert.equal(plain.context.location.assigned, '/signage', 'regular Add page returns to the library');
+plain.requests[0].reply(); await direct; assert.equal(plain.context.location.assigned, '/signage/content', 'regular Add page returns to the library');
 
 const website = harness(); website.type.value = 'website';
 const url = website.submit(); assert.equal(website.progress.hidden, true); website.requests[0].reply(); await url; assert.equal(website.added.length, 1);

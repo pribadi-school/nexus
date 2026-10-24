@@ -1,4 +1,4 @@
-import { initContentForms } from './signage-content.js?v=20261020-batch-upload';
+import { initContentForms } from './signage-content.js?v=20261024-library-url';
 import { initContentActions } from './signage-content-actions.js?v=20261020-actions';
 import { toast } from './toast.js';
 import { request } from './util.js';
