@@ -106,6 +106,28 @@ and landscape content, website scaling and offline Settings on one physical TV
 before updating the rest. A TV already disconnected cannot receive this APK
 over Wi-Fi; restore local/USB or network access first.
 
+### No black screen between items (1.4.4)
+
+Earlier versions released the player and its views before starting the next item, so every item change
+and every loop back to the first item showed a black frame. 1.4.4 changes this:
+
+- The next item is built **behind** the picture on screen. The old picture stays until the new video has
+  rendered its first frame, the new image is decoded, or the new page has painted (a few seconds' fallback).
+  The old video's decoder is still released at once (the TVs have one hardware decoder); only its last frame
+  stays on screen.
+- A playlist of only downloaded videos is one looping ExoPlayer playlist, so changing video and looping
+  never recreate the player or its surface. If one file fails to decode, that playlist falls back to
+  item-by-item playback until its next revision.
+- The website player (`signage-player.js`) stacks the next item over the old one, hidden until it has
+  drawn, and a playlist of one video simply loops in place.
+
+`android-tv/black-frame-probe.sh` proves it on a real TV (push it with `adb`, run it while a short mixed
+playlist plays): it counts screenshots that are nearly black. Compare an old build and 1.4.4; 1.4.4 should
+report 0. A black screen is also the correct result for pausing a screen, an error message or a revoked TV.
+
+Two builds, same version: the landscape Wi-Fi build (Xiaomi, `nexus-signage-landscape-wifi-1.4.4.apk`) and the
+standard build used as the vertical T960X's `nexus-signage-t960x-portrait-1.4.4.apk`.
+
 ### Recovery isolation (1.4.1)
 
 The 1.4.0 keeper performed Wi-Fi Binder calls on the main service thread, which

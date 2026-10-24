@@ -126,7 +126,7 @@ completely separate from the school's WordPress site. UI language: English.
    connectivity. The companion `android-tv/` app pairs by a six-digit code,
    downloads complete MP4 playlists for offline playback, and supports
    one-time default Home configuration for TV startup (see `docs/android-tv.md`).
-   Android player 1.3.2 supports API25 (the school's T960X Android 7.1.2 native
+   Android player 1.4.4 stops the black flash between items and on loops (next item staged behind the old picture; all-video playlists are one looping ExoPlayer playlist; `android-tv/black-frame-probe.sh` proves it on a TV), and the web player stacks items the same way. Android player 1.3.2 supports API25 (the school's T960X Android 7.1.2 native
    portrait panel), bounded/EXIF-aware image decoding on its own executor,
    native portrait without double rotation, touch-and-hold controls and wrapped
    buttons. `Fullscreen` restores immersive playback and menus after focus/resume;

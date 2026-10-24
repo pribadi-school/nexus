@@ -42,6 +42,7 @@ import android.widget.TextView;
 import android.widget.ImageView;
 import android.widget.GridLayout;
 import android.widget.CheckBox;
+import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
@@ -51,7 +52,9 @@ import androidx.media3.ui.PlayerView;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
@@ -81,9 +84,12 @@ public final class MainActivity extends Activity {
     private TextView wifiStatus;
     private TextView headline, explanation, status;
     private ExoPlayer player;
-    private WebView website;
-    private Bitmap imageBitmap;
+    // What is on screen: `shown` has drawn; `staged` was added after it and is waiting for its first frame.
+    private Layer shown, staged;
     private boolean imageLoading;
+    // gapless: one ExoPlayer plays the whole all-video playlist and loops it; gaplessOff: it failed once for this playlist.
+    private boolean gapless, gaplessOff;
+    private Runnable retireOld;
     private volatile JSONObject active;
     private ScheduledFuture<?> pollTask;
     private volatile boolean foreground, downloading, remoteEnabled = true;
@@ -286,7 +292,7 @@ public final class MainActivity extends Activity {
         if (!foreground || attempt != epoch) return;
         if (active != null && data.optString("revision").equals(active.optString("revision"))) {
             note(data.optJSONObject("screen").optString("name", "Nexus Signage") + " · Connected");
-            if (player == null && website == null && imageBitmap == null && !imageLoading) play(current < 0 ? 0 : current); return;
+            if (!hasMedia()) play(current < 0 ? 0 : current); return;
         }
         wantedRevision = data.optString("revision");
         if (downloading) return;
@@ -298,7 +304,8 @@ public final class MainActivity extends Activity {
                 ui.post(() -> {
                     if (!foreground || attempt != epoch || !remoteEnabled || !revision.equals(wantedRevision)) return;
                     try { cache.save(prepared); } catch (java.io.IOException error) { disconnected(error.getMessage()); return; }
-                    releaseMedia(); active = prepared; current = -1; failures = 0; note(prepared.optJSONObject("screen").optString("name", "Nexus Signage") + " · Playlist downloaded");
+                    // The old picture stays up until the new playlist's first item has drawn.
+                    stageMedia(); gaplessOff = false; active = prepared; current = -1; failures = 0; note(prepared.optJSONObject("screen").optString("name", "Nexus Signage") + " · Playlist downloaded");
                     play(0); downloader.execute(() -> { if (attempt == epoch) cache.prune(server, prepared); });
                 });
             } catch (NexusApi.Failure failure) { ui.post(() -> { if (attempt == epoch) { if (failure.status == 401 || failure.status == 403) revoke(); else disconnected(friendly(failure)); } }); }
@@ -317,19 +324,61 @@ public final class MainActivity extends Activity {
         JSONArray items = active == null ? null : active.optJSONArray("items");
         return items != null && current >= 0 && current < items.length() ? items.optJSONObject(current) : null;
     }
+    /** One thing on screen: its view, plus what must be freed when it goes. */
+    private static final class Layer {
+        final View view; Bitmap bitmap; WebView web;
+        Layer(View view) { this.view = view; }
+    }
+    private boolean hasMedia() { return player != null || shown != null || staged != null || imageLoading; }
+    /** Everything gone, including the last picture. For pausing, errors and leaving the screen. */
     private void releaseMedia() {
+        stageMedia();
+        if (shown != null) { drop(shown); shown = null; }
+        media.removeAllViews();
+    }
+    /**
+     * Stops the playing item (its decoder, timers and loads) but leaves the last picture on screen,
+     * so the next item can be drawn behind it and the screen never goes black in between.
+     * The decoder is released at once: cheap TV chips have a single hardware video decoder.
+     */
+    private void stageMedia() {
         playbackGeneration++;
         imageLoading = false;
+        gapless = false;
         if (advance != null) ui.removeCallbacks(advance);
         advance = null;
+        if (retireOld != null) ui.removeCallbacks(retireOld);
+        retireOld = null;
         if (player != null) { player.release(); player = null; }
-        if (website != null) {
-            website.stopLoading(); website.loadUrl("about:blank");
-            if (website.getParent() instanceof ViewGroup) ((ViewGroup) website.getParent()).removeView(website);
-            website.destroy(); website = null;
+        // An item that never drew is dropped; the picture before it is still the one on screen.
+        if (staged != null) { drop(staged); staged = null; }
+    }
+    /** Adds a new item beneath the picture on screen; it takes over in retire() once it has drawn. */
+    private void stage(Layer layer, long generation, long fallbackMillis) {
+        staged = layer;
+        // Beneath, because an opaque old view covers a new video surface's hole in the window until we retire it.
+        media.addView(layer.view, shown != null ? 0 : media.getChildCount(), new FrameLayout.LayoutParams(-1, -1));
+        retireOld = () -> retireIfCurrent(generation);
+        ui.postDelayed(retireOld, fallbackMillis);
+    }
+    private void retireIfCurrent(long generation) { if (generation == playbackGeneration) retire(); }
+    /** The staged item has drawn (or waited long enough): remove the picture it was hiding behind. */
+    private void retire() {
+        if (retireOld != null) ui.removeCallbacks(retireOld);
+        retireOld = null;
+        if (staged == null) return;
+        if (shown != null) drop(shown);
+        shown = staged; staged = null;
+    }
+    private void drop(Layer layer) {
+        if (layer.view instanceof ImageView) ((ImageView) layer.view).setImageDrawable(null);
+        if (layer.view.getParent() == media) media.removeView(layer.view);
+        if (layer.web != null) {
+            layer.web.stopLoading(); layer.web.loadUrl("about:blank");
+            if (layer.web.getParent() instanceof ViewGroup) ((ViewGroup) layer.web.getParent()).removeView(layer.web);
+            layer.web.destroy(); layer.web = null;
         }
-        media.removeAllViews();
-        if (imageBitmap != null) { imageBitmap.recycle(); imageBitmap = null; }
+        if (layer.bitmap != null) { layer.bitmap.recycle(); layer.bitmap = null; }
     }
     private boolean connected() {
         ConnectivityManager manager = getSystemService(ConnectivityManager.class);
@@ -338,28 +387,32 @@ public final class MainActivity extends Activity {
     }
     @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
     private void play(int index) {
-        releaseMedia();
-        if (!remoteEnabled) { show("Screen paused", "Resume this screen from Nexus."); return; }
+        if (!remoteEnabled) { releaseMedia(); show("Screen paused", "Resume this screen from Nexus."); return; }
         JSONArray items = active == null ? null : active.optJSONArray("items");
-        if (items == null || items.length() == 0) { show("Waiting for content", "Assign a playlist and add content in Nexus."); return; }
+        if (items == null || items.length() == 0) { releaseMedia(); show("Waiting for content", "Assign a playlist and add content in Nexus."); return; }
         current = ((index % items.length()) + items.length()) % items.length();
+        // The whole playlist is already one looping player: just move it to the wanted item.
+        if (gapless && player != null) { player.seekToDefaultPosition(current); player.play(); return; }
         JSONObject item = items.optJSONObject(current);
         int attempts = 0;
         while (item != null && "website".equals(item.optString("type")) && !connected() && attempts++ < items.length()) {
             current = (current + 1) % items.length(); item = items.optJSONObject(current);
         }
-        if (item == null || ("website".equals(item.optString("type")) && !connected())) { show("Website content needs internet", "Reconnect this TV. Downloaded MP4 videos can play offline."); return; }
+        if (item == null || ("website".equals(item.optString("type")) && !connected())) { releaseMedia(); show("Website content needs internet", "Reconnect this TV. Downloaded MP4 videos can play offline."); return; }
+        stageMedia();
         long generation = playbackGeneration; JSONObject screen = active.optJSONObject("screen");
         layoutMedia();
         message.setVisibility(View.GONE);
+        if (!gaplessOff && allLocalVideos(items)) { playVideos(items, screen, generation); return; }
         if ("video".equals(item.optString("type"))) {
             java.io.File local = cache.media(base(), item);
             if (!local.isFile()) { failedItem("A downloaded video is missing.", generation); return; }
-            PlayerView view = new PlayerView(this); view.setUseController(false); view.setFocusable(false); view.setResizeMode("cover".equals(screen.optString("fit")) ? AspectRatioFrameLayout.RESIZE_MODE_ZOOM : AspectRatioFrameLayout.RESIZE_MODE_FIT);
-            media.addView(view, new FrameLayout.LayoutParams(-1, -1)); player = new ExoPlayer.Builder(this).build(); view.setPlayer(player);
+            PlayerView view = videoView(screen); stage(new Layer(view), generation, 4000);
+            player = new ExoPlayer.Builder(this).build(); view.setPlayer(player);
             player.setVolume(screen.optBoolean("muted", true) ? 0f : 1f);
             player.setRepeatMode(Player.REPEAT_MODE_OFF);
             player.addListener(new Player.Listener() {
+                @Override public void onRenderedFirstFrame() { retireIfCurrent(generation); }
                 @Override public void onPlaybackStateChanged(int state) {
                     if (generation != playbackGeneration) return;
                     if (state == Player.STATE_READY) { failures = 0; lastError = ""; }
@@ -385,18 +438,20 @@ public final class MainActivity extends Activity {
                     if (generation != playbackGeneration || !foreground) { if (decoded != null) decoded.recycle(); return; }
                     imageLoading = false;
                     if (decoded == null) { failedItem("This image could not load.", generation); return; }
-                    imageBitmap = decoded;
                     ImageView view = new ImageView(this); view.setImageBitmap(decoded);
                     view.setContentDescription(imageName);
+                    view.setBackgroundColor(Color.BLACK);
                     view.setScaleType("cover".equals(screen.optString("fit")) ? ImageView.ScaleType.CENTER_CROP : ImageView.ScaleType.FIT_CENTER);
-                    media.addView(view, new FrameLayout.LayoutParams(-1, -1)); failures = 0; lastError = "";
+                    Layer layer = new Layer(view); layer.bitmap = decoded;
+                    // Decoded already, so it draws on the very next frame: the old picture can go with it.
+                    stage(layer, generation, 1000); retire(); failures = 0; lastError = "";
                     advance = () -> { if (generation == playbackGeneration) play(current + 1); };
                     ui.postDelayed(advance, imageDuration);
                 });
             });
         } else if ("website".equals(item.optString("type")) && UrlPolicy.website(item.optString("url"))) {
             WebsiteFrame websiteFrame = new WebsiteFrame(this);
-            website = websiteFrame.browser;
+            WebView website = websiteFrame.browser;
             WebSettings web = website.getSettings(); web.setJavaScriptEnabled(true); web.setDomStorageEnabled(true); web.setAllowFileAccess(false); web.setAllowContentAccess(false); web.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW); web.setMediaPlaybackRequiresUserGesture(false); web.setSupportMultipleWindows(false);
             web.setUseWideViewPort(true);
             web.setLoadWithOverviewMode(true);
@@ -406,16 +461,62 @@ public final class MainActivity extends Activity {
             CookieManager.getInstance().setAcceptCookie(false); CookieManager.getInstance().setAcceptThirdPartyCookies(website, false);
             website.setWebViewClient(new WebViewClient() {
                 @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) { return !UrlPolicy.website(request.getUrl().toString()); }
+                // The page has painted its first content: the picture before it can go.
+                @Override public void onPageCommitVisible(WebView view, String url) { retireIfCurrent(generation); }
+                @Override public void onPageFinished(WebView view, String url) { retireIfCurrent(generation); }
                 @Override public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) { handler.cancel(); failedItem("The website has a certificate error.", generation); }
                 @Override public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) { if (request.isForMainFrame()) failedItem("The website could not load.", generation); }
             });
-            media.addView(websiteFrame, new FrameLayout.LayoutParams(-1, -1)); websiteFrame.loadPage(item.optString("url"));
+            Layer layer = new Layer(websiteFrame); layer.web = website;
+            stage(layer, generation, 8000); websiteFrame.loadPage(item.optString("url"));
             // A one-website playlist stays open so its own live updates never reset.
             if (items.length() > 1) {
                 advance = () -> { if (generation == playbackGeneration) play(current + 1); };
                 ui.postDelayed(advance, Math.max(5, Math.min(86400, item.optInt("duration_seconds", 30))) * 1000L);
             }
         } else failedItem("This playlist item is not supported.", generation);
+    }
+    private boolean allLocalVideos(JSONArray items) {
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.optJSONObject(i);
+            if (item == null || !"video".equals(item.optString("type")) || !cache.media(base(), item).isFile()) return false;
+        }
+        return true;
+    }
+    /** A video surface that stays see-through until its first frame, and keeps the last frame when it resets. */
+    @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
+    private PlayerView videoView(JSONObject screen) {
+        PlayerView view = new PlayerView(this); view.setUseController(false); view.setFocusable(false);
+        view.setResizeMode("cover".equals(screen.optString("fit")) ? AspectRatioFrameLayout.RESIZE_MODE_ZOOM : AspectRatioFrameLayout.RESIZE_MODE_FIT);
+        view.setShutterBackgroundColor(Color.TRANSPARENT); view.setKeepContentOnPlayerReset(true);
+        view.setBackgroundColor(Color.BLACK);
+        return view;
+    }
+    /**
+     * A playlist of only downloaded videos is one ExoPlayer playlist set to repeat, so ending one video
+     * and starting the next (or looping back to the first) never goes through a new player or surface.
+     */
+    @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
+    private void playVideos(JSONArray items, JSONObject screen, long generation) {
+        List<MediaItem> list = new ArrayList<>();
+        for (int i = 0; i < items.length(); i++) list.add(MediaItem.fromUri(Uri.fromFile(cache.media(base(), items.optJSONObject(i)))));
+        PlayerView view = videoView(screen); stage(new Layer(view), generation, 4000);
+        ExoPlayer exo = new ExoPlayer.Builder(this).build(); player = exo; view.setPlayer(exo);
+        exo.setVolume(screen.optBoolean("muted", true) ? 0f : 1f);
+        exo.setRepeatMode(Player.REPEAT_MODE_ALL);
+        exo.addListener(new Player.Listener() {
+            @Override public void onRenderedFirstFrame() { retireIfCurrent(generation); }
+            @Override public void onMediaItemTransition(MediaItem item, int reason) { if (generation == playbackGeneration) current = exo.getCurrentMediaItemIndex(); }
+            @Override public void onPlaybackStateChanged(int state) { if (generation == playbackGeneration && state == Player.STATE_READY) { failures = 0; lastError = ""; } }
+            @Override public void onPlayerError(PlaybackException error) {
+                if (generation != playbackGeneration) return;
+                // One bad file must not stop the rest: from now on this playlist plays item by item.
+                gaplessOff = true; current = exo.getCurrentMediaItemIndex();
+                failedItem("This TV could not decode a video. Use H.264 MP4 with AAC audio.", generation);
+            }
+        });
+        exo.setMediaItems(list, current, C.TIME_UNSET); exo.prepare(); exo.play();
+        gapless = true;
     }
     private void failedItem(String reason, long generation) {
         if (generation != playbackGeneration) return;
@@ -591,7 +692,7 @@ public final class MainActivity extends Activity {
         watchConnectivity();
         enterKiosk();
         fullscreen.start();
-        if (!token().isEmpty() && active != null && player == null && website == null && imageBitmap == null && !imageLoading && remoteEnabled) play(current < 0 ? 0 : current);
+        if (!token().isEmpty() && active != null && !hasMedia() && remoteEnabled) play(current < 0 ? 0 : current);
         schedule(0);
     }
     @Override public void onWindowFocusChanged(boolean hasFocus) { super.onWindowFocusChanged(hasFocus); if (hasFocus && fullscreen != null) fullscreen.focusReturned(); }

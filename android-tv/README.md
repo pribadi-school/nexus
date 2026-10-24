@@ -44,6 +44,10 @@ The keeper setting defaults on; an existing explicit off preference is retained.
 before pairing and without internet. Setup/error screens also have a visible
 Wi-Fi Settings button. System Settings failures are reported instead of ignored.
 
+Version **1.4.4** removes the black screen between playlist items and when a playlist loops: the next item
+is prepared behind the current picture, and an all-video playlist plays as one repeating ExoPlayer
+playlist. See `docs/android-tv.md` and `black-frame-probe.sh`.
+
 Version **1.4.1** addresses local recovery becoming unresponsive: Wi-Fi reads,
 turn-on requests and awake-lock operations run on a dedicated worker instead
 of the player/UI thread. Wake events coalesce to one queued/running check.

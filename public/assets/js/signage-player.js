@@ -19,6 +19,7 @@ if (root) {
   let toolsTimer = null;
   let noticeTimer = null;
   let watchdogTimer = null;
+  let readyTimer = null;
   let failures = 0;
   let generation = 0;
   let lastError = '';
@@ -47,19 +48,53 @@ if (root) {
     toolsTimer = setTimeout(() => tools.classList.remove('player-tools-visible'), 5000);
   }
 
-  function clearItem() {
+  function discard(element) {
+    if (element instanceof HTMLVideoElement) {
+      element.pause();
+      element.removeAttribute('src');
+      element.load();
+    }
+    element.remove();
+  }
+
+  function stopTimers() {
     generation += 1;
     clearTimeout(itemTimer);
+    clearTimeout(readyTimer);
     itemTimer = null;
+    readyTimer = null;
     clearInterval(watchdogTimer);
     awaitingGesture = false;
-    if (currentMedia instanceof HTMLVideoElement) {
-      currentMedia.pause();
-      currentMedia.removeAttribute('src');
-      currentMedia.load();
-    }
+  }
+
+  // Everything off the screen. For messages, errors and pauses.
+  function clearItem() {
+    stopTimers();
     currentMedia = null;
-    content.replaceChildren();
+    for (const child of [...content.children]) discard(child);
+  }
+
+  // Ready for the next item without blanking the screen: the picture on screen stays until the
+  // next item has drawn (showNew). An item that never drew is dropped; the one before it stays.
+  function stageNext() {
+    stopTimers();
+    if (currentMedia && !currentMedia.classList.contains('is-ready')) discard(currentMedia);
+    else if (currentMedia instanceof HTMLVideoElement) currentMedia.pause(); // keeps its last frame
+    currentMedia = null;
+  }
+
+  // The newest element has drawn: now the picture it was waiting behind can go.
+  function showNew(element, activeGeneration) {
+    if (activeGeneration !== generation || element !== currentMedia) return;
+    clearTimeout(readyTimer);
+    element.classList.add('is-ready');
+    for (const child of [...content.children]) if (child !== element) discard(child);
+  }
+
+  // A page or video that never reports back must not leave the old picture up forever.
+  function showNewSoon(element, activeGeneration, wait = 8000) {
+    clearTimeout(readyTimer);
+    readyTimer = setTimeout(() => showNew(element, activeGeneration), wait);
   }
 
   function stop(title, description) {
@@ -110,8 +145,8 @@ if (root) {
   }
 
   function playItem(index) {
-    clearItem();
-    if (!manifest?.screen?.enabled || !manifest.items.length) return;
+    if (!manifest?.screen?.enabled || !manifest.items.length) { clearItem(); return; }
+    stageNext();
     currentIndex = ((index % manifest.items.length) + manifest.items.length) % manifest.items.length;
     const item = manifest.items[currentIndex];
     const activeGeneration = generation;
@@ -125,6 +160,7 @@ if (root) {
         clearTimeout(itemTimer);
         failures = 0;
         lastError = '';
+        showNew(image, activeGeneration);
         itemTimer = setTimeout(() => playItem(currentIndex + 1), Math.max(5, item.duration_seconds) * 1000);
       });
       image.addEventListener('error', () => failItem('This image could not load.', activeGeneration));
@@ -144,11 +180,13 @@ if (root) {
         if (activeGeneration !== generation) return;
         failures = 0;
         lastError = '';
+        showNew(frame, activeGeneration);
       });
       frame.addEventListener('error', () => failItem('This website could not load. Check its address and connection.', activeGeneration));
       frame.src = item.url;
       currentMedia = frame;
       content.append(frame);
+      showNewSoon(frame, activeGeneration);
       // Cross-origin sites can refuse framing; browsers do not reliably expose
       // that failure. A duration always lets the next playlist item run.
       itemTimer = setTimeout(() => playItem(currentIndex + 1), Math.max(5, item.duration_seconds) * 1000);
@@ -157,7 +195,8 @@ if (root) {
 
     const video = document.createElement('video');
     video.autoplay = true;
-    video.loop = false;
+    // One video alone just repeats; starting it over from scratch each time would blank the screen.
+    video.loop = manifest.items.length === 1;
     video.playsInline = true;
     video.muted = manifest.screen.muted;
     video.preload = 'auto';
@@ -173,10 +212,12 @@ if (root) {
       failures = 0;
       lastError = '';
       lastProgress = Date.now();
+      showNew(video, activeGeneration);
     });
     video.src = item.url;
     currentMedia = video;
     content.append(video);
+    showNewSoon(video, activeGeneration);
     lastProgress = Date.now();
     watchdogTimer = setInterval(() => {
       if (activeGeneration !== generation || awaitingGesture || document.hidden) return;

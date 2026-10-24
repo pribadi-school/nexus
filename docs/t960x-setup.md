@@ -1,4 +1,4 @@
-# T960X vertical display — Nexus 1.3.2
+# T960X vertical display — Nexus 1.4.4
 
 Built for the supplied **T960X, Android 7.1.2 (API25), 2 GB, native portrait**
 display. Supports video, image and website playlists and 4K display coordinates.
@@ -6,7 +6,7 @@ Physical playback and power-on still need checking on the display itself.
 
 ## Install once
 
-1. Copy **nexus-signage-t960x-portrait-1.3.2.apk** to a USB drive and install it
+1. Copy **nexus-signage-t960x-portrait-1.4.4.apk** (in `releases/`) to a USB drive and install it
    on the display. Allow installation from that USB/file manager if Android asks.
 2. Open **Nexus Signage** once. Keep the server address
    **https://nexus.pribadidepok.sch.id**, then choose **Get pairing code**.
@@ -26,7 +26,8 @@ launcher installed so IT can restore it through Android settings if needed.
 
 ## Updating — automatic Wi-Fi keeper
 
-Install **1.3.2 over the existing app** and choose Update. Do not uninstall first:
+Install **1.4.4 over the existing app** and choose Update (1.4.4 also removes the black flash between
+playlist items, see `docs/android-tv.md`). Do not uninstall first:
 the update uses the same app/signing key and preserves pairing, Home selection,
 downloaded media and settings.
 
@@ -101,7 +102,7 @@ Ordinary installation does not grant that control.
 With a computer already authorized for this display's USB debugging:
 
 ```sh
-adb install -r nexus-signage-t960x-portrait-1.3.2.apk
+adb install -r nexus-signage-t960x-portrait-1.4.4.apk
 adb shell dpm set-device-owner sch.id.pribadidepok.nexus.signage/.KioskAdmin
 adb shell am start -n sch.id.pribadidepok.nexus.signage/.MainActivity
 ```

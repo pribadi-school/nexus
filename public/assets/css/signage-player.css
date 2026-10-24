@@ -15,15 +15,21 @@
   inset: 0;
 }
 
+/* The next item is stacked over the one on screen and stays invisible until it has drawn, so
+   changing items never shows an empty frame; the old one is removed once the new is `.is-ready`. */
 .player-content video,
 .player-content img,
 .player-content iframe {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
   border: 0;
   background: var(--color-navy);
 }
+
+.player-content > :not(.is-ready) { visibility: hidden; }
 
 .player-content video, .player-content img { object-fit: contain; }
 .signage-player.player-fit-cover .player-content video,
