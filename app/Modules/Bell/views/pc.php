@@ -49,7 +49,7 @@ $deviceStatus = is_array($status['zones'] ?? null) ? $status['zones'] : [];
     <li>Install the Nexus Bell app on the bell PC (see <code>bell-pc/README.md</code>).</li>
     <li>Make a connection key here and copy it. It is shown only once.</li>
     <li>In the app's <strong>Koneksi</strong> box, enter the server address <code><?= e($serverUrl) ?></code> and the key, then press <strong>Simpan &amp; sambungkan</strong>.</li>
-    <li>Pick the sound device of each floor in the app and press <strong>Tes perangkat</strong>.</li>
+    <li>Pick the sound device of each area in the app and press <strong>Tes perangkat</strong>.</li>
   </ol>
   <div class="form-actions">
     <?php if ($hasKey): ?>

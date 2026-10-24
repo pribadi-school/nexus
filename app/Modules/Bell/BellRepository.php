@@ -175,7 +175,7 @@ final class BellRepository
         $target = db()->one('SELECT id FROM bell_profiles WHERE zone_id = ? AND name = ?', [$targetZoneId, (string) $source['name']]);
         $profileId = $target !== null ? (int) $target['id'] : (int) ($this->zone($targetZoneId)['active_profile_id'] ?? 0);
         if ($profileId < 1) {
-            throw new InvalidArgumentException('The other floor has no profile to copy into.');
+            throw new InvalidArgumentException('The other area has no profile to copy into.');
         }
         $this->saveEntry(null, $profileId, [
             'ring_time' => $entry['ring_time'], 'days' => $entry['days'], 'sound_ref' => $entry['sound_ref'],
@@ -208,7 +208,7 @@ final class BellRepository
     {
         $profile = $this->profile($profileId);
         if ($profile === null || (int) $profile['zone_id'] !== $zoneId) {
-            throw new InvalidArgumentException('That profile belongs to another floor.');
+            throw new InvalidArgumentException('That profile belongs to another area.');
         }
         db()->update('bell_zones', ['active_profile_id' => $profileId, 'updated_at' => Database::now()], ['id' => $zoneId]);
     }
@@ -237,7 +237,7 @@ final class BellRepository
         db()->transaction(function () use ($id, $zoneId): void {
             $others = db()->all('SELECT id FROM bell_profiles WHERE zone_id = ? AND id <> ? ORDER BY sort_order, id', [$zoneId, $id]);
             if ($others === []) {
-                throw new InvalidArgumentException('A floor needs at least one profile.');
+                throw new InvalidArgumentException('An area needs at least one profile.');
             }
             if ((int) ($this->zone($zoneId)['active_profile_id'] ?? 0) === $id) {
                 $this->setActiveProfile($zoneId, (int) $others[0]['id']);
@@ -246,12 +246,12 @@ final class BellRepository
         });
     }
 
-    /** Copies a profile and all its rows into a zone (the same one or the other floor). */
+    /** Copies a profile and all its rows into a zone (the same one or the other area). */
     public function copyProfile(int $profileId, int $targetZoneId): int
     {
         $profile = $this->profile($profileId) ?? throw new InvalidArgumentException('That profile does not exist.');
         if ($this->zone($targetZoneId) === null) {
-            throw new InvalidArgumentException('That floor does not exist.');
+            throw new InvalidArgumentException('That area does not exist.');
         }
         return db()->transaction(function () use ($profile, $targetZoneId): int {
             $name = (string) $profile['name'];
@@ -277,7 +277,7 @@ final class BellRepository
             throw new InvalidArgumentException('Give the profile a name of 1 to 60 characters.');
         }
         if ($this->profileNameExists($zoneId, $name, $exceptId)) {
-            throw new InvalidArgumentException('This floor already has a profile with that name.');
+            throw new InvalidArgumentException('This area already has a profile with that name.');
         }
     }
 
@@ -294,7 +294,7 @@ final class BellRepository
     public function updateZone(int $id, string $name, string $color, int $volume): void
     {
         if ($name === '' || mb_strlen($name) > 60) {
-            throw new InvalidArgumentException('Give the floor a name of 1 to 60 characters.');
+            throw new InvalidArgumentException('Give the area a name of 1 to 60 characters.');
         }
         if (!isset(BellData::COLORS[$color])) {
             throw new InvalidArgumentException('Choose one of the listed colours.');
@@ -304,7 +304,7 @@ final class BellRepository
         }
         $taken = (int) db()->value('SELECT COUNT(*) FROM bell_zones WHERE name = ? AND id <> ?', [$name, $id]);
         if ($taken > 0) {
-            throw new InvalidArgumentException('Another floor already has that name.');
+            throw new InvalidArgumentException('Another area already has that name.');
         }
         db()->update('bell_zones', ['name' => $name, 'color' => $color, 'volume' => $volume, 'updated_at' => Database::now()], ['id' => $id]);
     }
@@ -319,7 +319,7 @@ final class BellRepository
             throw new InvalidArgumentException('Keep the holiday name to 120 characters.');
         }
         if ((int) db()->value('SELECT COUNT(*) FROM bell_holidays WHERE zone_id = ? AND holiday_date = ?', [$zoneId, $date]) > 0) {
-            throw new InvalidArgumentException('That date is already a holiday on this floor.');
+            throw new InvalidArgumentException('That date is already a holiday on this area.');
         }
         db()->insert('bell_holidays', ['zone_id' => $zoneId, 'holiday_date' => $date, 'label' => $label]);
     }
@@ -398,7 +398,7 @@ final class BellRepository
 
     /**
      * What the bell PC downloads: for every zone its active profile's rows plus
-     * other zones' school-wide ("both floors") rows, holidays and volume.
+     * other zones' school-wide ("both areas") rows, holidays and volume.
      *
      * @return array<string,mixed>
      */

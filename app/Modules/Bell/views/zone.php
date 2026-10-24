@@ -1,6 +1,6 @@
 <?php
 /**
- * One floor's schedule, laid out like a classic alarm-clock list: a switch,
+ * One area's schedule, laid out like a classic alarm-clock list: a switch,
  * a big time, what and when, and the row's own buttons.
  *
  * @var array<string,mixed> $zone
@@ -17,7 +17,7 @@ $isActive = $selected !== null && (int) $selected['id'] === (int) $zone['active_
 $other = $others[0] ?? null;
 ?>
 <header class="page-header">
-  <div><h1 class="page-title">Bell</h1><p class="page-subtitle">Two floors, two separate schedules. Changes reach the bell PC within about 30 seconds.</p></div>
+  <div><h1 class="page-title">Bell</h1><p class="page-subtitle">Two areas, two separate schedules. Changes reach the bell PC within about 30 seconds.</p></div>
   <?php if ($selected !== null): ?><div class="page-actions"><a class="btn btn--primary" href="/bell/profiles/<?= (int) $selected['id'] ?>/entries/create"><?= icon('plus', 'icon--sm') ?>Add bell</a></div><?php endif ?>
 </header>
 <?= partial('Bell::_tabs', ['tab' => $tab]) ?>
@@ -43,7 +43,7 @@ $other = $others[0] ?? null;
           </form>
         </details>
       <?php endif ?>
-      <a class="btn btn--secondary btn--sm" href="/bell/zones/<?= $zoneId ?>/settings"><?= icon('settings', 'icon--sm') ?><span class="bell-label-long">Floor settings</span><span class="bell-label-short">Settings</span></a>
+      <a class="btn btn--secondary btn--sm" href="/bell/zones/<?= $zoneId ?>/settings"><?= icon('settings', 'icon--sm') ?><span class="bell-label-long">Area settings</span><span class="bell-label-short">Settings</span></a>
     </div>
   </div>
   <div class="bell-clock" aria-live="off">
@@ -52,7 +52,7 @@ $other = $others[0] ?? null;
   </div>
 
   <?php if ($selected === null): ?>
-    <?= partial('partials/empty-state', ['icon' => 'bell', 'title' => 'No profile', 'text' => 'Add a profile in Floor settings first.', 'compact' => true]) ?>
+    <?= partial('partials/empty-state', ['icon' => 'bell', 'title' => 'No profile', 'text' => 'Add a profile in Area settings first.', 'compact' => true]) ?>
   <?php else: ?>
   <div class="bell-profiles">
     <nav class="bell-profile-list" aria-label="Profiles of <?= e($zone['name']) ?>">
@@ -64,7 +64,7 @@ $other = $others[0] ?? null;
     </nav>
     <?php if (!$isActive): ?>
       <form method="post" action="/bell/zones/<?= $zoneId ?>/active-profile" data-busy-on-submit
-            data-confirm="Use the &quot;<?= e($selected['name']) ?>&quot; profile on <?= e($zone['name']) ?>?" data-confirm-text="The <?= e($zone['name']) ?> bells will follow this profile from now on. The other floor is not changed." data-confirm-button="Use this profile">
+            data-confirm="Use the &quot;<?= e($selected['name']) ?>&quot; profile on <?= e($zone['name']) ?>?" data-confirm-text="The <?= e($zone['name']) ?> bells will follow this profile from now on. The other area is not changed." data-confirm-button="Use this profile">
         <?= csrf_field() ?><input type="hidden" name="profile_id" value="<?= (int) $selected['id'] ?>">
         <button class="btn btn--primary btn--sm" type="submit"><?= icon('check', 'icon--sm') ?>Use this profile now</button>
       </form>
@@ -88,7 +88,7 @@ $other = $others[0] ?? null;
           <div class="bell-row__time num"><?= e(substr((string) $entry['ring_time'], 0, 8)) ?></div>
           <div class="bell-row__body">
             <p class="bell-row__label"><?= e($entry['label'] !== '' ? $entry['label'] : 'Bell') ?>
-              <?php if ($entry['both_floors']): ?><span class="chip chip--action">Both floors</span><?php endif ?>
+              <?php if ($entry['both_floors']): ?><span class="chip chip--action">Both areas</span><?php endif ?>
             </p>
             <p class="bell-days" aria-label="Days: <?= e(implode(', ', array_map(static fn (int $d): string => BellData::DAYS[$d][0], $days))) ?>">
               <?php foreach (BellData::DAYS as $n => $names): ?><span class="bell-day<?= in_array($n, $days, true) ? ' is-on' : '' ?>"><?= e(substr($names[0], 0, 2)) ?></span><?php endforeach ?>

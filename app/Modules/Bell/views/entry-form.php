@@ -73,7 +73,7 @@ $time = substr((string) $values['ring_time'], 0, 8);
 
     <div class="field field--full bell-checks">
       <label class="checkbox"><input type="checkbox" name="enabled" value="1"<?= $values['enabled'] ? ' checked' : '' ?>><span>Turned on</span></label>
-      <label class="checkbox"><input type="checkbox" name="both_floors" value="1"<?= $values['both_floors'] ? ' checked' : '' ?>><span>Also ring on the other floor <small>(a school-wide bell; it follows the other floor's volume and holidays)</small></span></label>
+      <label class="checkbox"><input type="checkbox" name="both_floors" value="1"<?= $values['both_floors'] ? ' checked' : '' ?>><span>Also ring on the other area <small>(a school-wide bell; it follows the other area's volume and holidays)</small></span></label>
     </div>
   </div>
   <div class="form-actions"><a class="btn btn--secondary" href="<?= e($back) ?>">Cancel</a><button class="btn btn--primary" type="submit"><?= $entry === null ? 'Add bell' : 'Save bell' ?></button></div>

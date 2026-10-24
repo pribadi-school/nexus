@@ -10,11 +10,11 @@ use App\Modules\Bell\BellData;
 $zoneId = (int) $zone['id'];
 ?>
 <a class="back-link" href="/bell/zones/<?= $zoneId ?>"><?= icon('chevron-left', 'icon--sm') ?><?= e($zone['name']) ?></a>
-<header class="page-header"><div><h1 class="page-title"><?= e($zone['name']) ?> settings</h1><p class="page-subtitle">Name, volume, profiles and holidays of this floor only.</p></div></header>
+<header class="page-header"><div><h1 class="page-title"><?= e($zone['name']) ?> settings</h1><p class="page-subtitle">Name, volume, profiles and holidays of this area only.</p></div></header>
 <?= partial('Bell::_tabs', ['tab' => 'zone-' . $zoneId]) ?>
 
 <section class="card bell-card bell-zone bell-zone--<?= e($zone['color']) ?>">
-  <h2 class="card__title">Floor</h2>
+  <h2 class="card__title">Area</h2>
   <form method="post" action="/bell/zones/<?= $zoneId ?>/settings" data-busy-on-submit>
     <?= csrf_field() ?>
     <div class="form-grid">
@@ -23,15 +23,15 @@ $zoneId = (int) $zone['id'];
         <select class="select" id="color" name="color"><?php foreach (BellData::COLORS as $key => $label): ?><option value="<?= e($key) ?>"<?= $zone['color'] === $key ? ' selected' : '' ?>><?= e($label) ?></option><?php endforeach ?></select></div>
       <div class="field field--full"><label class="field__label" for="volume">Volume (0–100)</label>
         <input class="input input--short num" id="volume" name="volume" type="number" min="0" max="100" step="1" value="<?= (int) $zone['volume'] ?>" required>
-        <p class="field__hint">How loud this floor's bells are. Also set the real loudness on the mixer.</p></div>
+        <p class="field__hint">How loud this area's bells are. Also set the real loudness on the mixer.</p></div>
     </div>
-    <div class="form-actions"><button class="btn btn--primary" type="submit">Save floor</button></div>
+    <div class="form-actions"><button class="btn btn--primary" type="submit">Save area</button></div>
   </form>
 </section>
 
 <section class="card bell-card" id="profiles">
   <h2 class="card__title">Profiles</h2>
-  <p class="signage-help">A profile is a full day plan, such as Normal, Jumat, Ujian or Pendek. Only the one marked "In use" rings. Profiles of this floor never change the other floor.</p>
+  <p class="signage-help">A profile is a full day plan, such as Normal, Jumat, Ujian or Pendek. Only the one marked "In use" rings. Profiles of this area never change the other area.</p>
   <ul class="bell-settings-list">
     <?php foreach ($profiles as $profile): $on = (int) $profile['id'] === (int) $zone['active_profile_id']; ?>
       <li class="bell-settings-row">
@@ -65,7 +65,7 @@ $zoneId = (int) $zone['id'];
 
 <section class="card bell-card" id="holidays">
   <h2 class="card__title">Holidays</h2>
-  <p class="signage-help">No bells ring on this floor on these dates, whatever profile is in use.</p>
+  <p class="signage-help">No bells ring on this area on these dates, whatever profile is in use.</p>
   <?php if ($holidays === []): ?><p class="notes-placeholder">No holidays added.</p><?php else: ?>
     <ul class="bell-settings-list">
       <?php foreach ($holidays as $holiday): ?>
@@ -88,6 +88,6 @@ $zoneId = (int) $zone['id'];
 
 <section class="card bell-card">
   <h2 class="card__title">Backup</h2>
-  <p class="signage-help">One JSON file with both floors, all profiles, bells and holidays. The sound files are not inside it (only their names).</p>
+  <p class="signage-help">One JSON file with both areas, all profiles, bells and holidays. The sound files are not inside it (only their names).</p>
   <div class="form-actions"><a class="btn btn--secondary" href="/bell/backup.json"><?= icon('download', 'icon--sm') ?>Download backup</a></div>
 </section>

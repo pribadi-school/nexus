@@ -10,7 +10,7 @@ MONTHS = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agust
           "September", "Oktober", "November", "Desember"]
 EVERY_DAY = "Setiap hari"
 
-# Panel setiap lantai
+# Panel setiap area
 ZONE_PROFILE = "Profil"
 ZONE_VOLUME = "Volume"
 ZONE_DEVICE = "Perangkat suara"
@@ -66,7 +66,7 @@ LOG_TEST = "%s: tes %s"
 LOG_MANUAL = "%s: dibunyikan manual (%s)"
 
 # Banner kesalahan
-BANNER_DEVICE_MISSING = "%s: perangkat suara \"%s\" tidak ditemukan. Lantai lain tetap berjalan."
+BANNER_DEVICE_MISSING = "%s: perangkat suara \"%s\" tidak ditemukan. Area lain tetap berjalan."
 BANNER_PLAY_FAILED = "%s: tidak bisa memutar suara (%s)"
 BANNER_AUDIO_LIB = "Pustaka suara tidak bisa dimuat (%s). Bel tidak akan berbunyi."
 BANNER_ALREADY_RUNNING = "Nexus Bell sudah berjalan di PC ini."

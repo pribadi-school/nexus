@@ -4,7 +4,7 @@
  */
 use App\Modules\Bell\BellSounds;
 ?>
-<header class="page-header"><div><h1 class="page-title">Bell</h1><p class="page-subtitle">Sounds you can use on either floor.</p></div></header>
+<header class="page-header"><div><h1 class="page-title">Bell</h1><p class="page-subtitle">Sounds you can use on either area.</p></div></header>
 <?= partial('Bell::_tabs', ['tab' => 'sounds']) ?>
 
 <section class="card bell-card">

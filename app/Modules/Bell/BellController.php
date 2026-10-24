@@ -13,7 +13,7 @@ use App\Core\View;
 use InvalidArgumentException;
 use RuntimeException;
 
-/** The Bell pages: each floor's schedule, its settings, the sound library and the bell PC. */
+/** The Bell pages: each area's schedule, its settings, the sound library and the bell PC. */
 final class BellController
 {
     private BellRepository $bell;
@@ -23,14 +23,14 @@ final class BellController
         $this->bell = new BellRepository();
     }
 
-    /** GET /bell : opens the first floor. */
+    /** GET /bell : opens the first area. */
     public function index(Request $request): Response
     {
         $zones = $this->bell->zones();
         return $zones === [] ? $this->render('empty', [], 'Bell') : Response::redirect('/bell/zones/' . $zones[0]['id']);
     }
 
-    /** GET /bell/zones/{id}?profile= : one floor's schedule. */
+    /** GET /bell/zones/{id}?profile= : one area's schedule. */
     public function zone(Request $request): Response
     {
         $zone = $this->zoneOf($request);
@@ -74,7 +74,7 @@ final class BellController
         $zone = $this->zoneOf($request);
         return $this->attempt(function () use ($zone, $request): string {
             $this->bell->updateZone((int) $zone['id'], trim((string) $request->input('name', '')), (string) $request->input('color', ''), (int) $request->input('volume', '100'));
-            return 'Floor settings saved.';
+            return 'Area settings saved.';
         }, '/bell/zones/' . $zone['id'] . '/settings');
     }
 
@@ -108,14 +108,14 @@ final class BellController
         }, '/bell/zones/' . $profile['zone_id'] . '/settings#profiles');
     }
 
-    /** POST /bell/profiles/{id}/copy (zone_id) : copy a whole profile to a floor */
+    /** POST /bell/profiles/{id}/copy (zone_id) : copy a whole profile to an area */
     public function copyProfile(Request $request): Response
     {
         $profile = $this->profileOf($request);
         $target = (int) $request->input('zone_id', '0');
         return $this->attempt(function () use ($profile, $target): string {
             $this->bell->copyProfile((int) $profile['id'], $target);
-            return 'Profile copied to ' . ($this->bell->zone($target)['name'] ?? 'the floor') . '.';
+            return 'Profile copied to ' . ($this->bell->zone($target)['name'] ?? 'the area') . '.';
         }, '/bell/zones/' . $profile['zone_id'] . '/settings#profiles');
     }
 
@@ -178,7 +178,7 @@ final class BellController
         $target = (int) $request->input('zone_id', '0');
         return $this->attempt(function () use ($entry, $target): string {
             $this->bell->copyEntry((int) $entry['id'], $target);
-            return 'Bell copied to ' . ($this->bell->zone($target)['name'] ?? 'the other floor') . '.';
+            return 'Bell copied to ' . ($this->bell->zone($target)['name'] ?? 'the other area') . '.';
         }, $this->zoneUrl($entry));
     }
 
@@ -239,7 +239,7 @@ final class BellController
         $zone = $this->zoneOf($request);
         return $this->attempt(function () use ($zone, $request): string {
             $this->bell->addHoliday((int) $zone['id'], (string) $request->input('date', ''), trim((string) $request->input('label', '')));
-            return 'Holiday added. No bells ring on this floor that day.';
+            return 'Holiday added. No bells ring on this area that day.';
         }, '/bell/zones/' . $zone['id'] . '/settings#holidays');
     }
 
@@ -419,7 +419,7 @@ final class BellController
     /** @return array<string,mixed> */
     private function zoneOf(Request $request): array
     {
-        return $this->bell->zone((int) $request->param('id')) ?? throw HttpException::notFound('That floor does not exist.');
+        return $this->bell->zone((int) $request->param('id')) ?? throw HttpException::notFound('That area does not exist.');
     }
 
     /** @return array<string,mixed> */
