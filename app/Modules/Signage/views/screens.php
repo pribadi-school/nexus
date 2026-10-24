@@ -39,3 +39,26 @@
     <?php endforeach ?>
   </ul>
 <?php endif ?>
+
+<?php /* Installable player apps: pick the one that matches the TV, then pair it with "Pair Android TV". */ ?>
+<section class="card signage-apps" aria-labelledby="signage-apps-title">
+  <div>
+    <h2 class="signage-apps__title" id="signage-apps-title">TV player app</h2>
+    <p class="signage-help">Install the Nexus Signage app on a TV, then pair it. Install over the existing app to update; never uninstall, or the TV loses its pairing and videos.</p>
+  </div>
+  <div class="signage-apps__buttons">
+    <?php foreach ($apps as $kind => $app): ?>
+      <?php if ($app['file'] !== null): ?>
+        <a class="btn btn--secondary signage-apps__button" href="<?= e('/signage/app/download/' . $kind) ?>" download>
+          <?= icon('download', 'icon--sm') ?>
+          <span><strong><?= e($app['label']) ?></strong><small>Version <?= e($app['file']['version']) ?> · <?= e(number_format($app['file']['size'] / 1048576, 1)) ?> MB</small></span>
+        </a>
+      <?php else: ?>
+        <span class="btn btn--secondary signage-apps__button" aria-disabled="true"><span><strong><?= e($app['label']) ?></strong><small>Not available yet</small></span></span>
+      <?php endif ?>
+    <?php endforeach ?>
+  </div>
+  <ul class="signage-apps__hints">
+    <?php foreach ($apps as $app): ?><li><strong><?= e($app['label']) ?>:</strong> <?= e($app['hint']) ?></li><?php endforeach ?>
+  </ul>
+</section>

@@ -24,7 +24,7 @@ final class SignageController
 
     public function index(Request $request): Response
     {
-        return $this->render('screens', ['screens' => $this->signage->screens()], 'screens', 'Signage');
+        return $this->render('screens', ['screens' => $this->signage->screens(), 'apps' => SignageApp::all()], 'screens', 'Signage');
     }
 
     public function createScreen(Request $request): Response

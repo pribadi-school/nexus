@@ -252,3 +252,14 @@ section > .signage-playlist-new, .signage-playlist-source__share .signage-playli
 /* The unused half of the form is hidden for the chosen mode (all shown without :has support). */
 .signage-schedule-form:has(input[name="mode"][value="once"]:checked) [data-mode="weekly"],
 .signage-schedule-form:has(input[name="mode"][value="weekly"]:checked) [data-mode="once"] { display: none; }
+
+/* Player app downloads at the bottom of Screens. */
+.signage-apps { display: grid; gap: var(--space-3); margin-top: var(--space-6); padding: var(--space-4); }
+.signage-apps__title { margin: 0 0 var(--space-1); font-size: var(--fs-card-title); font-weight: 600; }
+.signage-apps .signage-help { margin: 0; }
+.signage-apps__buttons { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: var(--space-2); }
+.signage-apps__button { justify-content: flex-start; gap: var(--space-3); min-height: 56px; text-align: left; }
+.signage-apps__button span { display: grid; }
+.signage-apps__button small { color: var(--color-muted-foreground); font-weight: 400; }
+.signage-apps__button[aria-disabled="true"] { opacity: .6; cursor: default; }
+.signage-apps__hints { margin: 0; padding-left: var(--space-5); color: var(--color-muted-foreground); }

@@ -10,6 +10,7 @@ use App\Modules\Bell\BellController;
 use App\Modules\Dashboard\DashboardController;
 use App\Modules\Signage\SignageController;
 use App\Modules\Signage\SignagePlayerController;
+use App\Modules\Signage\SignageAppController;
 use App\Modules\Signage\SignagePairingController;
 use App\Modules\Signage\SignageScheduleController;
 use App\Modules\Signage\SignageTvControlController;
@@ -42,6 +43,7 @@ categories()->registerRoutes($router);
 // Signage manages displays and content separately from the device inventory.
 $router->get('/signage', [SignageController::class, 'content']);
 $router->get('/signage/screens', [SignageController::class, 'index']);
+$router->get('/signage/app/download/{kind}', [SignageAppController::class, 'download']);
 $router->get('/signage/pair', [SignagePairingController::class, 'show']);
 $router->post('/signage/pair', [SignagePairingController::class, 'claim']);
 // Native TVs authenticate polling with a generated device secret, not an admin session.
